@@ -29,10 +29,10 @@ class PolicyAdmin(admin.ModelAdmin) :
     
     # 검색창 기준 선택창이 필요한 컬럼
     list_filter = (
-        "policy_type",
-        "is_active",
-        "handling_type",
-        "create_at",
+        "policy_type",      # 정책 타입 (도메인/정규표현식) 선택창
+        "is_active",        # 정책 적용 여부 (선택창)
+        "handling_type",    # 처리 유형 (선택창)
+        "create_at",        # 정책 생성 시간 (달력)
     )
     
     # 정책 생성 시간 기준으로 정렬
@@ -40,8 +40,9 @@ class PolicyAdmin(admin.ModelAdmin) :
     
     #상세 페이지로 들어가지 않고, 목록(리스트) 화면에서 바로 데이터를 수정하고 저장할 수 있게 해주는 설정 (토글/선택창)
     list_editable = (
-        "is_active",
-        "handling_type",
+        "is_active",        # 정책 적용 여부 선택창
+        "handling_type",    # 처리 유형 선택창
     )
     
+    # 한 페이지에 30페이지 출력
     list_per_page = 30

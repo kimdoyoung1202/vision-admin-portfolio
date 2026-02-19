@@ -31,12 +31,13 @@ class PolicyHistoryAdmin(admin.ModelAdmin) :
     
     # 검색창 기준 선택창이 필요한 컬럼
     list_filter = (
-        "is_active",
-        "handling_type",
-        "delete_at",
+        "is_active",        # 정책 적용 여부 (선택창)
+        "handling_type",    # 처리 유형 (선택창)
+        "delete_at",        # 정책 삭제 시간(달력)
     )
     
     # 정책 삭제 시간 기준으로 정렬
-    ordering = ("-create_at",)
+    ordering = ("delete_at",)
     
+    # 한 페이지에 30페이지 출력
     list_per_page = 30
