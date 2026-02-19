@@ -25,9 +25,9 @@ SECRET_KEY = 'django-insecure-j)1f*z6h-cebzrc%0_j6r8!a%bua2#dhz4!-a7jn#lk(m3#$!&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# 개발 단계에서만 꼭 바꾸기
 ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
+    "*"
 ]
 
 
@@ -61,7 +61,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -130,3 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]

@@ -33,11 +33,10 @@ class PolicyHistoryAdmin(admin.ModelAdmin) :
     list_filter = (
         "is_active",        # 정책 적용 여부 (선택창)
         "handling_type",    # 처리 유형 (선택창)
-        "delete_at",        # 정책 삭제 시간(달력)
     )
     
     # 정책 삭제 시간 기준으로 정렬
-    ordering = ("delete_at",)
+    ordering = ("-delete_at",)
     
     # 한 페이지에 30페이지 출력
     list_per_page = 30

@@ -14,7 +14,7 @@ class PolicyAdmin(admin.ModelAdmin) :
         "content",          # url (도메인) / url 패턴 (정규표현식)  
         "is_active",        # 정책 적용 여부 (true : 적용 /false : 미적용)
         "handling_type",    # 처리 유형 (block/log //관리자 페이지에서는 한글로 표시)
-        "created_by",       # 정책 추가한 사람의 id
+        "create_by",        # 정책 추가한 사람의 id
         "create_at",        # 정책 생성 시간
         "description"       # 정책 설명
         )
@@ -32,7 +32,6 @@ class PolicyAdmin(admin.ModelAdmin) :
         "policy_type",      # 정책 타입 (도메인/정규표현식) 선택창
         "is_active",        # 정책 적용 여부 (선택창)
         "handling_type",    # 처리 유형 (선택창)
-        "create_at",        # 정책 생성 시간 (달력)
     )
     
     # 정책 생성 시간 기준으로 정렬

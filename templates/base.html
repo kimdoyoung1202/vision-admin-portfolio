@@ -1,0 +1,439 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>{% block title %}VISION Admin{% endblock %}</title>
+
+  <!-- Sneat 느낌: 폰트/아이콘/부트스트랩 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    :root{
+      --sneat-bg: #f5f6fa;
+      --card-bg: #ffffff;
+      --text: #566a7f;
+      --muted: #a1acb8;
+      --primary: #696cff;      /* Sneat 대표 톤 */
+      --primary-2: #5f61e6;
+      --sidebar-bg: #ffffff;
+      --border: #e7e7ff;
+      --shadow: 0 6px 18px rgba(67, 89, 113, 0.12);
+
+      --header-h: 64px;
+      --sidebar-w: 260px;
+      --sidebar-w-collapsed: 0px; /* 완전 접힘 */
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
+    body{
+      margin: 0;
+      font-family: "Public Sans", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+      color: var(--text);
+      background: var(--sneat-bg);
+      overflow: hidden; /* PC 고정 레이아웃 */
+    }
+
+    /* ====== LAYOUT WRAPPER ====== */
+    .layout{
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ====== HEADER (고정) ====== */
+    .topbar{
+      height: var(--header-h);
+      min-height: var(--header-h);
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .topbar-left{
+      width: var(--sidebar-w);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hamburger-btn{
+      border: none;
+      background: transparent;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .hamburger-btn:hover{ background: rgba(255,255,255,0.12); }
+
+    .topbar-brand{
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      font-size: 14px;
+      opacity: 0.95;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .topbar-center{
+      flex: 1;
+      text-align: center;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+
+    .topbar-right{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .topbar-right a{
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 10px;
+      border-radius: 10px;
+    }
+    .topbar-right a:hover{ background: rgba(255,255,255,0.12); }
+
+    /* ====== BODY ====== */
+    .body{
+      flex: 1;
+      display: flex;
+      min-height: 0; /* 스크롤 계산 필수 */
+    }
+
+    /* ====== SIDEBAR ====== */
+    .sidebar{
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      box-shadow: 2px 0 10px rgba(67, 89, 113, 0.06);
+      transition: width 220ms ease;
+      overflow: hidden; /* 접힐 때 내용 숨김 */
+    }
+
+    .layout.sidebar-collapsed .sidebar{
+      width: var(--sidebar-w-collapsed);
+      border-right: none;
+      box-shadow: none;
+    }
+
+    .sidebar-inner{
+      height: 100%;
+      overflow: auto;
+      padding: 14px 10px;
+    }
+
+    .menu-section{
+      margin: 6px 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      user-select: none;
+    }
+
+    .menu{
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .menu-item{
+      margin: 4px 6px;
+    }
+
+    .menu-link{
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .menu-link:hover{
+      background: rgba(105, 108, 255, 0.08);
+      border-color: rgba(105, 108, 255, 0.18);
+      color: #2f3a45;
+    }
+
+    .menu-link .bx{
+      font-size: 18px;
+      color: var(--primary);
+      width: 20px;
+      text-align: center;
+    }
+
+    .menu-link .caret{
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 18px;
+      transition: transform 180ms ease;
+    }
+
+    .menu-item.active > .menu-link{
+      background: rgba(105, 108, 255, 0.12);
+      border-color: rgba(105, 108, 255, 0.25);
+    }
+
+    .submenu{
+      list-style: none;
+      padding: 6px 0 0 0;
+      margin: 0 6px;
+      display: none;
+    }
+
+    .menu-item.open > .submenu{ display: block; }
+    .menu-item.open > .menu-link .caret{ transform: rotate(90deg); }
+
+    .submenu .submenu-link{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px 9px 44px;
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .submenu .submenu-link:hover{
+      background: rgba(105, 108, 255, 0.08);
+      border-color: rgba(105, 108, 255, 0.18);
+    }
+
+    .submenu .submenu-link.current{
+      background: rgba(105, 108, 255, 0.14);
+      border-color: rgba(105, 108, 255, 0.25);
+    }
+
+    /* ====== MAIN CONTENT ====== */
+    .main{
+      flex: 1;
+      min-width: 0;
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .page-header{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .page-title{
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      color: #2f3a45;
+    }
+
+    .page-subtitle{
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .card-sneat{
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    /* (선택) 사이드바가 접혀도 헤더 왼쪽 영역 폭만 자연스럽게 */
+    .layout.sidebar-collapsed .topbar-left{
+      width: 60px;
+    }
+
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+
+<body>
+  <div class="layout" id="layoutRoot">
+    <!-- ===== Header ===== -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
+          <i class="bx bx-menu" style="font-size:22px;"></i>
+        </button>
+        <div class="topbar-brand">공통</div>
+      </div>
+
+      <div class="topbar-center">VISION</div>
+
+      <nav class="topbar-right">
+        <!-- 필요하면 request.user 표시 -->
+        <a href="{% url 'admin:index' %}">
+          <i class="bx bx-user"></i> ADMIN
+        </a>
+        <a href="{% url 'logout' %}">
+          <i class="bx bx-log-out"></i> 로그아웃
+        </a>
+      </nav>
+    </header>
+
+    <!-- ===== Body ===== -->
+    <div class="body">
+      <!-- ===== Sidebar ===== -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-inner">
+
+          <div class="menu-section">MENU</div>
+          <ul class="menu">
+
+            <!-- 대시보드 -->
+            <li class="menu-item {% if active_menu == 'dashboard' %}active{% endif %}">
+              <a class="menu-link" href="{% url 'dashboard' %}">
+                <i class="bx bx-home"></i>
+                <span>대시보드</span>
+              </a>
+            </li>
+
+            <!-- 정책 관리 (드롭다운) -->
+            <li class="menu-item {% if active_group == 'policy' %}active open{% endif %}" data-dropdown="true">
+              <div class="menu-link">
+                <i class="bx bx-shield-quarter"></i>
+                <span>정책 관리</span>
+                <i class="bx bx-chevron-right caret"></i>
+              </div>
+              <ul class="submenu">
+                <li>
+                  <a class="submenu-link {% if active_menu == 'policy_list' %}current{% endif %}" href="{% url 'policy:list' %}">
+                    정책 조회(삭제)
+                  </a>
+                </li>
+                <li>
+                  <a class="submenu-link {% if active_menu == 'policy_add' %}current{% endif %}" href="{% url 'policy:add' %}">
+                    정책 추가
+                  </a>
+                </li>
+                <li>
+                  <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy:history' %}">
+                    정책 삭제 관리
+                  </a>
+                </li>
+              </ul>
+            </li>
+
+            <!-- AI 관리 (드롭다운) -->
+            <li class="menu-item {% if active_group == 'ai' %}active open{% endif %}" data-dropdown="true">
+              <div class="menu-link">
+                <i class="bx bx-bot"></i>
+                <span>AI 관리</span>
+                <i class="bx bx-chevron-right caret"></i>
+              </div>
+              <ul class="submenu">
+                <li>
+                  <a class="submenu-link {% if active_menu == 'ai_records' %}current{% endif %}" href="{% url 'ai:records' %}">
+                    AI 기록관
+                  </a>
+                </li>
+                <li>
+                  <a class="submenu-link {% if active_menu == 'ai_status' %}current{% endif %}" href="{% url 'ai:status' %}">
+                    AI 성능 현황
+                  </a>
+                </li>
+              </ul>
+            </li>
+
+            <!-- 로그 관리 -->
+            <li class="menu-item {% if active_menu == 'logs' %}active{% endif %}">
+              <a class="menu-link" href="{% url 'logs:list' %}">
+                <i class="bx bx-receipt"></i>
+                <span>로그 관리</span>
+              </a>
+            </li>
+
+          </ul>
+        </div>
+      </aside>
+
+      <!-- ===== Main ===== -->
+      <main class="main">
+        <!-- (선택) 페이지 헤더 공통 -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">{% block page_title %}페이지 제목{% endblock %}</h1>
+            <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+          </div>
+          <div>
+            {% block page_actions %}{% endblock %}
+          </div>
+        </div>
+
+        <div class="card-sneat">
+          {% block content %}
+          <!-- 각 페이지 내용 -->
+          {% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const layoutRoot = document.getElementById("layoutRoot");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+
+      // 사이드바 토글(완전 접힘/펼침)
+      sidebarToggle.addEventListener("click", function () {
+        layoutRoot.classList.toggle("sidebar-collapsed");
+      });
+
+      // 드롭다운 메뉴 토글
+      const dropdownItems = document.querySelectorAll(".menu-item[data-dropdown='true'] > .menu-link");
+      dropdownItems.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const parent = btn.closest(".menu-item");
+          parent.classList.toggle("open");
+        });
+      });
+    })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

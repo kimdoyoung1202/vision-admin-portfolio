@@ -7,16 +7,15 @@ class IntegratedDetectionLogs(models.Model):
 
     client_ip = models.CharField(max_length=15)
 
-    detected_at = models.DateTimeField()
-
     request_url = models.TextField()
 
     domain = models.CharField(max_length=255)
-
-    policy = models.ForeignKey(
-        'Policy',
+    
+    policy_id = models.ForeignKey(
+        'policy.Policy',
+        to_field="policy_id",
+        db_column='policy_id',
         on_delete=models.PROTECT,
-        db_column='policy_id'
     )
 
     http_method = models.CharField(max_length=7)

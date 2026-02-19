@@ -28,16 +28,13 @@ class AiAnalysisResultAdmin(admin.ModelAdmin) :
     
     # 검색창 기준 선택창이 필요한 컬럼
     list_filter = (
-        "create_at",        # ai 결과 생성 시간 (달력)
         "is_checked",       # 관리자 검토 여부 (선택창) 관리자 검토 선택시 checked_result(관리자 검토 결과) 활성화
         "checked_result",   # (토글)관리자 정책 추가 선택시 정책 타입(policy_type), 정책 추가 시간(applied_at), 정책 작성자(admin) 활성화
         "policy_type",      # 정책 타입 (도메인/정규표현식) 선택창
-        "applied_at",       # 정책 추가 시간 (달력)
-        
     )
     
     # 검토 여부, ai결과 로그기준으로 정렬
-    ordering = ("is_checked", "create_at",)
+    ordering = ("is_checked", "-create_at",)
     
     # 한 페이지에 30페이지 출력
     list_per_page = 30

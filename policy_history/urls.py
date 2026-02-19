@@ -4,5 +4,5 @@ from . import views
 app_name = "policy_history"
 
 urlpatterns = [
-    
+    path("", views.history_list, name="list"),
 ]

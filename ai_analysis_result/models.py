@@ -24,5 +24,5 @@ class AiAnalysisResult(models.Model):
     create_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'ai_analysis_result'

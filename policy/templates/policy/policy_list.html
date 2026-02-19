@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}정책 조회{% endblock %}
+{% load static %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+
+<!-- 헤더 -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h4 class="mb-0">정책 조회</h4>
+        <small class="text-muted">정책 검색/조회 및 삭제</small>
+    </div>
+    <div>
+        <a class="btn btn-primary" href="/policy/add/">정책 추가</a>
+    </div>
+</div>
+
+<!-- 필터 카드 -->
+<div class="card mb-3">
+    <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+
+        <!-- 정책 타입 -->
+        <div class="col-12 col-md-2">
+            <label class="form-label">정책 타입</label>
+            <select class="form-select" name="policy_type">
+            <option value="" {% if filters.policy_type == "" %}selected{% endif %}>전체</option>
+            <option value="도메인" {% if filters.policy_type == "도메인" %}selected{% endif %}>도메인</option>
+            <option value="정규표현식" {% if filters.policy_type == "정규표현식" %}selected{% endif %}>정규표현식</option>
+            </select>
+        </div>
+
+        <!-- 정책 이름 -->
+        <div class="col-12 col-md-2">
+            <label class="form-label">정책 이름</label>
+            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="예: 네이버">
+        </div>
+
+        <!-- URL/패턴 -->
+        <div class="col-12 col-md-3">
+            <label class="form-label">정책 URL/패턴</label>
+            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="예: naver.com / ^https?://">
+        </div>
+
+        <!-- 처리 유형 -->
+        <div class="col-12 col-md-2">
+            <label class="form-label">처리 유형</label>
+            <select class="form-select" name="handling_type">
+            <option value="" {% if filters.handling_type == "" %}selected{% endif %}>전체</option>
+            <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
+            <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
+            </select>
+        </div>
+
+        <!-- 적용 여부 -->
+        <div class="col-12 col-md-1">
+            <label class="form-label">적용</label>
+            <select class="form-select" name="is_active">
+            <option value="" {% if filters.is_active == "" %}selected{% endif %}>전체</option>
+            <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
+            <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
+            </select>
+        </div>
+
+        <!-- 작성자 -->
+        <div class="col-12 col-md-2">
+            <label class="form-label">추가자 ID</label>
+            <input class="form-control" name="create_by" value="{{ filters.create_by }}" placeholder="예: ktech">
+        </div>
+
+        <!-- 기간 -->
+        <div class="col-12 col-md-2">
+            <label class="form-label">시작일</label>
+            <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label">종료일</label>
+            <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+        </div>
+
+        <!-- 버튼 -->
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button class="btn btn-primary w-100" type="submit">검색</button>
+            <a class="btn btn-outline-secondary w-100" href="{% url 'policy:list' %}">초기화</a>
+        </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- 테이블 카드 -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive text-nowrap">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>정책 ID</th>
+                <th>정책 타입</th>
+                <th>정책 이름</th>
+                <th>정책 URL/패턴</th>
+                <th>정책 설명</th>
+                <th>처리 유형</th>
+                <th>적용</th>
+                <th>추가자</th>
+                <th>추가 시간</th>
+                <th class="text-end">삭제</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for p in page_obj %}
+            <tr>
+                <td>{{ p.policy_id }}</td>
+                <td>{{ p.policy_type }}</td>
+                <td>{{ p.policy_name }}</td>
+                <td>{{ p.content }}</td>
+                <td>{{ p.description }}</td>
+                <td>{{ p.handling_type }}</td>
+                <td>
+                {% if p.is_active %}
+                    <span class="badge bg-success">적용</span>
+                {% else %}
+                    <span class="badge bg-secondary">미적용</span>
+                {% endif %}
+                </td> 
+                <td>{{ p.create_by }}</td>
+                <td>{{ p.create_at }}</td>
+                <td class="text-end">
+                <form method="post" action="{% url 'policy:delete' p.policy_id %}" onsubmit="return confirm('삭제할까요?');">
+                {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">삭제</button>
+                </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 페이지네이션 (필터 유지) -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+        </div>
+
+        <nav>
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">이전</span></li>
+            {% endif %}
+
+            <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">다음</span></li>
+            {% endif %}
+        </ul>
+        </nav>
+    </div>
+
+    </div>
+</div>
+
+</div>
+{% endblock %}
