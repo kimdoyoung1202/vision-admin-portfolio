@@ -1,6 +1,205 @@
 {% extends "base.html" %}
+{% load static %}
 {% block page_title %}정책 추가{% endblock %}
-{% block page_subtitle %}임시 페이지{% endblock %}
-{% block content %}
-    <div>Policy Add (임시)</div>
+{% block page_subtitle %}정책을 추가합니다{% endblock %}
+
+{% block page_actions %}
+    <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">목록으로</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ====== 전체 폭 / 정렬 (policy_list 톤 유지) ====== */
+    .pa-wrap{
+        max-width: 900px;
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .pa-card{
+        max-width: 900px;
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .pa-inner{
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    .pa-label{font-weight:700}
+    .pa-required::after{content:" *"; color:#ff3e1d; font-weight:900}
+    .pa-sub{font-size:12px; color:#6c7a89}
+
+    .pa-card .form-control,
+    .pa-card .form-select{border-radius:12px}
+    .pa-card .btn{border-radius:12px; font-weight:800}
+    .pa-type-tabs .nav-link{font-weight:800}
+
+    /* ✅ 정책 적용 여부: 라벨 아래로 내려오게 + 크기 동일 */
+    .pa-seg{
+        display:inline-flex;
+        border:1px solid #d9dee3;
+        border-radius:12px;
+        overflow:hidden;
+        background:#fff;
+    }
+    .pa-seg input{display:none}
+    .pa-seg label{
+        width:84px;              /* ✅ 동일 폭 */
+        text-align:center;
+        padding:10px 0;
+        cursor:pointer;
+        font-weight:800;
+        color:#566a7f;
+        user-select:none;
+    }
+    .pa-seg input:checked + label{
+        background:#696cff;
+        color:#fff;
+    }
+
+    /* 버튼 */
+    .pa-actions{
+        display:flex;
+        justify-content:center;
+        gap:12px;
+        margin-top:18px;
+    }
+
+    /* ✅ 카드 내부 헤더(타이틀/목록으로) */
+    .pa-card-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:16px;
+        margin-bottom:14px;
+    }
+    .pa-card-title{
+        margin:0;
+        font-size:20px;
+        font-weight:800;
+    }
+    .pa-card-desc{
+        margin:4px 0 0 0;
+        font-size:12px;
+        color:#6c7a89;
+    }
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div class="container-xxl flex-grow-1 container-p-y pa-wrap">
+
+    <div class="card pa-card">
+        <div class="card-body">
+        <div class="pa-inner">
+
+            {# ✅ 빨간 박스/에러 메시지 필요없다 했으니 출력 제거 #}
+            {# 필요하면 나중에 다시 붙이면 됨 #}
+
+            <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
+            <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
+
+            <!-- 0) 정책 타입 -->
+            <div class="mb-3">
+                <label class="form-label pa-label pa-required">정책 타입</label>
+
+                <ul class="nav nav-pills pa-type-tabs mb-2">
+                <li class="nav-item">
+                    <input class="d-none" type="radio" name="policy_type" id="type_domain" value="DOMAIN"
+                        {% if form.policy_type.value == "DOMAIN" or not form %}checked{% endif %}>
+                    <label class="nav-link {% if form.policy_type.value == 'DOMAIN' or not form %}active{% endif %}"
+                        for="type_domain">도메인</label>
+                </li>
+
+                <li class="nav-item ms-2">
+                    <input class="d-none" type="radio" name="policy_type" id="type_regex" value="REGEX"
+                        {% if form.policy_type.value == "REGEX" %}checked{% endif %}>
+                    <label class="nav-link {% if form.policy_type.value == 'REGEX' %}active{% endif %}"
+                        for="type_regex">정규 표현식</label>
+                </li>
+                </ul>
+
+                <div class="pa-sub">* 정책 타입에 따라 URL/표현식 입력값을 구분해 사용합니다.</div>
+            </div>
+
+            <!-- 1) 정책 URL/표현식 -->
+            <div class="mb-3">
+                <label class="form-label pa-label pa-required">정책 URL/표현식</label>
+                <input type="text" name="content" class="form-control"
+                    value="{{ form.content.value|default:initial_content|default_if_none:'' }}"
+                    placeholder="예) https://example.com/path">
+            </div>
+
+            <!-- 2) 정책 이름 -->
+            <div class="mb-3">
+                <label class="form-label pa-label pa-required">정책 이름</label>
+                <input type="text" name="policy_name" class="form-control"
+                    value="{{ form.policy_name.value|default_if_none:'' }}"
+                    placeholder="예) 네이버지도 차단">
+            </div>
+
+            <!-- 3) 정책 설명 -->
+            <div class="mb-3">
+                <label class="form-label pa-label">정책 설명</label>
+                <input type="text" name="description" class="form-control"
+                    value="{{ form.description.value|default_if_none:'' }}"
+                    placeholder="예) 특정 서비스 접속 차단 정책">
+            </div>
+
+            <!-- 4) 처리 유형 -->
+            <div class="mb-3">
+                <label class="form-label pa-label pa-required">처리 유형</label>
+                <select class="form-select" name="handling_type">
+                <option value="block" {% if form.handling_type.value == "block" %}selected{% endif %}>block</option>
+                <option value="log" {% if form.handling_type.value == "log" %}selected{% endif %}>log</option>
+                </select>
+            </div>
+
+            <!-- 5) 정책 적용 여부 (✅ 선택란을 라벨 아래로 내림) -->
+            <div class="mb-2">
+                <label class="form-label pa-label pa-required">정책 적용 여부</label>
+                <div class="mt-1">
+                <div class="pa-seg">
+                    <input type="radio" name="is_active" id="is_active_no" value="false"
+                        {% if form.is_active.value == "false" or not form %}checked{% endif %}>
+                    <label for="is_active_no">아니오</label>
+
+                    <input type="radio" name="is_active" id="is_active_yes" value="true"
+                        {% if form.is_active.value == "true" %}checked{% endif %}>
+                    <label for="is_active_yes">예</label>
+                </div>
+                </div>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="pa-actions">
+                <button class="btn btn-primary px-4" type="submit">추가</button>
+                {% if return_to %}
+                    <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
+                    {% else %}
+                    <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
+                {% endif %}
+            </div>
+
+            </form>
+        </div>
+        </div>
+    </div>
+
+    </div>
+
+    <script>
+    // nav-pills 라벨 클릭 시 active 토글 (라디오 기반)
+    (function () {
+        const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
+        labels.forEach(lb => {
+        lb.addEventListener("click", () => {
+            labels.forEach(x => x.classList.remove("active"));
+            lb.classList.add("active");
+        });
+        });
+    })();
+</script>
 {% endblock %}

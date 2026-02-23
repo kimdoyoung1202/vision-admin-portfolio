@@ -300,7 +300,7 @@
         <div class="topbar-brand">공통</div>
       </div>
 
-      <div class="topbar-center">VISION</div>
+      <div class="topbar-center" id="mainname" type="button">VISION</div>
 
       <nav class="topbar-right">
         <!-- 필요하면 request.user 표시 -->
@@ -349,7 +349,7 @@
                   </a>
                 </li>
                 <li>
-                  <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy:history' %}">
+                  <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy_history:list' %}">
                     정책 삭제 관리
                   </a>
                 </li>
@@ -394,7 +394,7 @@
         <!-- (선택) 페이지 헤더 공통 -->
         <div class="page-header">
           <div>
-            <h1 class="page-title">{% block page_title %}페이지 제목{% endblock %}</h1>
+            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
             <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
           </div>
           <div>

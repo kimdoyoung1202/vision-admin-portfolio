@@ -1,178 +1,466 @@
 {% extends "base.html" %}
-{% block title %}정책 조회{% endblock %}
 {% load static %}
+{% block page_title %}정책 조회{% endblock %}
+{% block page_subtitle %}정책 검색/조회 및 삭제{% endblock %}
 
-{% block content %}
-<div class="container-xxl flex-grow-1 container-p-y">
+{% block page_actions %}
+    <a class="btn btn-primary" href="{% url 'policy:add' %}">정책 추가</a>
+{% endblock %}
 
-<!-- 헤더 -->
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-        <h4 class="mb-0">정책 조회</h4>
-        <small class="text-muted">정책 검색/조회 및 삭제</small>
-    </div>
-    <div>
-        <a class="btn btn-primary" href="/policy/add/">정책 추가</a>
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    .table .form-select.form-select-sm{
+    border-radius:10px;
+    padding:.35rem 2rem .35rem .75rem;
+    font-weight:600;
+    }
+    .btn.btn-sm{ border-radius:10px; font-weight:700; }
 
-<!-- 필터 카드 -->
-<div class="card mb-3">
-    <div class="card-body">
-    <form method="get" class="row g-3 align-items-end">
+    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-        <!-- 정책 타입 -->
-        <div class="col-12 col-md-2">
-            <label class="form-label">정책 타입</label>
-            <select class="form-select" name="policy_type">
-            <option value="" {% if filters.policy_type == "" %}selected{% endif %}>전체</option>
-            <option value="도메인" {% if filters.policy_type == "도메인" %}selected{% endif %}>도메인</option>
-            <option value="정규표현식" {% if filters.policy_type == "정규표현식" %}selected{% endif %}>정규표현식</option>
-            </select>
-        </div>
+    /* =========================================================
+        ✅ [변경] "페이지 전체 스크롤 막기" 제거
+        - body/html overflow:hidden 넣으면 스크롤 없이 잘릴 수 있음
+        - 대신 아래 policy-workspace 영역만 높이 고정하고 내부 스크롤
+    ========================================================== */
+    /* body{ overflow:hidden; }  <- 삭제/금지 */
 
-        <!-- 정책 이름 -->
-        <div class="col-12 col-md-2">
+    /* =========================================================
+        ✅ [변경] 테이블+상세 영역만 화면 높이에 맞춰 고정 (안쪽 스크롤 생성)
+        - 숫자(360px)는 상단(헤더+타이틀+필터카드) 높이에 따라 조절
+    ========================================================== */
+    .policy-workspace{
+        height: calc(100vh - 360px); /* 🔥 필요하면 380~450으로 조절 */
+        min-height: 420px;
+    }
+
+    /* 좌/우 컬럼 높이 체인 */
+    #tableCol, #detailCol{
+        height: 100%;
+        min-height: 0;
+    }
+
+    /* =======================
+        ✅ 왼쪽 테이블: 카드 안에서 스크롤
+    ======================= */
+    #tableCol .card{
+        height: 100%;
+        display:flex;
+        flex-direction:column;
+    }
+    #tableCol .card-body{
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+    }
+    #tableCol .table-responsive{
+        flex:1;
+        min-height:0;
+        overflow:auto; /* ✅ 테이블 내부 스크롤 */
+    }
+
+    /* =======================
+        ✅ 오른쪽 상세: 카드 안에서 스크롤 + 하단 고정
+    ======================= */
+    #detailCol .card{
+        height: 100%;
+        display:flex;
+        flex-direction:column;
+    }
+    #detailCol .card-body{
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+    }
+    #detailCol .detail-scroll{
+        flex:1;
+        min-height:0;
+        overflow:auto; /* ✅ 상세 내부 스크롤 */
+        padding-right:6px;
+    }
+    #detailCol .detail-footer{
+        flex:0 0 auto;
+        border-top:1px solid #eee;
+        background:#fff;
+        padding-top:10px;
+    }
+
+    /* ✅ 정책 설명 박스도 내부 스크롤 */
+    #dDescription{
+        height: 140px;
+        overflow:auto;
+        resize: vertical; /* 원하면 none */
+    }
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div class="container-xxl flex-grow-1 container-p-y">
+
+    <!-- =======================
+        필터 카드(기존 그대로)
+    ======================== -->
+    <div class="card mb-3">
+        <div class="card-body">
+
+        <ul class="nav nav-pills mb-3">
+            <li class="nav-item">
+            <a class="nav-link {% if filters.policy_type == '' %}active{% endif %}"
+                href="{% url 'policy:list' %}?policy_type=">전체</a>
+            </li>
+            <li class="nav-item">
+            <a class="nav-link {% if filters.policy_type == '도메인' %}active{% endif %}"
+                href="{% url 'policy:list' %}?policy_type=도메인">도메인</a>
+            </li>
+            <li class="nav-item">
+            <a class="nav-link {% if filters.policy_type == '정규표현식' %}active{% endif %}"
+                href="{% url 'policy:list' %}?policy_type=정규표현식">정규 표현식</a>
+            </li>
+        </ul>
+
+        <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
+
+            <div class="col-2">
+            <label class="form-label">정책 아이디</label>
+            <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력 :">
+            </div>
+
+            <div class="col-3">
             <label class="form-label">정책 이름</label>
-            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="예: 네이버">
-        </div>
+            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
+            </div>
 
-        <!-- URL/패턴 -->
-        <div class="col-12 col-md-3">
-            <label class="form-label">정책 URL/패턴</label>
-            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="예: naver.com / ^https?://">
-        </div>
+            <div class="col-5">
+            <label class="form-label">정책 URL/표현식</label>
+            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
+            </div>
 
-        <!-- 처리 유형 -->
-        <div class="col-12 col-md-2">
+            <div class="col-2">
+            <label class="form-label">정책 적용 여부</label>
+            <select class="form-select" name="is_active">
+                <option value="" {% if filters.is_active == "" %}selected{% endif %}>선택</option>
+                <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
+                <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
+            </select>
+            </div>
+
+            <div class="col-3">
             <label class="form-label">처리 유형</label>
             <select class="form-select" name="handling_type">
-            <option value="" {% if filters.handling_type == "" %}selected{% endif %}>전체</option>
-            <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
-            <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
+                <option value="" {% if filters.handling_type == "" %}selected{% endif %}>선택</option>
+                <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
+                <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
             </select>
-        </div>
+            </div>
 
-        <!-- 적용 여부 -->
-        <div class="col-12 col-md-1">
-            <label class="form-label">적용</label>
-            <select class="form-select" name="is_active">
-            <option value="" {% if filters.is_active == "" %}selected{% endif %}>전체</option>
-            <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
-            <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
-            </select>
-        </div>
+            <div class="col-3">
+            <label class="form-label">정책 추가자 id</label>
+            <input class="form-control" name="create_by" value="{{ filters.create_by }}" placeholder="입력 :">
+            </div>
 
-        <!-- 작성자 -->
-        <div class="col-12 col-md-2">
-            <label class="form-label">추가자 ID</label>
-            <input class="form-control" name="create_by" value="{{ filters.create_by }}" placeholder="예: ktech">
-        </div>
+            <div class="col-4">
+            <label class="form-label">추가시간</label>
+            <div class="d-flex gap-2">
+                <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
+                <div class="d-flex align-items-center text-muted">~</div>
+                <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+            </div>
+            </div>
 
-        <!-- 기간 -->
-        <div class="col-12 col-md-2">
-            <label class="form-label">시작일</label>
-            <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
-        </div>
-        <div class="col-12 col-md-2">
-            <label class="form-label">종료일</label>
-            <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
-        </div>
-
-        <!-- 버튼 -->
-        <div class="col-12 col-md-2 d-flex gap-2">
+            <div class="col-2 d-flex gap-2">
             <button class="btn btn-primary w-100" type="submit">검색</button>
             <a class="btn btn-outline-secondary w-100" href="{% url 'policy:list' %}">초기화</a>
-        </div>
-
+            </div>
         </form>
-    </div>
-</div>
 
-<!-- 테이블 카드 -->
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive text-nowrap">
-        <table class="table table-hover">
-            <thead>
-            <tr>
-                <th>정책 ID</th>
-                <th>정책 타입</th>
-                <th>정책 이름</th>
-                <th>정책 URL/패턴</th>
-                <th>정책 설명</th>
-                <th>처리 유형</th>
-                <th>적용</th>
-                <th>추가자</th>
-                <th>추가 시간</th>
-                <th class="text-end">삭제</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for p in page_obj %}
-            <tr>
-                <td>{{ p.policy_id }}</td>
-                <td>{{ p.policy_type }}</td>
-                <td>{{ p.policy_name }}</td>
-                <td>{{ p.content }}</td>
-                <td>{{ p.description }}</td>
-                <td>{{ p.handling_type }}</td>
-                <td>
-                {% if p.is_active %}
-                    <span class="badge bg-success">적용</span>
-                {% else %}
-                    <span class="badge bg-secondary">미적용</span>
-                {% endif %}
-                </td> 
-                <td>{{ p.create_by }}</td>
-                <td>{{ p.create_at }}</td>
-                <td class="text-end">
-                <form method="post" action="{% url 'policy:delete' p.policy_id %}" onsubmit="return confirm('삭제할까요?');">
-                {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-danger" type="submit">삭제</button>
-                </form>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        </div>
     </div>
 
-    <!-- 페이지네이션 (필터 유지) -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="text-muted">
-        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+    <!-- =======================
+        테이블 + 상세 패널
+    ======================== -->
+    <div class="row g-3 policy-workspace">
+        <!-- 왼쪽: 테이블 -->
+        <div class="col-12" id="tableCol">
+        <div class="card">
+            <div class="card-body">
+
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover align-middle" id="policyTable">
+                <thead>
+                    <tr>
+                    <th style="width:90px;">정책 ID</th>
+                    <th style="width:120px;">정책 타입</th>
+                    <th>정책 이름</th>
+                    <th>정책 URL/패턴</th>
+                    <th class="text-center" style="width:90px;">적용</th>
+                    <th class="text-center" style="width:110px;">처리 유형</th>
+                    <th style="width:120px;">추가자</th>
+                    <th style="width:170px;">추가 시간</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in page_obj %}
+                    <tr class="js-row" style="cursor:pointer;"
+                        data-id="{{ p.policy_id }}"
+                        data-policy-type="{{ p.policy_type|default:'' }}"
+                        data-policy-name="{{ p.policy_name|default:'' }}"
+                        data-content="{{ p.content|default:'' }}"
+                        data-is-active="{% if p.is_active %}true{% else %}false{% endif %}"
+                        data-handling-type="{{ p.handling_type|default:'' }}"
+                        data-create-by="{{ p.create_by|default:'' }}"
+                        data-create-at="{% if p.create_at %}{{ p.create_at|date:'Y-m-d H:i' }}{% endif %}"
+                        data-description="{{ p.description|default:'' }}"
+                    >
+                    <td class="fw-semibold">{{ p.policy_id }}</td>
+                    <td>{{ p.policy_type }}</td>
+                    <td class="cell-truncate-sm">{{ p.policy_name }}</td>
+                    <td class="cell-truncate">{{ p.content }}</td>
+
+                    <td class="text-center">
+                        {% if p.is_active %}적용{% else %}미적용{% endif %}
+                    </td>
+                    <td class="text-center">
+                        {{ p.handling_type|default:"-" }}
+                    </td>
+
+                    {# ✅ create_by는 날짜가 아니라 보통 문자열/ID라 date 필터 쓰면 깨짐 #}
+                    <td>{{ p.create_by|default:"-" }}</td>
+
+                    <td>{% if p.create_at %}{{ p.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                    <td colspan="6" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            </div>
+
+            <!-- 페이지네이션 (필터 유지) -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+                </div>
+
+                <nav>
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">이전</span></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">다음</span></li>
+                    {% endif %}
+                </ul>
+                </nav>
+            </div>
+
+            </div>
+        </div>
         </div>
 
-        <nav>
-        <ul class="pagination mb-0">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">이전</span></li>
-            {% endif %}
+        <!-- 오른쪽: 상세 패널 -->
+        <div class="col-4 d-none" id="detailCol">
+        <div class="card">
+            <div class="card-body">
 
-            <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0 fw-bold">정책 상세</h6>
+                <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                </div>
+            </div>
 
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">다음</span></li>
-            {% endif %}
-        </ul>
-        </nav>
-    </div>
+            <hr class="my-2">
+            <div class="detail-scroll">
+                <div class="small text-muted fw-bold mb-2">선택한 정책 1건의 상세정보가 표시됩니다</div>
 
-    </div>
-</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                    <tbody>
+                        <tr><th class="text-muted" style="width:120px;">정책 타입</th><td id="dPolicyType">-</td></tr>
+                        <tr><th class="text-muted">정책 이름</th><td id="dPolicyName">-</td></tr>
+                        <tr><th class="text-muted">URL/패턴</th><td id="dContent">-</td></tr>
+                        <tr><th class="text-muted">추가자</th><td id="dCreateBy">-</td></tr>
+                        <tr><th class="text-muted">추가 시간</th><td id="dCreateAt">-</td></tr>
+                    </tbody>
+                    </table>
+                </div>
 
-</div>
+            <!-- ✅ 정책 설명은 상세에서만 -->
+                <div class="mt-2">
+                    <div class="form-label fw-bold mb-1">정책 설명</div>
+                    <textarea class="form-control" rows="4" id="dDescription" readonly></textarea>
+                </div>
+            </div>
+
+            <!-- ✅ 적용/처리유형/삭제는 상세에서만 -->
+            <div class="detail-footer">
+                <form method="post" id="detailUpdateForm" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" id="detailNext" value="{{ request.get_full_path }}">
+
+                    <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label fw-bold mb-1">정책 적용 여부</label>
+                        <select class="form-select" name="is_active" id="dIsActive">
+                        <option value="true">적용</option>
+                        <option value="false">미적용</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold mb-1">처리 유형</label>
+                        <select class="form-select" name="handling_type" id="dHandlingType">
+                        <option value="block">block</option>
+                        <option value="log">log</option>
+                        </select>
+                    </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary w-50" id="btnSave" disabled>저장</button>
+
+                    <button type="button" class="btn btn-outline-danger w-50" id="btnDelete" disabled>
+                        삭제
+                    </button>
+                    </div>
+                </form>
+
+                <!-- 삭제용 숨김 form -->
+                <form method="post" id="detailDeleteForm" class="d-none">
+                    {% csrf_token %}
+                </form>
+            </div>
+            </div>
+        </div>
+        </div>
+
+    </div><!-- /row -->
+</div><!-- /container -->
+
+    <script>
+    (function(){
+    const rows = document.querySelectorAll(".js-row");
+
+    const tableCol = document.getElementById("tableCol");
+    const detailCol = document.getElementById("detailCol");
+    const detailCloseBtn = document.getElementById("detailCloseBtn");
+
+    const badge = document.getElementById("detailIdBadge");
+    const dPolicyType = document.getElementById("dPolicyType");
+    const dPolicyName = document.getElementById("dPolicyName");
+    const dContent = document.getElementById("dContent");
+    const dCreateBy = document.getElementById("dCreateBy");
+    const dCreateAt = document.getElementById("dCreateAt");
+    const dDescription = document.getElementById("dDescription");
+
+    const dIsActive = document.getElementById("dIsActive");
+    const dHandlingType = document.getElementById("dHandlingType");
+
+    const updateForm = document.getElementById("detailUpdateForm");
+    const deleteForm = document.getElementById("detailDeleteForm");
+
+    const btnSave = document.getElementById("btnSave");
+    const btnDelete = document.getElementById("btnDelete");
+
+    function clearActive(){
+        rows.forEach(r => r.classList.remove("table-active"));
+    }
+
+    function setButtons(enabled){
+        btnSave.disabled = !enabled;
+        btnDelete.disabled = !enabled;
+    }
+
+    function resetDetail(){
+        badge.textContent = "선택 없음";
+        dPolicyType.textContent = "-";
+        dPolicyName.textContent = "-";
+        dContent.textContent = "-";
+        dCreateBy.textContent = "-";
+        dCreateAt.textContent = "-";
+        dDescription.value = "";
+        dIsActive.value = "true";
+        dHandlingType.value = "block";
+        setButtons(false);
+    }
+
+    function openDetail(){
+        detailCol.classList.remove("d-none");
+        tableCol.classList.remove("col-12");
+        tableCol.classList.add("col-8");
+    }
+
+    function closeDetail(){
+        detailCol.classList.add("d-none");
+        tableCol.classList.remove("col-8");
+        tableCol.classList.add("col-12");
+        clearActive();
+        resetDetail();
+        window.__selectedPolicyId = null;
+    }
+
+    rows.forEach(row => {
+        row.addEventListener("click", () => {
+        const data = row.dataset;
+        const policyId = data.id;
+
+        openDetail();
+        clearActive();
+        row.classList.add("table-active");
+        window.__selectedPolicyId = policyId;
+
+        badge.textContent = `ID: ${policyId}`;
+        dPolicyType.textContent = data.policyType || "-";
+        dPolicyName.textContent = data.policyName || "-";
+        dContent.textContent = data.content || "-";
+        dCreateBy.textContent = data.createBy || "-";
+        dCreateAt.textContent = data.createAt || "-";
+        dDescription.value = data.description || "";
+
+        dIsActive.value = (data.isActive === "true") ? "true" : "false";
+        dHandlingType.value = data.handlingType || "block";
+
+        // ✅ 업데이트/삭제 action을 “선택된 id”로 동적 설정
+        updateForm.action = `/policy/update/${policyId}/`;
+        deleteForm.action = `/policy/delete/${policyId}/`;
+
+        setButtons(true);
+        });
+    });
+
+    detailCloseBtn.addEventListener("click", closeDetail);
+
+    // ✅ 삭제 버튼 → confirm 후 delete form submit
+    btnDelete.addEventListener("click", () => {
+        const policyId = window.__selectedPolicyId;
+        if (!policyId) return;
+        const ok = confirm("정말 삭제할까요? (삭제된 정책은 삭제 관리에서 복구할 수 있습니다)");
+        if (!ok) return;
+        deleteForm.submit();
+    });
+
+    resetDetail();
+    })();
+</script>
 {% endblock %}

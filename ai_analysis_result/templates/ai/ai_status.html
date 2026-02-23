@@ -1,6 +1,462 @@
 {% extends "base.html" %}
-{% block page_title %}ai 관리{% endblock %}
-{% block page_subtitle %}임시 페이지{% endblock %}
-{% block content %}
-    <div>ai_status (임시)</div>
+{% load static %}
+
+{% block page_title %}AI 성능 현황{% endblock %}
+{% block page_subtitle %}실시간 모니터링 대시보드{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* PPT 느낌: 카드/박스 라운드 + 얇은 테두리 */
+    .dash-wrap { max-width: 1200px; }
+    .panel {
+        border: 1px solid rgba(67, 89, 113, .18);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(67,89,113,.06);
+    }
+    .kpi-card{
+    border: 1px solid rgba(67, 89, 113, .18);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(67,89,113,.06);
+    padding: 12px 14px;
+    height: 78px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    }
+
+    .kpi-card.center{
+    align-items:center !important;
+    text-align:center !important;
+    }
+
+    .kpi-title{
+        font-size:13px;
+    }
+
+    .kpi-value{
+        font-size:26px;
+        margin-top:4px;
+    }
+
+    .kpi-row { row-gap: 12px; }
+
+    .status-pill{
+        display:inline-flex; align-items:center; gap:10px;
+        border:1px solid rgba(67,89,113,.18);
+        padding:10px 14px; border-radius:999px; background:#fff;
+    }
+    .dot{
+        width:10px; height:10px; border-radius:50%;
+        background:#28c76f; box-shadow:0 0 0 4px rgba(40,199,111,.15);
+    }
+    .section-title{
+        font-weight:900; font-size:18px; color:#2b3a4a;
+        margin-bottom:12px;
+    }
+
+    /* 차트 영역 높이 고정(PPT처럼) */
+    .h-240{ height:240px; }
+    .h-220{ height:180px; }
+
+    /* 테이블 */
+    .mini-table th{
+        background:#f5f6f8;
+        font-weight:800;
+    }
+    .mini-table td, .mini-table th{
+        padding:10px 12px;
+        border-color: rgba(67,89,113,.12) !important;
+    }
+
+    /* 도넛 + 스파크 배치 */
+    .donut-wrap{
+    display:grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    }
+    .donut-card{
+        border:1px solid rgba(67,89,113,.18);
+        border-radius:14px;
+        padding:10px;
+        background:#fff;       
+        height: 240px; 
+        overflow: visible;
+    }
+    .donut-title{ font-weight:900; color:#2b3a4a; margin-bottom:6px; }
+    .spark{
+        height:60px;
+    }
+    .panel{ overflow:hidden; }
+
+    /* ✅ 도넛 카드 내부도 overflow 차단 */
+    .donut-card{ overflow:hidden; }
+
+    #cpuDonut, #memDonut{
+    width: 100% !important;
+    height: 120px !important;
+    }
+
+    /* ✅ 스파크(실시간) 캔버스 높이 */
+    #cpuSpark, #memSpark{
+    width: 100% !important;
+    height: 50px !important;
+    }
+    
+
+    #cpuDonut, #memDonut{
+    max-height:120px !important;
+    }
+    /* PPT처럼 여백 */
+    .mt-18{ margin-top:18px; }
+
+    .h-160{ height: 120px;}
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div class="container-xxl container-p-y dash-wrap">
+
+    <!-- 상단 상태 -->
+    <div class="d-flex justify-content-end mb-3">
+        <div class="status-pill">
+        <span class="dot" id="engineDot"></span>
+        <div style="font-weight:900;" id="engineText">FASTAPI 정상 동작 중</div>
+        </div>
+    </div>
+
+    <!-- KPI 4개 -->
+    <div class="row g-3 mb-3 kpi-row">
+        <div class="col-3">
+        <div class="kpi-card center panel">
+            <div class="kpi-title">응답속도</div>
+            <div class="kpi-value"><span id="kpiLatency">-</span><span style="font-size:16px;font-weight:900;color:#566a7f"> ms</span></div>
+        </div>
+        </div>
+        <div class="col-3">
+        <div class="kpi-card center panel">
+            <div class="kpi-title">처리량(RPM)</div>
+            <div class="kpi-value"><span id="kpiRPM">-</span></div>
+        </div>
+        </div>
+        <div class="col-3">
+        <div class="kpi-card center panel">
+            <div class="kpi-title">요청수(오늘)</div>
+            <div class="kpi-value"><span id="kpiTotal">-</span></div>
+        </div>
+        </div>
+        <div class="col-3">
+        <div class="kpi-card center panel">
+            <div class="kpi-title">정확도</div>
+            <div class="kpi-value"><span id="kpiAcc">-</span><span style="font-size:16px;font-weight:900;color:#566a7f"> %</span></div>
+        </div>
+        </div>
+    </div>
+
+    <!-- 중단: 왼쪽 라인차트 2개 + 오른쪽 도넛 2개 -->
+    <div class="row g-3">
+        <!-- 왼쪽: 라인차트 박스 -->
+        <div class="col-8">
+        <div class="panel p-3">
+            <div class="section-title">실시간 추이</div>
+
+            <div class="row g-3">
+            <div class="col-6">
+                <div class="panel p-2">
+                <div style="font-weight:900; color:#2b3a4a; margin:8px 10px;">응답속도</div>
+                <div class="h-220">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="panel p-2">
+                <div style="font-weight:900; color:#2b3a4a; margin:8px 10px;">처리량</div>
+                <div class="h-220">
+                    <canvas id="throughputChart"></canvas>
+                </div>
+                </div>
+            </div>
+            </div>
+
+        </div>
+        </div>
+
+        <!-- 오른쪽: 도넛 박스 -->
+        <div class="col-4">
+        <div class="panel p-3">
+            <div class="section-title">자원 사용량</div>
+
+            <div class="donut-wrap">
+            <div class="donut-card">
+                <div class="donut-title">CPU 사용량 <span class="text-muted" style="font-weight:800;" id="cpuPct">-</span></div>
+                <div class="h-160">
+                <canvas id="cpuDonut"></canvas>
+                </div>
+                <div class="spark">
+                <canvas id="cpuSpark"></canvas>
+                </div>
+                <div class="text-muted" style="font-weight:800; font-size:12px; margin-top:6px;">
+                    실시간 사용량: <span id="cpuLive">-</span>
+                </div>
+            </div>
+
+            <div class="donut-card">
+                <div class="donut-title">메모리 사용량 <span class="text-muted" style="font-weight:800;" id="memPct">-</span></div>
+                <div class="h-160">
+                <canvas id="memDonut"></canvas>
+                </div>
+                <div class="spark">
+                <canvas id="memSpark"></canvas>
+                </div>
+                <div class="text-muted" style="font-weight:800; font-size:12px; margin-top:6px;">
+                실시간 사용량: <span id="memLive">-</span>
+                </div>
+            </div>
+            </div>
+
+        </div>
+        </div>
+    </div>
+
+    <!-- 하단: 최근 오류 + 시스템 정보 -->
+    <div class="row g-3 mt-18">
+        <div class="col-8">
+        <div class="panel p-3">
+            <div class="section-title">최근 오류</div>
+            <div class="table-responsive">
+            <table class="table mini-table mb-0">
+                <thead>
+                <tr>
+                    <th style="width:200px;">시간</th>
+                    <th>오류 내용(임시: 최근 로그 URL)</th>
+                    <th style="width:120px;" class="text-end">확률</th>
+                </tr>
+                </thead>
+                <tbody id="recentErrorsTbody">
+                <tr><td colspan="3" class="text-center text-muted">-</td></tr>
+                </tbody>
+            </table>
+            </div>
+            <div class="text-muted mt-2" style="font-weight:700;">
+            * 오류 기준은 아직 미정이라 임시로 “최근 로그”를 표시합니다. (TODO)
+            </div>
+        </div>
+        </div>
+
+        <div class="col-4">
+        <div class="panel p-3">
+            <div class="section-title">시스템 정보</div>
+            <div class="table-responsive">
+            <table class="table mini-table mb-0">
+                <tbody>
+                <tr>
+                    <th style="width:140px;">현재 버전</th>
+                    <td id="sysVersion">-</td>
+                </tr>
+                <tr>
+                    <th>개발자 이름</th>
+                    <td id="sysDev">-</td>
+                </tr>
+                <tr>
+                    <th>업데이트 주기</th>
+                    <td>5초</td>
+                </tr>
+                <tr>
+                    <th>엔진 연동</th>
+                    <td class="text-muted">TODO (FastAPI metrics)</td>
+                </tr>
+                <tr>
+                    <th>모니터링 연동</th>
+                    <td class="text-muted">TODO (CPU/MEM real)</td>
+                </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+    // 차트 인스턴스
+    let latencyChart, throughputChart, cpuDonut, memDonut, cpuSpark, memSpark;
+
+    function makeLine(ctx, label){
+        return new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, data: [], tension: .35, pointRadius: 0, borderWidth: 3 }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false } },
+            scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true }
+            }
+        }
+        });
+    }
+
+    function makeSpark(ctx){
+        return new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], tension: .35, pointRadius: 0, borderWidth: 2 }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: { x: { display:false }, y: { display:false } },
+            elements: { line: { borderJoinStyle: 'round' } }
+        }
+        });
+    }
+
+    function makeDonut(ctx){
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            animation: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false },
+                centerText: { value: 0 }   // ✅ 중앙 텍스트용
+                }
+            }
+        });
+    }
+
+    function setEngine(ok){
+        const dot = document.getElementById("engineDot");
+        const txt = document.getElementById("engineText");
+        if(ok){
+        dot.style.background = "#28c76f";
+        dot.style.boxShadow = "0 0 0 4px rgba(40,199,111,.15)";
+        txt.textContent = "FASTAPI 정상 동작 중";
+        }else{
+        dot.style.background = "#ea5455";
+        dot.style.boxShadow = "0 0 0 4px rgba(234,84,85,.15)";
+        txt.textContent = "FASTAPI 장애/점검";
+        }
+    }
+
+    async function loadStatus(){
+        const res = await fetch("{% url 'ai:status_api' %}");
+        const data = await res.json();
+
+        // KPI
+        document.getElementById("kpiLatency").textContent = data.kpi.latency ?? "-";
+        document.getElementById("kpiRPM").textContent = data.kpi.rpm ?? "-";
+        document.getElementById("kpiTotal").textContent = data.kpi.total_today ?? "-";
+        document.getElementById("kpiAcc").textContent = data.kpi.accuracy ?? "-";
+
+        // 상태 pill
+        setEngine(!!data.kpi.engine_ok);
+
+        // 시스템 정보
+        document.getElementById("sysVersion").textContent = data.system_info?.version ?? "-";
+        document.getElementById("sysDev").textContent = data.system_info?.developer ?? "-";
+
+        // 차트 준비
+        if(!latencyChart){
+        latencyChart = makeLine(document.getElementById("latencyChart"), "응답속도");
+        throughputChart = makeLine(document.getElementById("throughputChart"), "처리량");
+        cpuDonut = makeDonut(document.getElementById("cpuDonut"));
+        memDonut = makeDonut(document.getElementById("memDonut"));
+        cpuSpark = makeSpark(document.getElementById("cpuSpark"));
+        memSpark = makeSpark(document.getElementById("memSpark"));
+        }
+
+        // 라인차트 업데이트
+        latencyChart.data.labels = data.chart.labels;
+        latencyChart.data.datasets[0].data = data.chart.latency_series;
+        latencyChart.update();
+
+        throughputChart.data.labels = data.chart.labels;
+        throughputChart.data.datasets[0].data = data.chart.throughput_series;
+        throughputChart.update();
+
+        // 도넛 업데이트
+        const cpu = Number(data.kpi.cpu ?? 0);
+        const mem = Number(data.kpi.memory ?? 0);
+
+        document.getElementById("cpuPct").textContent = `${cpu}%`;
+        document.getElementById("memPct").textContent = `${mem}%`;
+
+        cpuDonut.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
+        cpuDonut.options.plugins.centerText.value = cpu;
+        cpuDonut.update();
+
+        memDonut.data.datasets[0].data = [mem, Math.max(0, 100-mem)];
+        memDonut.options.plugins.centerText.value = mem;
+        memDonut.update();
+
+        // 스파크라인 업데이트(임시)
+        cpuSpark.data.labels = data.chart.labels;
+        cpuSpark.data.datasets[0].data = data.chart.cpu_spark;
+        cpuSpark.update();
+
+        memSpark.data.labels = data.chart.labels;
+        memSpark.data.datasets[0].data = data.chart.mem_spark;
+        memSpark.update();
+
+        // 최근 오류 테이블
+        const tbody = document.getElementById("recentErrorsTbody");
+        const rows = data.recent_errors || [];
+        if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`;
+        }else{
+        tbody.innerHTML = rows.map(r => {
+            const t = (r.create_at || "").toString();
+            const url = (r.request_url || "-").toString();
+            const c = (r.confidence_score ?? "-");
+            return `
+            <tr>
+                <td>${t}</td>
+                <td class="text-truncate" style="max-width:520px;">${url}</td>
+                <td class="text-end">${c}${c !== "-" ? "%" : ""}</td>
+            </tr>
+            `;
+        }).join("");
+        }
+    }
+
+    const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw(chart, args, pluginOptions) {
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return;
+
+            const value = chart?.config?.options?.plugins?.centerText?.value;
+            if (value == null) return;
+
+            const x = (chartArea.left + chartArea.right) / 2;
+            const y = (chartArea.top + chartArea.bottom) / 2;
+
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '900 20px sans-serif';
+            ctx.fillStyle = '#2b3a4a';
+            ctx.fillText(`${value}%`, x, y);
+            ctx.restore();
+        }
+    };
+    Chart.register(centerTextPlugin);
+
+    loadStatus();
+    setInterval(loadStatus, 5000);
+</script>
 {% endblock %}

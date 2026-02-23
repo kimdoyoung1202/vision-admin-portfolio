@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}로그 기록 조회{% endblock %}
+{% block page_subtitle %}통합 탐지 로그 검색 및 확인{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* policy_list 톤 유지 */
+    .table .form-select.form-select-sm{
+        border-radius:10px;
+        padding:.35rem 2rem .35rem .75rem;
+        font-weight:600;
+    }
+    .btn.btn-sm{ border-radius:10px; font-weight:700; }
+
+    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* 상세 패널 */
+    .detail-card{
+        position: sticky;
+        top: 88px; /* base 헤더 높이에 맞춰 필요시 조정 */
+    }
+    .detail-k{color:#6c757d;font-size:.82rem;margin-bottom:.2rem}
+    .detail-v{font-weight:700;margin-bottom:.75rem}
+    .clickable-row{cursor:pointer}
+
+    .date-sm{
+    width:180px;
+    min-width:180px;
+    }
+    .radio-line{
+    height:38px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:nowrap;
+    }
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div class="container-fluid flex-grow-1 container-p-y">
+
+    <!-- 필터 카드 (PPT 배치 느낌: 2줄 + 우측 조회) -->
+    <div class="card mb-3">
+        <div class="card-body">
+
+        <form method="get" class="row g-3 align-items-end">
+
+            <!-- ===== 1행 ===== -->
+            <!-- 1) URL/도메인 -->
+            <div class="col-4">
+                <label class="form-label">URL/도메인</label>
+                <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력 :">
+            </div>
+
+            <!-- 2) URL 쿼리 스트링 -->
+            <div class="col-4">
+                <label class="form-label">URL쿼리 스트링</label>
+                <input class="form-control" name="query_string" value="{{ filters.query_string }}" placeholder="입력 :">
+            </div>
+
+            <!-- 3) 정책 이름/정책 ID -->
+            <div class="col-4">
+                <label class="form-label">정책 이름/정책 ID</label>
+                <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력 :">
+            </div>
+
+            <!-- ===== 2행 ===== -->
+            <!-- 4) 사용자 IP -->
+            <div class="col-12">
+                <div class="d-flex align-items-end gap-3 flex-wrap-nowrap">
+
+                    <!-- 사용자 IP (고정 폭) -->
+                    <div style="width: 360px;">
+                    <label class="form-label">사용자 IP</label>
+                    <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력 :">
+                    </div>
+
+                    <!-- 도메인/정규 -->
+                    <div style="width: 200px;">
+                    <label class="form-label">도메인 / 정규 표현식</label>
+                    <div class="radio-line">
+                        <label class="form-check d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input" type="radio" name="policy_type" value="DOMAIN"
+                                {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
+                        <span class="form-check-label">도메인</span>
+                        </label>
+                        <label class="form-check d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input" type="radio" name="policy_type" value="REGEX"
+                                {% if filters.policy_type == "REGEX" %}checked{% endif %}>
+                        <span class="form-check-label">정규</span>
+                        </label>
+                    </div>
+                    </div>
+
+                    <!-- POST/GET -->
+                    <div style="width: 200px;">
+                    <label class="form-label">POST / GET</label>
+                    <div class="radio-line">
+                        <label class="form-check d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input" type="radio" name="method" value="POST"
+                                {% if filters.method == "POST" %}checked{% endif %}>
+                        <span class="form-check-label">POST</span>
+                        </label>
+                        <label class="form-check d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input" type="radio" name="method" value="GET"
+                                {% if filters.method == "GET" %}checked{% endif %}>
+                        <span class="form-check-label">GET</span>
+                        </label>
+                    </div>
+                    </div>
+
+                    <!-- 탐지기간 -->
+                    <div style="width: 500px;">
+                        <label class="form-label">탐지 기간(날짜)</label>
+
+                        <!-- ✅ 이 div가 핵심: 날짜와 버튼을 같은 줄로 묶는 부모 flex -->
+                        <div class="d-flex align-items-center">
+
+                            <!-- 날짜 -->
+                            <div class="d-flex gap-1">
+                            <input class="form-control dt-sm" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
+                            <div class="d-flex align-items-center text-muted">~</div>
+                            <input class="form-control dt-sm" type="datetime-local" name="end_dt" value="{{ filters.end_dt }}">
+                            </div>
+                    
+                        </div>
+                    </div>
+                        <div class="ms-auto d-flex gap-3">
+                            <button class="btn btn-primary" type="submit" style="min-width:80px;">조회</button>
+                            <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:60px;">초기화</a>
+                        </div>
+                </div>
+                </div>
+        </form>
+
+        </div>
+    </div>
+
+    <!-- 본문: 테이블 + 상세패널 -->
+    <div class="row g-3" id="mainRow">
+
+        <!-- 테이블 -->
+        <div class="col-12" id="tableCol">
+        <div class="card">
+            <div class="card-body">
+
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                    <th style="width:80px;">번호</th>
+                    <th>URL</th>
+                    <th>도메인</th>
+                    <th>URL 쿼리스트링</th>
+                    <th>사용자 IP</th>
+                    <th>정책 ID</th>
+                    <th>정책 이름</th>
+                    <th>정책 타입</th>
+                    <th>로그 추가시간</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for r in page_obj %}
+                    <tr class="clickable-row js-row"
+                        data-id="{{ r.id }}"
+                        data-request-url="{{ r.request_url|default_if_none:'' }}"
+                        data-domain="{{ r.domain|default_if_none:'' }}"
+                        data-query="{{ r.query_string|default_if_none:'' }}"
+                        data-client-ip="{{ r.client_ip|default_if_none:'' }}"
+                        data-policy-id="{{ r.policy_id.policy_id|default_if_none:'' }}"
+                        data-policy-name="{{ r.policy_id.policy_name|default_if_none:'' }}"
+                        data-policy-type="{{ r.policy_id.policy_type|default_if_none:'' }}"
+                        data-policy-desc="{{ r.policy_id.description|default_if_none:'' }}"
+                        data-dst-port="{{ r.dst_port|default_if_none:'' }}"
+                        data-method="{{ r.http_method|default_if_none:'' }}"
+                        data-create-at="{{ r.create_at|date:'Y/m/d H:i' }}"
+                    >
+                    <td class="fw-semibold">{{ r.id }}</td>
+                    <td class="cell-truncate">{{ r.request_url }}</td>
+                    <td class="cell-truncate-sm">{{ r.domain }}</td>
+                    <td class="cell-truncate-sm">{{ r.query_string }}</td>
+                    <td>{{ r.client_ip }}</td>
+                    <td class="fw-semibold">{{ r.policy_id.policy_id }}</td>
+                    <td class="cell-truncate-sm">{{ r.policy_id.policy_name }}</td>
+                    <td>{{ r.policy_id.policy_type }}</td>
+                    <td>{{ r.create_at|date:"Y/m/d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                    <td colspan="9" class="text-center text-muted py-4">조회된 데이터가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            </div>
+
+            <!-- 페이지네이션 (필터 유지) -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+                </div>
+
+                <nav>
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.previous_page_number }}
+                        &url_domain={{ filters.url_domain }}
+                        &start_date={{ filters.start_date }}
+                        &end_date={{ filters.end_date }}
+                        &policy_kw={{ filters.policy_kw }}
+                        &client_ip={{ filters.client_ip }}
+                        &policy_type={{ filters.policy_type }}
+                        &method={{ filters.method }}
+                        &query_string={{ filters.query_string }}">이전</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">이전</span></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ page_obj.next_page_number }}
+                        &url_domain={{ filters.url_domain }}
+                        &start_date={{ filters.start_date }}
+                        &end_date={{ filters.end_date }}
+                        &policy_kw={{ filters.policy_kw }}
+                        &client_ip={{ filters.client_ip }}
+                        &policy_type={{ filters.policy_type }}
+                        &method={{ filters.method }}
+                        &query_string={{ filters.query_string }}">다음</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">다음</span></li>
+                    {% endif %}
+                </ul>
+                </nav>
+            </div>
+
+            </div>
+        </div>
+        </div>
+
+        <!-- 상세 패널 -->
+        <div class="col-4 d-none" id="detailCol">
+        <div class="card detail-card">
+            <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div>
+                <div class="badge bg-label-primary" id="dId">ID</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+            </div>
+
+            <div class="detail-k">URL</div>
+            <div class="detail-v" id="dRequestUrl">-</div>
+
+            <div class="detail-k">도메인</div>
+            <div class="detail-v" id="dDomain">-</div>
+
+            <div class="detail-k">URL 쿼리스트링</div>
+            <div class="detail-v" id="dQuery">-</div>
+
+            <hr class="my-3">
+
+            <div class="detail-k">정책 ID</div>
+            <div class="detail-v" id="dPolicyId">-</div>
+
+            <div class="detail-k">정책 이름</div>
+            <div class="detail-v" id="dPolicyName">-</div>
+
+            <div class="detail-k">정책 타입</div>
+            <div class="detail-v" id="dPolicyType">-</div>
+
+            <!-- ✅ 정책 설명: 상세 패널에서만 -->
+            <div class="detail-k">정책 설명</div>
+            <div class="detail-v" id="dPolicyDesc">-</div>
+
+            <hr class="my-3">
+
+            <!-- ✅ 서버 포트: 상세 패널에서만 -->
+            <div class="detail-k">서버 포트</div>
+            <div class="detail-v" id="dDstPort">-</div>
+
+            <!-- ✅ 메서드: 상세 패널에서만 -->
+            <div class="detail-k">메서드</div>
+            <div class="detail-v" id="dMethod">-</div>
+
+            <div class="detail-k">로그 추가시간</div>
+            <div class="detail-v" id="dCreateAt">-</div>
+            </div>
+        </div>
+        </div>
+
+    </div>
+    </div>
+
+    <script>
+    (function(){
+    const rows = document.querySelectorAll(".js-row");
+    const tableCol = document.getElementById("tableCol");
+    const detailCol = document.getElementById("detailCol");
+    const detailCloseBtn = document.getElementById("detailCloseBtn");
+
+    const dId = document.getElementById("dId");
+    const dRequestUrl = document.getElementById("dRequestUrl");
+    const dDomain = document.getElementById("dDomain");
+    const dQuery = document.getElementById("dQuery");
+    const dPolicyId = document.getElementById("dPolicyId");
+    const dPolicyName = document.getElementById("dPolicyName");
+    const dPolicyType = document.getElementById("dPolicyType");
+    const dPolicyDesc = document.getElementById("dPolicyDesc");
+    const dDstPort = document.getElementById("dDstPort");
+    const dMethod = document.getElementById("dMethod");
+    const dCreateAt = document.getElementById("dCreateAt");
+
+    function openDetail(row){
+        // col-12 -> col-8
+        tableCol.classList.remove("col-12");
+        tableCol.classList.add("col-8");
+        detailCol.classList.remove("d-none");
+
+        dId.textContent = `ID ${row.dataset.id || "-"}`;
+        dRequestUrl.textContent = row.dataset.requestUrl || "-";
+        dDomain.textContent = row.dataset.domain || "-";
+        dQuery.textContent = row.dataset.query || "-";
+        dPolicyId.textContent = row.dataset.policyId || "-";
+        dPolicyName.textContent = row.dataset.policyName || "-";
+        dPolicyType.textContent = row.dataset.policyType || "-";
+        dPolicyDesc.textContent = row.dataset.policyDesc || "-";
+        dDstPort.textContent = row.dataset.dstPort || "-";
+        dMethod.textContent = row.dataset.method || "-";
+        dCreateAt.textContent = row.dataset.createAt || "-";
+    }
+
+    function closeDetail(){
+        detailCol.classList.add("d-none");
+        tableCol.classList.remove("col-8");
+        tableCol.classList.add("col-12");
+    }
+
+    rows.forEach(r => r.addEventListener("click", () => openDetail(r)));
+    detailCloseBtn.addEventListener("click", closeDetail);
+})();
+</script>
+{% endblock %}
