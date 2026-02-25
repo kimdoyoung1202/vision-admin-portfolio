@@ -104,7 +104,10 @@
       font-size: 22px;
       letter-spacing: 1px;
       user-select: none;
+      color:#fff;
+      text-decoration:none;
     }
+    .topbar-center:hover{ opacity:.92; }
 
     .topbar-right{
       display: flex;
@@ -285,6 +288,9 @@
       width: 60px;
     }
 
+    .page-title:empty{ display:none; }
+    .page-subtitle:empty{ display:none; }
+
     {% block extra_css %}{% endblock %}
   </style>
 </head>
@@ -297,10 +303,9 @@
         <button class="hamburger-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
           <i class="bx bx-menu" style="font-size:22px;"></i>
         </button>
-        <div class="topbar-brand">공통</div>
       </div>
 
-      <div class="topbar-center" id="mainname" type="button">VISION</div>
+      <a class="topbar-center" id="mainname" href="{% url 'dashboard:home' %}">VISION</a>
 
       <nav class="topbar-right">
         <!-- 필요하면 request.user 표시 -->
@@ -323,8 +328,8 @@
           <ul class="menu">
 
             <!-- 대시보드 -->
-            <li class="menu-item {% if active_menu == 'dashboard' %}active{% endif %}">
-              <a class="menu-link" href="{% url 'dashboard' %}">
+            <li class="menu-item {% if active_menu == 'dashboard:home' %}active{% endif %}">
+              <a class="menu-link" href="{% url 'dashboard:home' %}">
                 <i class="bx bx-home"></i>
                 <span>대시보드</span>
               </a>
@@ -391,21 +396,24 @@
 
       <!-- ===== Main ===== -->
       <main class="main">
-        <!-- (선택) 페이지 헤더 공통 -->
+
+        {# ✅ 페이지 제목 영역: 기본은 표시됨 #}
+        {% block page_header %}
         <div class="page-header">
           <div>
             <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
-            <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+            <div class="page-subtitle">{% block page_subtitle %}{% endblock %}</div>
           </div>
-          <div>
+
+          <div class="page-actions">
             {% block page_actions %}{% endblock %}
           </div>
         </div>
+        {% endblock %}
 
+        {# ✅ 본문 카드 #}
         <div class="card-sneat">
-          {% block content %}
-          <!-- 각 페이지 내용 -->
-          {% endblock %}
+          {% block content %}{% endblock %}
         </div>
       </main>
     </div>

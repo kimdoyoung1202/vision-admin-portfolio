@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+
+{% block page_header %}{% endblock %}
+
+{% block content %}
+
+<style>
+    /* =========================
+        ✅ 한 화면(스크롤 최소) 압축 세팅
+        ========================= */
+    .card-sneat{
+        padding: 10px;             /* ✅ 전체 패딩 축소 */
+    }
+
+    /* Row 간격 전반 축소 */
+    .row.compact{ --bs-gutter-x: .5rem; --bs-gutter-y: .5rem; } /* g-2 느낌 */
+    .mb-compact{ margin-bottom: .5rem !important; }             /* mb-2 느낌 */
+
+    /* KPI/도넛 높이 축소 */
+    .kpi-card, .ratio-card{
+        height: 92px;              /* ✅ 120 -> 92 */
+    }
+    .kpi-card .display-6{
+        line-height: 1;
+        margin: 0;
+        font-size: 28px;           /* ✅ 숫자 약간 축소 */
+    }
+    .text-muted.small{ font-size: 12px; }
+
+    /* 도넛: 더 작게 */
+    .ratio-donut-wrap{
+        width: 74px;               /* ✅ 92 -> 74 */
+        height: 74px;
+        position: relative;
+        flex-shrink: 0;
+    }
+    .ratio-inner{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 8px;
+    }
+    .ratio-left{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        width:auto;
+        min-width:0;
+    }
+    .ratio-title{
+        font-size: 13px;
+        line-height: 1;
+        margin-bottom: 0 !important;
+        white-space: nowrap;
+    }
+    .ratio-number-line{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap: nowrap;
+    }
+    .ratio-badges{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    /* Timeseries/Top Chart 영역 높이 축소 */
+    .chart-tight{
+        height: 70px !important;   /* canvas height와 별개로 레이아웃 안정 */
+    }
+
+    /* 시스템 카드 압축 */
+    .sys-card{ padding: 10px; }
+    .sys-card hr{ margin: .4rem 0; }
+
+    .sys-mini-wrap{
+        border: 1px solid rgba(67,89,113,.18);
+        border-radius: 12px;
+        background:#fff;
+        padding:8px;
+        height: 140px;            /* ✅ 170 -> 140 */
+        overflow:hidden;
+    }
+
+    .sys-donut{
+        position: relative;
+        width: 100%;
+        height: 70px;             /* ✅ 92 -> 70 */
+    }
+    .sys-donut canvas{
+        width:100% !important;
+        height:100% !important;
+    }
+    .sys-donut-center{
+        position:absolute;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        pointer-events:none;
+    }
+    .sys-pct{
+        font-weight:900;
+        font-size:15px;           /* ✅ 18 -> 15 */
+        color:#566a7f;
+    }
+    .sys-spark canvas{
+        width:100% !important;
+    }
+
+    .sys-meta{
+        border-top: 1px solid rgba(67,89,113,.12);
+        padding-top:8px;
+        font-size: 12px;
+    }
+
+    /* 제목/버튼 크기 살짝 축소 */
+    .fw-bold{ font-weight: 800 !important; }
+    .btn-group-sm>.btn, .btn-sm{
+        padding: .2rem .45rem;
+        font-size: 12px;
+    }
+    .badge{
+        font-size: 11px;
+    }
+
+    /* 차트 캔버스 자체도 높이 축소 (height 속성과 같이 쓰면 더 안정적) */
+    canvas{ max-height: 140px; }
+    </style>
+
+    <!-- 1) Timeseries -->
+    <div class="row compact mb-compact">
+    <div class="col-12">
+        <div class="card-sneat">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
+
+            <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
+                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+            </div>
+
+            <span class="badge text-bg-primary">DOMAIN</span>
+            <span class="badge text-bg-danger">REGEX</span>
+            </div>
+        </div>
+
+        <canvas id="chartTimeseries" height="70"></canvas>
+        </div>
+    </div>
+    </div>
+
+    <!-- 2) Top10 2개 -->
+    <div class="row compact mb-compact">
+    <div class="col-md-6">
+        <div class="card-sneat">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="fw-bold">도메인 탐지로그 (Top10)</div>
+            <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
+            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+            </div>
+        </div>
+        <canvas id="chartTopDomains" height="95"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card-sneat">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
+            <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
+            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+            </div>
+        </div>
+        <canvas id="chartTopRegex" height="95"></canvas>
+        </div>
+    </div>
+    </div>
+
+    <!-- KPI + 도넛 -->
+    <div class="row compact mb-compact">
+    <div class="col-lg-8">
+        <div class="row compact">
+        <div class="col-md-4">
+            <div class="card-sneat kpi-card">
+            <div class="text-muted fw-bold">policy</div>
+            <div class="d-flex align-items-end justify-content-between">
+                <div class="display-6 fw-bold" id="kpiPolicy">-</div>
+                <div class="fw-bold" id="kpiPolicyDelta">-</div>
+            </div>
+            <div class="text-muted small">전일 대비</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-sneat kpi-card">
+            <div class="text-muted fw-bold">ai_analysis_result</div>
+            <div class="d-flex align-items-end justify-content-between">
+                <div class="display-6 fw-bold" id="kpiAi">-</div>
+                <div class="fw-bold" id="kpiAiDelta">-</div>
+            </div>
+            <div class="text-muted small">전일 대비</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-sneat kpi-card">
+            <div class="text-muted fw-bold">integrated_detection_logs</div>
+            <div class="d-flex align-items-end justify-content-between">
+                <div class="display-6 fw-bold" id="kpiBlocked">-</div>
+                <div class="fw-bold" id="kpiBlockedDelta">-</div>
+            </div>
+            <div class="text-muted small">전일 대비</div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-sneat ratio-card">
+        <div class="ratio-inner">
+            <div class="ratio-left">
+            <div class="ratio-title">일일 수집한 패킷 수</div>
+            <div class="ratio-number-line">
+                <div class="display-6 fw-bold" id="kpiTotal">-</div>
+
+                <div class="ratio-badges">
+                <span class="badge text-bg-primary">통과</span>
+                <span class="fw-bold" id="kpiTotalAi">-</span>
+                <span class="badge text-bg-danger ms-2">차단</span>
+                <span class="fw-bold" id="kpiTotalBlocked">-</span>
+                </div>
+            </div>
+            </div>
+
+            <div class="ratio-donut-wrap">
+            <canvas id="chartBlockedRatio"></canvas>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- IP Top + 시스템정보 -->
+    <div class="row compact">
+    <div class="col-lg-8">
+        <div class="card-sneat h-100">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
+            <div class="text-muted small" id="ipWindowText">최근 10분</div>
+        </div>
+        <canvas id="chartTopIps" height="95"></canvas>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card-sneat h-100 sys-card">
+        <div class="fw-bold mb-1">시스템 정보</div>
+
+        <div class="row compact mb-1">
+            <!-- CPU -->
+            <div class="col-6">
+            <div class="sys-mini-wrap">
+                <div class="sys-donut">
+                <canvas id="cpuDonut"></canvas>
+                <div class="sys-donut-center"><div id="cpuPctText" class="sys-pct">65%</div></div>
+                </div>
+                <div class="sys-spark mt-1">
+                <canvas id="cpuSpark" height="34"></canvas>
+                </div>
+            </div>
+            <div class="text-center small mt-1">CPU</div>
+            </div>
+
+            <!-- MEM -->
+            <div class="col-6">
+            <div class="sys-mini-wrap">
+                <div class="sys-donut">
+                <canvas id="memDonut"></canvas>
+                <div class="sys-donut-center"><div id="memPctText" class="sys-pct">54%</div></div>
+                </div>
+                <div class="sys-spark mt-1">
+                <canvas id="memSpark" height="34"></canvas>
+                </div>
+            </div>
+            <div class="text-center small mt-1">MEM</div>
+            </div>
+        </div>
+
+
+        <hr class="my-2">
+
+        <div class="small">
+            <div class="d-flex justify-content-between"><span class="text-muted">시스템 이름</span><span id="sysName">-</span></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">연결 DB</span><span id="sysDb">-</span></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">로그 백업</span><span id="sysBackup">-</span></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">엔진 상태</span><span id="sysEngine">-</span></div>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    {% endblock %}
+
+    {% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+    (function(){
+    const REFRESH_MS = 5000;
+    const state = { ts:"day", dom:"day", rx:"day" };
+
+    const kpiPolicy = document.getElementById("kpiPolicy");
+    const kpiAi = document.getElementById("kpiAi");
+    const kpiBlocked = document.getElementById("kpiBlocked");
+    const kpiPolicyDelta = document.getElementById("kpiPolicyDelta");
+    const kpiAiDelta = document.getElementById("kpiAiDelta");
+    const kpiBlockedDelta = document.getElementById("kpiBlockedDelta");
+    const ipWindowText = document.getElementById("ipWindowText");
+    const kpiTotal = document.getElementById("kpiTotal");
+    const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
+    const kpiTotalAi = document.getElementById("kpiTotalAi");
+
+    async function getJSON(url){
+        const res = await fetch(url, {credentials:"same-origin"});
+        if(!res.ok) throw new Error("API Error: " + res.status);
+        return await res.json();
+    }
+
+    function fmtDelta(n){
+        const sign = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
+        return `${sign} ${Math.abs(n)}`;
+    }
+
+    function wrapLabel(str, maxLen=18){
+        if(!str) return "";
+        const words = str.split(".");
+        let lines = [];
+        let cur = "";
+        words.forEach(w=>{
+        if((cur + w).length > maxLen){
+            if(cur) lines.push(cur);
+            cur = w + ".";
+        }else{
+            cur += w + ".";
+        }
+        });
+        if(cur) lines.push(cur);
+        return lines;
+    }
+
+    // Charts
+    const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
+        type: "bar",
+        data: {
+        labels: [],
+        datasets: [
+            { label: "DOMAIN", data: [], borderWidth: 1 },
+            { label: "REGEX", data: [], borderWidth: 1 },
+            { label: "TOTAL", type: "line", data: [], tension: 0.35, borderWidth: 2, pointRadius: 0 }
+        ]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { position: "top" } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+        }
+    });
+
+    const chartTopDomains = new Chart(document.getElementById("chartTopDomains"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1 }] },
+        options: {
+        indexAxis: "y",
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0, stepSize: 1 } },
+            y: { grid: { display: false } }
+        }
+        }
+    });
+
+    const chartTopRegex = new Chart(document.getElementById("chartTopRegex"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1 }] },
+        options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+        }
+    });
+
+    const chartBlockedRatio = new Chart(document.getElementById("chartBlockedRatio"), {
+        type: "doughnut",
+        data: { labels: ["통과", "차단"], datasets: [{ data: [0,0], borderWidth: 1 }] },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "70%",
+        radius: "95%",
+        plugins: { legend: { display: false } }
+        }
+    });
+
+    const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "count", data: [], borderWidth: 1 }] },
+        options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    });
+
+    async function refreshKpi(){
+        const kpi = await getJSON(`/api/kpis/?gran=day`);
+
+        kpiPolicy.textContent = kpi.policy_count;
+        kpiAi.textContent = kpi.ai_count;
+        kpiBlocked.textContent = kpi.blocked_count;
+
+        kpiPolicyDelta.textContent = fmtDelta(kpi.policy_delta);
+        kpiAiDelta.textContent = fmtDelta(kpi.ai_delta);
+        kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
+
+        const total = (kpi.blocked_count || 0) + (kpi.ai_count || 0);
+        kpiTotal.textContent = total;
+        kpiTotalBlocked.textContent = kpi.blocked_count;
+        kpiTotalAi.textContent = kpi.ai_count;
+
+        chartBlockedRatio.data.datasets[0].data = [kpi.ai_count, kpi.blocked_count];
+        chartBlockedRatio.update();
+    }
+
+    async function refreshTimeseries(){
+        const gran = state.ts;
+        const ts = await getJSON(`/api/timeseries/?gran=${gran}`);
+        chartTimeseries.data.labels = ts.labels;
+        chartTimeseries.data.datasets[0].data = ts.domain;
+        chartTimeseries.data.datasets[1].data = ts.regex;
+        chartTimeseries.data.datasets[2].data = ts.total;
+        chartTimeseries.update();
+    }
+
+    async function refreshTopDomains(){
+        const gran = state.dom;
+        const dom = await getJSON(`/api/top-domains/?gran=${gran}&limit=10`);
+        chartTopDomains.data.labels = dom.labels.map(wrapLabel);
+        chartTopDomains.data.datasets[0].data = dom.values;
+        chartTopDomains.update();
+    }
+
+    async function refreshTopRegex(){
+        const gran = state.rx;
+        const rx = await getJSON(`/api/top-regex/?gran=${gran}&limit=10`);
+        chartTopRegex.data.labels = rx.labels.map(wrapLabel);
+        chartTopRegex.data.datasets[0].data = rx.values;
+        chartTopRegex.update();
+    }
+
+    async function refreshIps(){
+        const ip = await getJSON(`/api/top-ips/?window_minutes=10&limit=10`);
+        ipWindowText.textContent = `최근 ${ip.window_minutes}분`;
+        chartTopIps.data.labels = ip.labels;
+        chartTopIps.data.datasets[0].data = ip.values;
+        chartTopIps.update();
+    }
+
+    async function refreshAll(){
+        try{
+        await Promise.all([refreshKpi(), refreshTimeseries(), refreshTopDomains(), refreshTopRegex(), refreshIps()]);
+        }catch(err){
+        console.error(err);
+        }
+    }
+
+    function bindGranButtons(){
+        document.querySelectorAll(".btn-group[data-ctl]").forEach(group=>{
+        const ctl = group.dataset.ctl;
+        group.querySelectorAll("button[data-gran]").forEach(btn=>{
+            btn.addEventListener("click", async ()=>{
+            group.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
+            btn.classList.add("active");
+            state[ctl] = btn.dataset.gran;
+
+            if(ctl === "ts") await refreshTimeseries();
+            if(ctl === "dom") await refreshTopDomains();
+            if(ctl === "rx") await refreshTopRegex();
+            });
+        });
+        });
+    }
+
+    bindGranButtons();
+    refreshAll();
+    setInterval(refreshAll, REFRESH_MS);
+    })();
+
+    (function(){
+    function makeDonut(ctx, pct){
+        return new Chart(ctx, {
+        type: "doughnut",
+        data: { datasets: [{ data: [pct, 100 - pct], borderWidth: 0, hoverOffset: 0 }] },
+        options: {
+            cutout: "75%",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        }
+        });
+    }
+
+    function makeSpark(ctx, initial){
+        return new Chart(ctx, {
+        type: "line",
+        data: { labels: initial.map((_,i)=>i), datasets: [{ data: initial, tension: 0.35, pointRadius: 0, borderWidth: 2, fill: false }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: { x: { display: false }, y: { display: false, suggestedMin: 0, suggestedMax: 100 } }
+        }
+        });
+    }
+
+    let cpuPct = 65;
+    let memPct = 54;
+
+    const cpuSeries = Array.from({length: 24}, () => cpuPct);
+    const memSeries = Array.from({length: 24}, () => memPct);
+
+    const cpuDonut = makeDonut(document.getElementById("cpuDonut"), cpuPct);
+    const memDonut = makeDonut(document.getElementById("memDonut"), memPct);
+    const cpuSpark = makeSpark(document.getElementById("cpuSpark"), cpuSeries);
+    const memSpark = makeSpark(document.getElementById("memSpark"), memSeries);
+
+    setInterval(() => {
+        cpuPct = Math.max(0, Math.min(100, cpuPct + (Math.random()*10 - 5)));
+        memPct = Math.max(0, Math.min(100, memPct + (Math.random()*6 - 3)));
+
+        document.getElementById("cpuPctText").textContent = Math.round(cpuPct) + "%";
+        document.getElementById("memPctText").textContent = Math.round(memPct) + "%";
+
+        cpuDonut.data.datasets[0].data = [cpuPct, 100-cpuPct];
+        memDonut.data.datasets[0].data = [memPct, 100-memPct];
+        cpuDonut.update("none");
+        memDonut.update("none");
+
+        cpuSeries.push(cpuPct); cpuSeries.shift();
+        memSeries.push(memPct); memSeries.shift();
+        cpuSpark.data.datasets[0].data = cpuSeries;
+        memSpark.data.datasets[0].data = memSeries;
+        cpuSpark.update("none");
+        memSpark.update("none");
+    }, 1000);
+    })();
+</script>
+{% endblock %}

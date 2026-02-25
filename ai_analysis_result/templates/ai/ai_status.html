@@ -6,292 +6,390 @@
 
 {% block extra_css %}
 <style>
-    /* PPT 느낌: 카드/박스 라운드 + 얇은 테두리 */
-    .dash-wrap { max-width: 1200px; }
-    .panel {
+    /* =========================
+        ✅ 이 페이지(대시보드)만 한 화면 고정
+        ========================= */
+    .ai-page{
+        height: calc(100vh - 64px); /* topbar 64px 기준 */
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .ai-wrap{
+        flex: 1;
+        overflow: hidden;
+        padding: 10px 18px !important; /* container-p-y 줄임 */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* ===== panel ===== */
+    .panel{
         border: 1px solid rgba(67, 89, 113, .18);
         border-radius: 14px;
         background: #fff;
         box-shadow: 0 2px 10px rgba(67,89,113,.06);
     }
-    .kpi-card{
-    border: 1px solid rgba(67, 89, 113, .18);
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(67,89,113,.06);
-    padding: 12px 14px;
-    height: 78px;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
+    .section-title{
+        font-weight: 900;
+        font-size: 16px;
+        color:#2b3a4a;
+        margin: 0 0 8px 0;
     }
 
-    .kpi-card.center{
-    align-items:center !important;
-    text-align:center !important;
-    }
-
-    .kpi-title{
-        font-size:13px;
-    }
-
-    .kpi-value{
-        font-size:26px;
-        margin-top:4px;
-    }
-
-    .kpi-row { row-gap: 12px; }
-
+    /* ===== 상단 상태 ===== */
     .status-pill{
         display:inline-flex; align-items:center; gap:10px;
         border:1px solid rgba(67,89,113,.18);
-        padding:10px 14px; border-radius:999px; background:#fff;
+        padding:8px 12px; border-radius:999px; background:#fff;
     }
     .dot{
         width:10px; height:10px; border-radius:50%;
         background:#28c76f; box-shadow:0 0 0 4px rgba(40,199,111,.15);
     }
-    .section-title{
-        font-weight:900; font-size:18px; color:#2b3a4a;
-        margin-bottom:12px;
+
+    /* =========================
+        ✅ 높이 배분 (스크롤 0)
+        - top: 상태 + KPI
+        - mid: 라인차트 + 도넛
+        - bottom: 오류 + 시스템정보
+        ========================= */
+    .ai-top{ flex: 0 0 auto; }
+    .ai-mid{ flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    .ai-bot{ flex: 0 0 auto; }
+
+    /* ===== KPI ===== */
+    .kpi-row{ row-gap: 10px; }
+    .kpi-card{
+        border: 1px solid rgba(67, 89, 113, .18);
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(67,89,113,.06);
+        padding: 10px 12px;
+        height: 84px;  /* ✅ 더 낮춤 */
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+    }
+    .kpi-card.center{ align-items:center; text-align:center; }
+    .kpi-title{ font-size:12px; font-weight:900; color:#566a7f; }
+    .kpi-value{
+        font-size:24px;
+        margin-top:3px;
+        font-weight: 900;
+        color:#2b3a4a;
+        line-height: 1.05;
+    }
+    .kpi-unit{
+        font-size:13px;
+        font-weight: 900;
+        color:#566a7f;
+        margin-left:6px;
+    }
+    .kpi-sub{
+        margin-top:3px;
+        font-size:11px;
+        color:#7a8a9a;
+        font-weight:700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    /* 차트 영역 높이 고정(PPT처럼) */
-    .h-240{ height:240px; }
-    .h-220{ height:180px; }
+    /* ===== Charts fixed heights (중단 영역) ===== */
+    .mid-left, .mid-right{ height: 100%; min-height: 0; }
+    .mid-left .panel, .mid-right .panel{ height: 100%; overflow: hidden; }
 
-    /* 테이블 */
-    .mini-table th{
-        background:#f5f6f8;
-        font-weight:800;
+    .chart-box{
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
-    .mini-table td, .mini-table th{
-        padding:10px 12px;
-        border-color: rgba(67,89,113,.12) !important;
+    .chart-card{
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .chart-card .inner{
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .chart-title{
+        font-weight: 900;
+        color:#2b3a4a;
+        margin: 8px 10px 6px;
+        font-size: 13px;
+    }
+    .chart-canvas{
+        flex: 1;
+        min-height: 0;
     }
 
-    /* 도넛 + 스파크 배치 */
+    /* ===== Donut ===== */
     .donut-wrap{
-    display:grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
     }
     .donut-card{
         border:1px solid rgba(67,89,113,.18);
         border-radius:14px;
         padding:10px;
-        background:#fff;       
-        height: 240px; 
-        overflow: visible;
+        background:#fff;
+        height: 100%;
+        overflow: hidden;
+        display:flex;
+        flex-direction:column;
     }
-    .donut-title{ font-weight:900; color:#2b3a4a; margin-bottom:6px; }
-    .spark{
-        height:60px;
+    .donut-title{
+        font-weight:900;
+        color:#2b3a4a;
+        margin-bottom:6px;
+        display:flex;
+        align-items:baseline;
+        justify-content:space-between;
+        gap: 8px;
+        font-size: 13px;
     }
-    .panel{ overflow:hidden; }
-
-    /* ✅ 도넛 카드 내부도 overflow 차단 */
-    .donut-card{ overflow:hidden; }
-
-    #cpuDonut, #memDonut{
-    width: 100% !important;
-    height: 120px !important;
+    .donut-title .muted{
+        color:#7a8a9a;
+        font-weight:900;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    .donut-canvas-wrap{ height: 110px; } /* ✅ 줄임 */
+    .spark{ height: 48px; }              /* ✅ 줄임 */
+    .hint{
+        font-size: 11px;
+        color:#7a8a9a;
+        font-weight:700;
+        margin-top: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    /* ✅ 스파크(실시간) 캔버스 높이 */
-    #cpuSpark, #memSpark{
-    width: 100% !important;
-    height: 50px !important;
+    /* ===== Bottom tables ===== */
+    .mini-table th{
+        background:#f5f6f8;
+        font-weight:900;
+        color:#2b3a4a;
     }
-    
-
-    #cpuDonut, #memDonut{
-    max-height:120px !important;
+    .mini-table td, .mini-table th{
+        padding:8px 10px; /* ✅ 줄임 */
+        border-color: rgba(67,89,113,.12) !important;
+        font-size: 12px;
     }
-    /* PPT처럼 여백 */
-    .mt-18{ margin-top:18px; }
+    .bot-panel{
+        height: 190px; /* ✅ 하단 고정 높이로 스크롤 방지 */
+        overflow: hidden;
+        display:flex;
+        flex-direction:column;
+    }
+    .bot-panel .table-responsive{
+        flex:1;
+        min-height:0;
+        overflow: hidden;
+    }
 
-    .h-160{ height: 120px;}
+    /* 최근오류 테이블은 내용 많아지면 그 안에서만 최소 스크롤(필요시) */
+    #recentErrorsTbody{
+        overflow:hidden;
+    }
     </style>
     {% endblock %}
 
     {% block content %}
-    <div class="container-xxl container-p-y dash-wrap">
+    <div class="ai-page">
+    <div class="ai-wrap">
 
-    <!-- 상단 상태 -->
-    <div class="d-flex justify-content-end mb-3">
-        <div class="status-pill">
-        <span class="dot" id="engineDot"></span>
-        <div style="font-weight:900;" id="engineText">FASTAPI 정상 동작 중</div>
+        <!-- =======================
+            TOP: 상태 + KPI
+            ======================= -->
+        <div class="ai-top">
+        <div class="d-flex justify-content-end">
+            <div class="status-pill">
+            <span class="dot" id="engineDot"></span>
+            <div style="font-weight:900;" id="engineText">FASTAPI 정상 동작 중</div>
+            </div>
         </div>
-    </div>
 
-    <!-- KPI 4개 -->
-    <div class="row g-3 mb-3 kpi-row">
-        <div class="col-3">
-        <div class="kpi-card center panel">
-            <div class="kpi-title">응답속도</div>
-            <div class="kpi-value"><span id="kpiLatency">-</span><span style="font-size:16px;font-weight:900;color:#566a7f"> ms</span></div>
-        </div>
-        </div>
-        <div class="col-3">
-        <div class="kpi-card center panel">
-            <div class="kpi-title">처리량(RPM)</div>
-            <div class="kpi-value"><span id="kpiRPM">-</span></div>
-        </div>
-        </div>
-        <div class="col-3">
-        <div class="kpi-card center panel">
-            <div class="kpi-title">요청수(오늘)</div>
-            <div class="kpi-value"><span id="kpiTotal">-</span></div>
-        </div>
-        </div>
-        <div class="col-3">
-        <div class="kpi-card center panel">
-            <div class="kpi-title">정확도</div>
-            <div class="kpi-value"><span id="kpiAcc">-</span><span style="font-size:16px;font-weight:900;color:#566a7f"> %</span></div>
-        </div>
-        </div>
-    </div>
+        <div class="row g-2 mt-2 kpi-row">
+            <div class="col-3">
+            <div class="kpi-card center panel">
+                <div class="kpi-title">응답속도</div>
+                <div class="kpi-value">
+                <span id="kpiLatency">-</span><span class="kpi-unit">ms</span>
+                </div>
+                <div class="kpi-sub">※ p95/평균 등 확장 예정</div>
+            </div>
+            </div>
 
-    <!-- 중단: 왼쪽 라인차트 2개 + 오른쪽 도넛 2개 -->
-    <div class="row g-3">
-        <!-- 왼쪽: 라인차트 박스 -->
-        <div class="col-8">
-        <div class="panel p-3">
+            <div class="col-3">
+            <div class="kpi-card center panel">
+                <div class="kpi-title">처리량 (RPM)</div>
+                <div class="kpi-value"><span id="kpiRPM">-</span></div>
+                <div class="kpi-sub">※ 성공/실패 분리 예정</div>
+            </div>
+            </div>
+
+            <div class="col-3">
+            <div class="kpi-card center panel">
+                <div class="kpi-title">요청수 (오늘)</div>
+                <div class="kpi-value"><span id="kpiTotal">-</span></div>
+                <div class="kpi-sub">※ 기간 선택 예정</div>
+            </div>
+            </div>
+
+            <div class="col-3">
+            <div class="kpi-card center panel">
+                <div class="kpi-title">정확도</div>
+                <div class="kpi-value">
+                <span id="kpiAcc">-</span><span class="kpi-unit">%</span>
+                </div>
+                <div class="kpi-sub">※ 관리자 정책 추가(ADD) 기준</div>
+            </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- =======================
+            MID: 라인차트 + 도넛
+            ======================= -->
+        <div class="row g-2 ai-mid">
+        <!-- 왼쪽: 라인차트 -->
+        <div class="col-8 mid-left">
+            <div class="panel p-3">
             <div class="section-title">실시간 추이</div>
 
-            <div class="row g-3">
-            <div class="col-6">
-                <div class="panel p-2">
-                <div style="font-weight:900; color:#2b3a4a; margin:8px 10px;">응답속도</div>
-                <div class="h-220">
+            <div class="chart-box">
+                <div class="panel p-2 chart-card">
+                <div class="inner">
+                    <div class="chart-title">응답속도</div>
+                    <div class="chart-canvas">
                     <canvas id="latencyChart"></canvas>
+                    </div>
                 </div>
                 </div>
-            </div>
-            <div class="col-6">
-                <div class="panel p-2">
-                <div style="font-weight:900; color:#2b3a4a; margin:8px 10px;">처리량</div>
-                <div class="h-220">
+
+                <div class="panel p-2 chart-card">
+                <div class="inner">
+                    <div class="chart-title">처리량</div>
+                    <div class="chart-canvas">
                     <canvas id="throughputChart"></canvas>
+                    </div>
                 </div>
                 </div>
             </div>
+
             </div>
-
-        </div>
         </div>
 
-        <!-- 오른쪽: 도넛 박스 -->
-        <div class="col-4">
-        <div class="panel p-3">
+        <!-- 오른쪽: 도넛 -->
+        <div class="col-4 mid-right">
+            <div class="panel p-3">
             <div class="section-title">자원 사용량</div>
 
-            <div class="donut-wrap">
-            <div class="donut-card">
-                <div class="donut-title">CPU 사용량 <span class="text-muted" style="font-weight:800;" id="cpuPct">-</span></div>
-                <div class="h-160">
-                <canvas id="cpuDonut"></canvas>
+            <div class="donut-wrap" style="height: calc(100% - 28px);">
+                <div class="donut-card">
+                <div class="donut-title">
+                    <span>CPU 사용량</span>
+                    <span class="muted" id="cpuPct">-</span>
                 </div>
-                <div class="spark">
-                <canvas id="cpuSpark"></canvas>
+                <div class="donut-canvas-wrap">
+                    <canvas id="cpuDonut"></canvas>
                 </div>
-                <div class="text-muted" style="font-weight:800; font-size:12px; margin-top:6px;">
-                    실시간 사용량: <span id="cpuLive">-</span>
+                <div class="spark mt-1">
+                    <canvas id="cpuSpark"></canvas>
+                </div>
+                <div class="hint">※ 추후 엔진/호스트 metrics로 교체</div>
+                </div>
+
+                <div class="donut-card">
+                <div class="donut-title">
+                    <span>메모리 사용량</span>
+                    <span class="muted" id="memPct">-</span>
+                </div>
+                <div class="donut-canvas-wrap">
+                    <canvas id="memDonut"></canvas>
+                </div>
+                <div class="spark mt-1">
+                    <canvas id="memSpark"></canvas>
+                </div>
+                <div class="hint">※ 추후 엔진/호스트 metrics로 교체</div>
                 </div>
             </div>
 
-            <div class="donut-card">
-                <div class="donut-title">메모리 사용량 <span class="text-muted" style="font-weight:800;" id="memPct">-</span></div>
-                <div class="h-160">
-                <canvas id="memDonut"></canvas>
-                </div>
-                <div class="spark">
-                <canvas id="memSpark"></canvas>
-                </div>
-                <div class="text-muted" style="font-weight:800; font-size:12px; margin-top:6px;">
-                실시간 사용량: <span id="memLive">-</span>
-                </div>
             </div>
-            </div>
-
         </div>
         </div>
-    </div>
 
-    <!-- 하단: 최근 오류 + 시스템 정보 -->
-    <div class="row g-3 mt-18">
+        <!-- =======================
+            BOTTOM: 최근 오류 + 시스템 정보
+            ======================= -->
+        <div class="row g-2 ai-bot">
         <div class="col-8">
-        <div class="panel p-3">
+            <div class="panel p-3 bot-panel">
             <div class="section-title">최근 오류</div>
             <div class="table-responsive">
-            <table class="table mini-table mb-0">
+                <table class="table mini-table mb-0">
                 <thead>
-                <tr>
-                    <th style="width:200px;">시간</th>
+                    <tr>
+                    <th style="width:170px;">시간</th>
                     <th>오류 내용(임시: 최근 로그 URL)</th>
-                    <th style="width:120px;" class="text-end">확률</th>
-                </tr>
+                    <th style="width:100px;" class="text-end">확률</th>
+                    </tr>
                 </thead>
                 <tbody id="recentErrorsTbody">
-                <tr><td colspan="3" class="text-center text-muted">-</td></tr>
+                    <tr><td colspan="3" class="text-center text-muted">-</td></tr>
                 </tbody>
-            </table>
+                </table>
             </div>
-            <div class="text-muted mt-2" style="font-weight:700;">
-            * 오류 기준은 아직 미정이라 임시로 “최근 로그”를 표시합니다. (TODO)
+            <div class="hint">* TODO: 오류 기준 확정 후 개선</div>
             </div>
-        </div>
         </div>
 
         <div class="col-4">
-        <div class="panel p-3">
+            <div class="panel p-3 bot-panel">
             <div class="section-title">시스템 정보</div>
             <div class="table-responsive">
-            <table class="table mini-table mb-0">
+                <table class="table mini-table mb-0">
                 <tbody>
-                <tr>
-                    <th style="width:140px;">현재 버전</th>
-                    <td id="sysVersion">-</td>
-                </tr>
-                <tr>
-                    <th>개발자 이름</th>
-                    <td id="sysDev">-</td>
-                </tr>
-                <tr>
-                    <th>업데이트 주기</th>
-                    <td>5초</td>
-                </tr>
-                <tr>
-                    <th>엔진 연동</th>
-                    <td class="text-muted">TODO (FastAPI metrics)</td>
-                </tr>
-                <tr>
-                    <th>모니터링 연동</th>
-                    <td class="text-muted">TODO (CPU/MEM real)</td>
-                </tr>
+                    <tr><th style="width:120px;">현재 버전</th><td id="sysVersion">-</td></tr>
+                    <tr><th>개발자 이름</th><td id="sysDev">-</td></tr>
+                    <tr><th>업데이트 주기</th><td>5초</td></tr>
+                    <tr><th>정확도 정의</th><td class="text-muted">관리자 검토로 <b>정책 추가(ADD)</b>된 비율</td></tr>
+                    <tr><th>엔진 연동</th><td class="text-muted">TODO (FastAPI metrics)</td></tr>
+                    <tr><th>모니터링</th><td class="text-muted">TODO (CPU/MEM real)</td></tr>
                 </tbody>
-            </table>
+                </table>
+            </div>
+            <div class="hint">※ UI/구조 확정용 더미 데이터</div>
             </div>
         </div>
         </div>
-    </div>
 
     </div>
+    </div>
+    {% endblock %}
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script>
-    // 차트 인스턴스
+    (function(){
     let latencyChart, throughputChart, cpuDonut, memDonut, cpuSpark, memSpark;
 
-    function makeLine(ctx, label){
+    function makeLine(ctx){
         return new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label, data: [], tension: .35, pointRadius: 0, borderWidth: 3 }] },
+        data: { labels: [], datasets: [{ data: [], tension: .35, pointRadius: 0, borderWidth: 3 }] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -299,7 +397,7 @@
             plugins: { legend: { display: false } },
             scales: {
             x: { grid: { display: false } },
-            y: { beginAtZero: true }
+            y: { beginAtZero: true, ticks: { precision: 0 } }
             }
         }
         });
@@ -314,27 +412,27 @@
             maintainAspectRatio: false,
             animation: false,
             plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: { x: { display:false }, y: { display:false } },
-            elements: { line: { borderJoinStyle: 'round' } }
+            scales: { x: { display:false }, y: { display:false, suggestedMin: 0, suggestedMax: 100 } }
         }
         });
     }
 
     function makeDonut(ctx){
         return new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
-            options: {
+        type: 'doughnut',
+        data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
+        options: {
             responsive: true,
             maintainAspectRatio: false,
             cutout: '72%',
             animation: false,
+            layout: { padding: 8 },
             plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false },
-                centerText: { value: 0 }   // ✅ 중앙 텍스트용
-                }
+            legend: { display: false },
+            tooltip: { enabled: false },
+            centerText: { value: 0 }
             }
+        }
         });
     }
 
@@ -352,67 +450,82 @@
         }
     }
 
+    const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+        const value = chart?.config?.options?.plugins?.centerText?.value;
+        if (value == null) return;
+
+        const x = (chartArea.left + chartArea.right) / 2;
+        const y = (chartArea.top + chartArea.bottom) / 2;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 18px sans-serif';
+        ctx.fillStyle = '#2b3a4a';
+        ctx.fillText(`${value}%`, x, y);
+        ctx.restore();
+        }
+    };
+    Chart.register(centerTextPlugin);
+
     async function loadStatus(){
-        const res = await fetch("{% url 'ai:status_api' %}");
+        const res = await fetch("{% url 'ai:status_api' %}", { credentials: "same-origin" });
+        if(!res.ok) throw new Error("status_api error: " + res.status);
         const data = await res.json();
 
-        // KPI
-        document.getElementById("kpiLatency").textContent = data.kpi.latency ?? "-";
-        document.getElementById("kpiRPM").textContent = data.kpi.rpm ?? "-";
-        document.getElementById("kpiTotal").textContent = data.kpi.total_today ?? "-";
-        document.getElementById("kpiAcc").textContent = data.kpi.accuracy ?? "-";
+        document.getElementById("kpiLatency").textContent = data.kpi?.latency ?? "-";
+        document.getElementById("kpiRPM").textContent     = data.kpi?.rpm ?? "-";
+        document.getElementById("kpiTotal").textContent   = data.kpi?.total_today ?? "-";
+        document.getElementById("kpiAcc").textContent     = data.kpi?.accuracy ?? "-";
 
-        // 상태 pill
-        setEngine(!!data.kpi.engine_ok);
+        setEngine(!!data.kpi?.engine_ok);
 
-        // 시스템 정보
         document.getElementById("sysVersion").textContent = data.system_info?.version ?? "-";
-        document.getElementById("sysDev").textContent = data.system_info?.developer ?? "-";
+        document.getElementById("sysDev").textContent     = data.system_info?.developer ?? "-";
 
-        // 차트 준비
         if(!latencyChart){
-        latencyChart = makeLine(document.getElementById("latencyChart"), "응답속도");
-        throughputChart = makeLine(document.getElementById("throughputChart"), "처리량");
-        cpuDonut = makeDonut(document.getElementById("cpuDonut"));
-        memDonut = makeDonut(document.getElementById("memDonut"));
-        cpuSpark = makeSpark(document.getElementById("cpuSpark"));
-        memSpark = makeSpark(document.getElementById("memSpark"));
+        latencyChart    = makeLine(document.getElementById("latencyChart"));
+        throughputChart = makeLine(document.getElementById("throughputChart"));
+        cpuDonut        = makeDonut(document.getElementById("cpuDonut"));
+        memDonut        = makeDonut(document.getElementById("memDonut"));
+        cpuSpark        = makeSpark(document.getElementById("cpuSpark"));
+        memSpark        = makeSpark(document.getElementById("memSpark"));
         }
 
-        // 라인차트 업데이트
-        latencyChart.data.labels = data.chart.labels;
-        latencyChart.data.datasets[0].data = data.chart.latency_series;
-        latencyChart.update();
+        latencyChart.data.labels = data.chart?.labels ?? [];
+        latencyChart.data.datasets[0].data = data.chart?.latency_series ?? [];
+        latencyChart.update("none");
 
-        throughputChart.data.labels = data.chart.labels;
-        throughputChart.data.datasets[0].data = data.chart.throughput_series;
-        throughputChart.update();
+        throughputChart.data.labels = data.chart?.labels ?? [];
+        throughputChart.data.datasets[0].data = data.chart?.throughput_series ?? [];
+        throughputChart.update("none");
 
-        // 도넛 업데이트
-        const cpu = Number(data.kpi.cpu ?? 0);
-        const mem = Number(data.kpi.memory ?? 0);
+        const cpu = Number(data.kpi?.cpu ?? 0);
+        const mem = Number(data.kpi?.memory ?? 0);
 
-        document.getElementById("cpuPct").textContent = `${cpu}%`;
-        document.getElementById("memPct").textContent = `${mem}%`;
+        document.getElementById("cpuPct").textContent = `${Math.round(cpu)}%`;
+        document.getElementById("memPct").textContent = `${Math.round(mem)}%`;
 
         cpuDonut.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
-        cpuDonut.options.plugins.centerText.value = cpu;
-        cpuDonut.update();
+        cpuDonut.options.plugins.centerText.value = Math.round(cpu);
+        cpuDonut.update("none");
 
         memDonut.data.datasets[0].data = [mem, Math.max(0, 100-mem)];
-        memDonut.options.plugins.centerText.value = mem;
-        memDonut.update();
+        memDonut.options.plugins.centerText.value = Math.round(mem);
+        memDonut.update("none");
 
-        // 스파크라인 업데이트(임시)
-        cpuSpark.data.labels = data.chart.labels;
-        cpuSpark.data.datasets[0].data = data.chart.cpu_spark;
-        cpuSpark.update();
+        cpuSpark.data.labels = data.chart?.labels ?? [];
+        cpuSpark.data.datasets[0].data = data.chart?.cpu_spark ?? [];
+        cpuSpark.update("none");
 
-        memSpark.data.labels = data.chart.labels;
-        memSpark.data.datasets[0].data = data.chart.mem_spark;
-        memSpark.update();
+        memSpark.data.labels = data.chart?.labels ?? [];
+        memSpark.data.datasets[0].data = data.chart?.mem_spark ?? [];
+        memSpark.update("none");
 
-        // 최근 오류 테이블
         const tbody = document.getElementById("recentErrorsTbody");
         const rows = data.recent_errors || [];
         if(rows.length === 0){
@@ -433,30 +546,8 @@
         }
     }
 
-    const centerTextPlugin = {
-        id: 'centerText',
-        afterDraw(chart, args, pluginOptions) {
-            const { ctx, chartArea } = chart;
-            if (!chartArea) return;
-
-            const value = chart?.config?.options?.plugins?.centerText?.value;
-            if (value == null) return;
-
-            const x = (chartArea.left + chartArea.right) / 2;
-            const y = (chartArea.top + chartArea.bottom) / 2;
-
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '900 20px sans-serif';
-            ctx.fillStyle = '#2b3a4a';
-            ctx.fillText(`${value}%`, x, y);
-            ctx.restore();
-        }
-    };
-    Chart.register(centerTextPlugin);
-
-    loadStatus();
-    setInterval(loadStatus, 5000);
+    loadStatus().catch(console.error);
+    setInterval(() => loadStatus().catch(console.error), 5000);
+})();
 </script>
 {% endblock %}

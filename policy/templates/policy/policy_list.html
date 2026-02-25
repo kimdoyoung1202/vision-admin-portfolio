@@ -1,3 +1,4 @@
+{# templates/policy/policy_list.html #}
 {% extends "base.html" %}
 {% load static %}
 {% block page_title %}정책 조회{% endblock %}
@@ -9,294 +10,203 @@
 
 {% block extra_css %}
 <style>
-    .table .form-select.form-select-sm{
-    border-radius:10px;
-    padding:.35rem 2rem .35rem .75rem;
-    font-weight:600;
-    }
-    .btn.btn-sm{ border-radius:10px; font-weight:700; }
-
-    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    /* =========================================================
-        ✅ [변경] "페이지 전체 스크롤 막기" 제거
-        - body/html overflow:hidden 넣으면 스크롤 없이 잘릴 수 있음
-        - 대신 아래 policy-workspace 영역만 높이 고정하고 내부 스크롤
-    ========================================================== */
-    /* body{ overflow:hidden; }  <- 삭제/금지 */
-
-    /* =========================================================
-        ✅ [변경] 테이블+상세 영역만 화면 높이에 맞춰 고정 (안쪽 스크롤 생성)
-        - 숫자(360px)는 상단(헤더+타이틀+필터카드) 높이에 따라 조절
-    ========================================================== */
-    .policy-workspace{
-        height: calc(100vh - 360px); /* 🔥 필요하면 380~450으로 조절 */
-        min-height: 420px;
+    /* ✅ 이 페이지(정책조회)만 한 화면 고정 */
+    .policy-page{
+        height: calc(100vh - 64px);   /* topbar 64 기준 */
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* 좌/우 컬럼 높이 체인 */
-    #tableCol, #detailCol{
-        height: 100%;
+    .policy-fluid{
+        flex: 1;
+        overflow: hidden;
+        padding: 8px 18px !important;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* 카드 패딩/간격 압축 */
+    .policy-fluid .card{ margin:0 !important; }
+    .filter-card .card-body{ padding: 10px 12px 8px; }
+    .list-card .card-body{ padding: 8px 12px; }
+
+    /* 필터 압축 */
+    .filter-card .nav{ margin-bottom: 8px !important; }
+    .filter-card .nav-pills .nav-link{
+        padding: .28rem .7rem; border-radius:10px; font-weight:800;
+    }
+    .filter-card .form-label{
+        margin-bottom:4px; font-weight:800; font-size:.80rem; line-height:1.1;
+    }
+    .filter-card .form-control, .filter-card .form-select{
+        padding:.32rem .6rem; border-radius:10px; height:34px;
+    }
+    .filter-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:flex-end; }
+    .filter-actions .btn{ height:34px; padding:.42rem 1rem; border-radius:10px; font-weight:800; }
+
+    /* ✅ 아래 영역(테이블/상세) */
+    .workspace{
+        flex: 1;
         min-height: 0;
+        overflow: hidden;
+    }
+    #tableCol, #detailCol{ height:100%; min-height:0; }
+    .workspace-card{
+        height:100%;
+        display:flex;
+        flex-direction:column;
+    }
+    .workspace-card .card-body{
+        flex:1; min-height:0;
+        display:flex; flex-direction:column;
     }
 
-    /* =======================
-        ✅ 왼쪽 테이블: 카드 안에서 스크롤
-    ======================= */
-    #tableCol .card{
-        height: 100%;
-        display:flex;
-        flex-direction:column;
-    }
-    #tableCol .card-body{
-        flex:1;
-        min-height:0;
-        display:flex;
-        flex-direction:column;
-    }
-    #tableCol .table-responsive{
-        flex:1;
-        min-height:0;
-        overflow:auto; /* ✅ 테이블 내부 스크롤 */
+    /* ✅ 테이블 영역(스크롤 없음 목표) */
+    #listArea{
+        flex:1; min-height:0;
+        overflow:hidden;   /* 내부 스크롤 금지 */
+        display:flex; flex-direction:column;
     }
 
-    /* =======================
-        ✅ 오른쪽 상세: 카드 안에서 스크롤 + 하단 고정
-    ======================= */
-    #detailCol .card{
-        height: 100%;
-        display:flex;
-        flex-direction:column;
+    /* 상세패널 레이아웃 */
+    .detail-scroll{
+        flex:1; min-height:0;
+        overflow:hidden; /* 설명만 스크롤 주기 */
+        display:flex; flex-direction:column;
     }
-    #detailCol .card-body{
-        flex:1;
-        min-height:0;
-        display:flex;
-        flex-direction:column;
-    }
-    #detailCol .detail-scroll{
-        flex:1;
-        min-height:0;
-        overflow:auto; /* ✅ 상세 내부 스크롤 */
-        padding-right:6px;
-    }
-    #detailCol .detail-footer{
-        flex:0 0 auto;
-        border-top:1px solid #eee;
-        background:#fff;
-        padding-top:10px;
-    }
-
-    /* ✅ 정책 설명 박스도 내부 스크롤 */
     #dDescription{
-        height: 140px;
-        overflow:auto;
-        resize: vertical; /* 원하면 none */
+        flex:1; min-height:120px;
+        resize:none;
+        overflow:auto;   /* ✅ 설명만 스크롤 */
     }
+    .detail-footer{
+        border-top:1px solid #eee;
+        padding-top:10px;
+        margin-top:10px;
+        flex:0 0 auto;
+    }
+
+    /* 테이블 텍스트 줄임 */
+    .cell-truncate{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cell-truncate-sm{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     </style>
     {% endblock %}
 
     {% block content %}
-    <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="policy-page">
+    <div class="container-fluid policy-fluid container-p-y">
 
-    <!-- =======================
-        필터 카드(기존 그대로)
-    ======================== -->
-    <div class="card mb-3">
+        <!-- 필터 -->
+        <div class="card filter-card">
         <div class="card-body">
-
-        <ul class="nav nav-pills mb-3">
+            <ul class="nav nav-pills">
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '' %}active{% endif %}"
+                <a class="nav-link {% if filters.policy_type == '' %}active{% endif %}"
                 href="{% url 'policy:list' %}?policy_type=">전체</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '도메인' %}active{% endif %}"
-                href="{% url 'policy:list' %}?policy_type=도메인">도메인</a>
+                <a class="nav-link {% if filters.policy_type == 'DOMAIN' %}active{% endif %}"
+                href="{% url 'policy:list' %}?policy_type=DOMAIN">DOMAIN</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '정규표현식' %}active{% endif %}"
-                href="{% url 'policy:list' %}?policy_type=정규표현식">정규 표현식</a>
+                <a class="nav-link {% if filters.policy_type == 'REGEX' %}active{% endif %}"
+                href="{% url 'policy:list' %}?policy_type=REGEX">REGEX</a>
             </li>
-        </ul>
+            </ul>
 
-        <form method="get" class="row g-3 align-items-end">
+            <form method="get" class="row g-2 align-items-end" id="filterForm">
             <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
 
-            <div class="col-2">
-            <label class="form-label">정책 아이디</label>
-            <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력 :">
+            <div class="col-xl-2 col-lg-3">
+                <label class="form-label">정책 아이디</label>
+                <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력 :">
             </div>
 
-            <div class="col-3">
-            <label class="form-label">정책 이름</label>
-            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
+            <div class="col-xl-2 col-lg-3">
+                <label class="form-label">정책 이름</label>
+                <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
             </div>
 
-            <div class="col-5">
-            <label class="form-label">정책 URL/표현식</label>
-            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
+            <div class="col-xl-4 col-lg-6">
+                <label class="form-label">정책 URL/표현식</label>
+                <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
             </div>
 
-            <div class="col-2">
-            <label class="form-label">정책 적용 여부</label>
-            <select class="form-select" name="is_active">
+            <div class="col-xl-2 col-lg-3">
+                <label class="form-label">정책 적용 여부</label>
+                <select class="form-select" name="is_active">
                 <option value="" {% if filters.is_active == "" %}selected{% endif %}>선택</option>
                 <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
                 <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
-            </select>
+                </select>
             </div>
 
-            <div class="col-3">
-            <label class="form-label">처리 유형</label>
-            <select class="form-select" name="handling_type">
+            <div class="col-xl-2 col-lg-3">
+                <label class="form-label">처리 유형</label>
+                <select class="form-select" name="handling_type">
                 <option value="" {% if filters.handling_type == "" %}selected{% endif %}>선택</option>
                 <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
                 <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
-            </select>
+                </select>
             </div>
 
-            <div class="col-3">
-            <label class="form-label">정책 추가자 id</label>
-            <input class="form-control" name="create_by" value="{{ filters.create_by }}" placeholder="입력 :">
+            <div class="col-xl-2 col-lg-3">
+                <label class="form-label">정책 추가자 id</label>
+                <input class="form-control" name="create_by" value="{{ filters.create_by }}" placeholder="입력 :">
             </div>
 
-            <div class="col-4">
-            <label class="form-label">추가시간</label>
-            <div class="d-flex gap-2">
+            <div class="col-xl-3 col-lg-6">
+                <label class="form-label">추가시간</label>
+                <div class="d-flex gap-2">
                 <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
                 <div class="d-flex align-items-center text-muted">~</div>
                 <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
-            </div>
-            </div>
-
-            <div class="col-2 d-flex gap-2">
-            <button class="btn btn-primary w-100" type="submit">검색</button>
-            <a class="btn btn-outline-secondary w-100" href="{% url 'policy:list' %}">초기화</a>
-            </div>
-        </form>
-
-        </div>
-    </div>
-
-    <!-- =======================
-        테이블 + 상세 패널
-    ======================== -->
-    <div class="row g-3 policy-workspace">
-        <!-- 왼쪽: 테이블 -->
-        <div class="col-12" id="tableCol">
-        <div class="card">
-            <div class="card-body">
-
-            <div class="table-responsive text-nowrap">
-                <table class="table table-hover align-middle" id="policyTable">
-                <thead>
-                    <tr>
-                    <th style="width:90px;">정책 ID</th>
-                    <th style="width:120px;">정책 타입</th>
-                    <th>정책 이름</th>
-                    <th>정책 URL/패턴</th>
-                    <th class="text-center" style="width:90px;">적용</th>
-                    <th class="text-center" style="width:110px;">처리 유형</th>
-                    <th style="width:120px;">추가자</th>
-                    <th style="width:170px;">추가 시간</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for p in page_obj %}
-                    <tr class="js-row" style="cursor:pointer;"
-                        data-id="{{ p.policy_id }}"
-                        data-policy-type="{{ p.policy_type|default:'' }}"
-                        data-policy-name="{{ p.policy_name|default:'' }}"
-                        data-content="{{ p.content|default:'' }}"
-                        data-is-active="{% if p.is_active %}true{% else %}false{% endif %}"
-                        data-handling-type="{{ p.handling_type|default:'' }}"
-                        data-create-by="{{ p.create_by|default:'' }}"
-                        data-create-at="{% if p.create_at %}{{ p.create_at|date:'Y-m-d H:i' }}{% endif %}"
-                        data-description="{{ p.description|default:'' }}"
-                    >
-                    <td class="fw-semibold">{{ p.policy_id }}</td>
-                    <td>{{ p.policy_type }}</td>
-                    <td class="cell-truncate-sm">{{ p.policy_name }}</td>
-                    <td class="cell-truncate">{{ p.content }}</td>
-
-                    <td class="text-center">
-                        {% if p.is_active %}적용{% else %}미적용{% endif %}
-                    </td>
-                    <td class="text-center">
-                        {{ p.handling_type|default:"-" }}
-                    </td>
-
-                    {# ✅ create_by는 날짜가 아니라 보통 문자열/ID라 date 필터 쓰면 깨짐 #}
-                    <td>{{ p.create_by|default:"-" }}</td>
-
-                    <td>{% if p.create_at %}{{ p.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                    <td colspan="6" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                </table>
-            </div>
-
-            <!-- 페이지네이션 (필터 유지) -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="text-muted">
-                총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
                 </div>
-
-                <nav>
-                <ul class="pagination mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                    <a class="page-link"
-                        href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">이전</span></li>
-                    {% endif %}
-
-                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
-
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                    <a class="page-link"
-                        href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&handling_type={{ filters.handling_type }}&is_active={{ filters.is_active }}&create_by={{ filters.create_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">다음</span></li>
-                    {% endif %}
-                </ul>
-                </nav>
             </div>
 
+            <div class="col-auto ms-auto filter-actions">
+                <button class="btn btn-primary" type="submit">검색</button>
+                <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">초기화</a>
             </div>
+            </form>
         </div>
         </div>
 
-        <!-- 오른쪽: 상세 패널 -->
+        <!-- 테이블 + 상세 -->
+        <div class="row g-2 workspace">
+        <!-- 좌: 테이블 -->
+        <div class="col-12" id="tableCol">
+            <div class="card list-card workspace-card">
+            <div class="card-body">
+                <div id="listArea">
+                {% include "policy/policy_list_partial.html" %}
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- 우: 상세 -->
         <div class="col-4 d-none" id="detailCol">
-        <div class="card">
+            <div class="card workspace-card">
             <div class="card-body">
 
-            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="mb-0 fw-bold">정책 상세</h6>
                 <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                    <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
                 </div>
-            </div>
+                </div>
 
-            <hr class="my-2">
-            <div class="detail-scroll">
+                <hr class="my-2">
+
+                <div class="detail-scroll">
                 <div class="small text-muted fw-bold mb-2">선택한 정책 1건의 상세정보가 표시됩니다</div>
 
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
+                <div class="table-responsive" style="flex:0 0 auto;">
+                    <table class="table table-sm align-middle mb-2">
                     <tbody>
                         <tr><th class="text-muted" style="width:120px;">정책 타입</th><td id="dPolicyType">-</td></tr>
                         <tr><th class="text-muted">정책 이름</th><td id="dPolicyName">-</td></tr>
@@ -307,16 +217,15 @@
                     </table>
                 </div>
 
-            <!-- ✅ 정책 설명은 상세에서만 -->
-                <div class="mt-2">
+                <div class="mt-1" style="flex:1; min-height:0; display:flex; flex-direction:column;">
                     <div class="form-label fw-bold mb-1">정책 설명</div>
-                    <textarea class="form-control" rows="4" id="dDescription" readonly></textarea>
+                    <textarea class="form-control" id="dDescription" readonly></textarea>
                 </div>
-            </div>
+                </div>
 
-            <!-- ✅ 적용/처리유형/삭제는 상세에서만 -->
-            <div class="detail-footer">
-                <form method="post" id="detailUpdateForm" class="mt-3">
+                <!-- ✅ 여기! 저장/삭제/적용여부/처리유형 (원래 기본틀 복원) -->
+                <div class="detail-footer">
+                <form method="post" id="detailUpdateForm">
                     {% csrf_token %}
                     <input type="hidden" name="next" id="detailNext" value="{{ request.get_full_path }}">
 
@@ -339,28 +248,27 @@
 
                     <div class="d-flex gap-2 mt-3">
                     <button type="submit" class="btn btn-primary w-50" id="btnSave" disabled>저장</button>
-
-                    <button type="button" class="btn btn-outline-danger w-50" id="btnDelete" disabled>
-                        삭제
-                    </button>
+                    <button type="button" class="btn btn-outline-danger w-50" id="btnDelete" disabled>삭제</button>
                     </div>
                 </form>
 
-                <!-- 삭제용 숨김 form -->
                 <form method="post" id="detailDeleteForm" class="d-none">
                     {% csrf_token %}
                 </form>
+                </div>
+
             </div>
             </div>
         </div>
         </div>
 
-    </div><!-- /row -->
-</div><!-- /container -->
+    </div>
+    </div>
 
     <script>
     (function(){
-    const rows = document.querySelectorAll(".js-row");
+    const listArea = document.getElementById("listArea");
+    const filterForm = document.getElementById("filterForm");
 
     const tableCol = document.getElementById("tableCol");
     const detailCol = document.getElementById("detailCol");
@@ -383,13 +291,28 @@
     const btnSave = document.getElementById("btnSave");
     const btnDelete = document.getElementById("btnDelete");
 
+    function buildQuery(extra){
+        const fd = new FormData(filterForm);
+        const params = new URLSearchParams(fd);
+        params.set("partial", "1");
+        if (extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
+        return params.toString();
+    }
+
     function clearActive(){
-        rows.forEach(r => r.classList.remove("table-active"));
+        listArea.querySelectorAll(".js-row.table-active")
+        .forEach(r => r.classList.remove("table-active"));
     }
 
     function setButtons(enabled){
         btnSave.disabled = !enabled;
         btnDelete.disabled = !enabled;
+    }
+
+    function openDetail(){
+        detailCol.classList.remove("d-none");
+        tableCol.classList.remove("col-12");
+        tableCol.classList.add("col-8");
     }
 
     function resetDetail(){
@@ -403,12 +326,7 @@
         dIsActive.value = "true";
         dHandlingType.value = "block";
         setButtons(false);
-    }
-
-    function openDetail(){
-        detailCol.classList.remove("d-none");
-        tableCol.classList.remove("col-12");
-        tableCol.classList.add("col-8");
+        window.__selectedPolicyId = null;
     }
 
     function closeDetail(){
@@ -417,11 +335,40 @@
         tableCol.classList.add("col-12");
         clearActive();
         resetDetail();
-        window.__selectedPolicyId = null;
     }
 
-    rows.forEach(row => {
-        row.addEventListener("click", () => {
+    async function loadPage(page){
+        const qs = buildQuery({ page });
+        const url = `${window.location.pathname}?${qs}`;
+
+        const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+        if(!res.ok) throw new Error("load failed");
+        listArea.innerHTML = await res.text();
+
+        // 페이지 바뀌면 선택 초기화(원하면 유지로 바꿀 수 있음)
+        closeDetail();
+
+        const fullUrl = `${window.location.pathname}?${buildQuery({page}).replace("&partial=1","")}`;
+        window.history.replaceState({}, "", fullUrl);
+    }
+
+    filterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loadPage(1).catch(console.error);
+    });
+
+    // ✅ 이벤트 위임: 페이징 + row 클릭
+    listArea.addEventListener("click", (e) => {
+        const pageLink = e.target.closest("a[data-page]");
+        if(pageLink){
+        e.preventDefault();
+        loadPage(pageLink.dataset.page).catch(console.error);
+        return;
+        }
+
+        const row = e.target.closest("tr.js-row");
+        if(!row) return;
+
         const data = row.dataset;
         const policyId = data.id;
 
@@ -441,17 +388,14 @@
         dIsActive.value = (data.isActive === "true") ? "true" : "false";
         dHandlingType.value = data.handlingType || "block";
 
-        // ✅ 업데이트/삭제 action을 “선택된 id”로 동적 설정
-        updateForm.action = `/policy/update/${policyId}/`;
-        deleteForm.action = `/policy/delete/${policyId}/`;
+        updateForm.action = data.updateUrl;
+        deleteForm.action = data.deleteUrl;
 
         setButtons(true);
-        });
     });
 
     detailCloseBtn.addEventListener("click", closeDetail);
 
-    // ✅ 삭제 버튼 → confirm 후 delete form submit
     btnDelete.addEventListener("click", () => {
         const policyId = window.__selectedPolicyId;
         if (!policyId) return;
@@ -460,6 +404,7 @@
         deleteForm.submit();
     });
 
+    // 초기 상태
     resetDetail();
     })();
 </script>

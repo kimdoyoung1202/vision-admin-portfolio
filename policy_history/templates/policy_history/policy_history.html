@@ -224,7 +224,7 @@
                 <td class="text-end">
                     <form method="post"
                         action="{% url 'policy_history:restore' h.policy_id %}"
-                        onsubmit="return confirm('복구할까요? (정책이 다시 활성 목록에 추가됩니다)');">
+                        onsubmit="return confirm('정말 복구하시겠습니까?');">
                     {% csrf_token %}
                     <button class="btn btn-sm btn-outline-success" type="submit">복구</button>
                     </form>

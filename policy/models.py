@@ -22,6 +22,8 @@ class Policy(models.Model):
     
     create_at = models.DateTimeField()
     
+    is_deleted = models.BooleanField(default=False)
+    
     
     class Meta:
         managed = False

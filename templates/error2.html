@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>접속이 제한되었습니다</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel: rgba(255,255,255,.06);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --line: rgba(255,255,255,.14);
+      --danger:#ff4d6d;
+      --warn:#ffb020;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", Arial, "Malgun Gothic", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      min-height:100svh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,77,109,.25), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(77,225,193,.18), transparent 55%),
+        radial-gradient(1000px 700px at 60% 90%, rgba(255,176,32,.14), transparent 55%),
+        linear-gradient(180deg, #070b14, var(--bg));
+    }
+    .card{
+      width:min(820px, 100%);
+      background: linear-gradient(180deg, var(--panel), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .header{
+      padding:18px 20px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      gap:14px;
+      background: linear-gradient(90deg, rgba(255,77,109,.12), rgba(255,255,255,.02));
+    }
+    .badge{
+      width:44px;height:44px;border-radius:14px;
+      display:grid;place-items:center;
+      background: rgba(255,77,109,.18);
+      border:1px solid rgba(255,77,109,.35);
+    }
+    .badge svg{width:22px;height:22px}
+    .title h1{margin:0;font-size:20px;letter-spacing:-.2px}
+    .title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .body{ padding:18px 20px 20px; }
+
+    .alert{
+      display:flex;gap:12px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid rgba(255,176,32,.35);
+      background: rgba(255,176,32,.10);
+      margin-bottom:14px;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: var(--warn);
+      margin-top:6px;
+      box-shadow: 0 0 0 6px rgba(255,176,32,.18);
+      flex:0 0 auto;
+    }
+    .alert h2{margin:0;font-size:15px}
+    .alert p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .kv{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .v{
+      font-size:13px;font-family: var(--mono);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+
+    .actions{
+      display:flex;flex-wrap:wrap;gap:10px;
+      margin-top:16px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.22); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(255,77,109,.42);
+      background: rgba(255,77,109,.14);
+    }
+    .btn.primary:hover{
+      background: rgba(255,77,109,.20);
+      border-color: rgba(255,77,109,.55);
+    }
+
+    .footer{
+      margin-top:14px;
+      padding-top:14px;
+      border-top:1px solid var(--line);
+      color: rgba(255,255,255,.55);
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      font-size:12px;color: rgba(255,255,255,.75);
+      font-family: var(--mono);
+    }
+    .pill .s{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--danger);
+      box-shadow: 0 0 0 5px rgba(255,77,109,.14);
+    }
+    .mini-note{color:rgba(255,255,255,.55)}
+    @media (max-width: 720px){
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <section class="card" aria-label="차단 안내">
+    <div class="header">
+      <div class="badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z" stroke="rgba(255,255,255,.9)" stroke-width="1.8"/>
+          <path d="M8.5 12.2l2.3 2.4 4.8-5" stroke="rgba(255,255,255,.9)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="title">
+        <h1>접속이 제한되었습니다</h1>
+        <p>보안 정책에 따라 요청하신 페이지 접근이 차단되었습니다.</p>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="alert" role="alert">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <h2 id="reasonTitle">차단 사유: 유해/위험 콘텐츠 의심</h2>
+          <p>정상 사이트인데도 차단되었다면 “차단 해제 요청”으로 URL과 사용 목적을 남겨주세요.</p>
+        </div>
+      </div>
+
+      <div class="grid" aria-label="요청 정보">
+        <div class="kv"><div class="k">요청 URL</div><div class="v" id="vUrl">-</div></div>
+        <div class="kv"><div class="k">카테고리</div><div class="v" id="vCategory">-</div></div>
+        <div class="kv"><div class="k">차단 시각</div><div class="v" id="vTime">-</div></div>
+        <div class="kv"><div class="k">요청 ID</div><div class="v" id="vReqId">-</div></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnBack" type="button">← 이전 페이지</button>
+        <a class="btn" id="btnHome" href="/">⌂ 홈으로</a>
+        <button class="btn" id="btnCopy" type="button">⧉ 정보 복사</button>
+        <a class="btn" id="btnRequest" href="#">✉ 차단 해제 요청</a>
+      </div>
+
+      <div class="footer">
+        <div class="pill"><span class="s" aria-hidden="true"></span><span id="vStatus">BLOCKED</span></div>
+        <div class="mini-note">본 화면은 서비스 자체 안내 페이지입니다. (기관/정부 안내를 모방하지 않음)</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const qs = new URLSearchParams(location.search);
+    const safeText = (s, max=180) => {
+      if (!s) return "-";
+      s = String(s).replace(/\s+/g," ").trim();
+      if (s.length > max) s = s.slice(0, max-1) + "…";
+      return s;
+    };
+
+    const url = qs.get("url") || qs.get("u");
+    const category = qs.get("category") || qs.get("c") || "Policy";
+    const reason = qs.get("reason") || qs.get("r") || "유해/위험 콘텐츠 의심";
+    const reqId = qs.get("req") || qs.get("id") || ("REQ-" + Date.now());
+    const status = qs.get("status") || "BLOCKED";
+
+    document.getElementById("vUrl").textContent = safeText(url);
+    document.getElementById("vCategory").textContent = safeText(category, 60);
+    document.getElementById("vReqId").textContent = safeText(reqId, 80);
+    document.getElementById("vStatus").textContent = safeText(status, 20);
+    document.getElementById("reasonTitle").textContent = "차단 사유: " + safeText(reason, 80);
+
+    const now = new Date();
+    const pad = (n)=> String(n).padStart(2,"0");
+    const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    document.getElementById("vTime").textContent = ts;
+
+    document.getElementById("btnBack").addEventListener("click", () => history.length > 1 ? history.back() : location.href="/");
+
+    document.getElementById("btnCopy").addEventListener("click", async () => {
+      const payload =
+`[Access Blocked]
+URL: ${safeText(url)}
+Category: ${safeText(category)}
+Reason: ${safeText(reason)}
+Time: ${ts}
+RequestId: ${safeText(reqId)}
+Status: ${safeText(status)}`;
+      try{ await navigator.clipboard.writeText(payload); alert("요청 정보가 클립보드에 복사되었습니다."); }
+      catch(e){ prompt("복사되지 않으면 아래 내용을 직접 복사하세요:", payload); }
+    });
+
+    const mailTo = "mailto:security@your-company.example"
+      + "?subject=" + encodeURIComponent("[차단 해제 요청] " + safeText(reqId))
+      + "&body=" + encodeURIComponent(
+        `요청 ID: ${safeText(reqId)}\n차단 URL: ${safeText(url)}\n카테고리: ${safeText(category)}\n사유: ${safeText(reason)}\n발생 시각: ${ts}\n\n(사용 목적을 여기에 적어주세요)`
+      );
+    document.getElementById("btnRequest").href = mailTo;
+  </script>
+</body>
+</html>

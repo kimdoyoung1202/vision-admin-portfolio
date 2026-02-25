@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'policy_history',
     'intergrated_detection_logs',
     'ai_analysis_result',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.LoginRequiredMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -117,9 +119,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -134,3 +136,27 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
+
+LOGIN_EXEMPT_URLS = [
+    r"^login/$",
+    r"^admin/",   # Django admin 로그인은 열어둠 (선택)
+]
+
+#로그인 타임아웃
+# 세션 유지 시간 (초)
+#SESSION_COOKIE_AGE = 600   # 10분 = 600초
+
+# 요청이 있을 때마다 세션 만료시간 갱신
+#SESSION_SAVE_EVERY_REQUEST = True
+
+# 브라우저 종료 시 세션 삭제
+#SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+
+ENGINE_RELOAD_HOST = "192.168.1.43"   
+ENGINE_RELOAD_PORT = 5555
+ENGINE_RELOAD_TIMEOUT = 2.0

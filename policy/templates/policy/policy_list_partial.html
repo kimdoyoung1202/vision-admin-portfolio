@@ -1,0 +1,82 @@
+{# templates/policy/_policy_list_partial.html #}
+
+<style>
+  /* ✅ 테이블 행/글자 줄여서 한 화면에 맞추기 */
+    #policyTable th, #policyTable td{
+        padding-top: 8px;
+        padding-bottom: 8px;
+        font-size: .92rem;
+    }
+    #policyTable thead th{ font-weight: 900; }
+    .policy-pager{ margin-top: 6px !important; height: 44px; }
+    </style>
+
+    <div id="tableViewport" class="text-nowrap">
+    <table class="table table-hover align-middle mb-0" id="policyTable">
+        <thead>
+        <tr>
+            <th style="width:90px;">정책 ID</th>
+            <th style="width:110px;">정책 타입</th>
+            <th style="width:220px;">정책 이름</th>
+            <th>정책 URL/패턴</th>
+            <th class="text-center" style="width:90px;">적용</th>
+            <th class="text-center" style="width:110px;">처리 유형</th>
+            <th style="width:120px;">추가자</th>
+            <th style="width:170px;">추가 시간</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for p in page_obj %}
+        <tr class="js-row" style="cursor:pointer;"
+            data-id="{{ p.policy_id }}"
+            data-update-url="{% url 'policy:update' p.policy_id %}"
+            data-delete-url="{% url 'policy:delete' p.policy_id %}"
+            data-policy-type="{{ p.policy_type|default:'' }}"
+            data-policy-name="{{ p.policy_name|default:'' }}"
+            data-content="{{ p.content|default:'' }}"
+            data-is-active="{% if p.is_active %}true{% else %}false{% endif %}"
+            data-handling-type="{{ p.handling_type|default:'' }}"
+            data-create-by="{{ p.create_by|default:'' }}"
+            data-create-at="{% if p.create_at %}{{ p.create_at|date:'Y-m-d H:i' }}{% endif %}"
+            data-description="{{ p.description|default:'' }}"
+        >
+            <td class="fw-semibold">{{ p.policy_id }}</td>
+            <td>{{ p.policy_type }}</td>
+            <td class="cell-truncate-sm">{{ p.policy_name }}</td>
+            <td class="cell-truncate">{{ p.content }}</td>
+            <td class="text-center">{% if p.is_active %}적용{% else %}미적용{% endif %}</td>
+            <td class="text-center">{{ p.handling_type|default:"-" }}</td>
+            <td>{{ p.create_by|default:"-" }}</td>
+            <td>{% if p.create_at %}{{ p.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-3">조회 결과가 없습니다.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center policy-pager">
+    <div class="text-muted">
+        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+    </div>
+
+    <nav>
+        <ul class="pagination mb-0">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">이전</span></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">다음</span></li>
+        {% endif %}
+        </ul>
+    </nav>
+</div>

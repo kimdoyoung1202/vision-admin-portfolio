@@ -18,19 +18,20 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
+from .views_auth import login_view, logout_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
     # ✅ 임시 대시보드
-    path("", TemplateView.as_view(template_name="dashboard.html"), name="dashboard"),
+    path("", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
 
-    # ✅ 로그아웃 (auth 미들웨어/앱이 settings에 있어야 함)
-    path("logout/", auth_views.LogoutView.as_view(next_page="/"), name="logout"),
+    path("login/", login_view, name="login"),
+    path("logout/", logout_view, name="logout"),
 
     # ✅ 각 앱 임시 페이지
     path("policy/", include("policy.urls")),
     path("policy-history/", include("policy_history.urls")),
-    path("ai/", include("ai_analysis_result.urls")),
-    path("logs/", include("intergrated_detection_logs.urls")),
+    path("ai/", include("ai_analysis_result.urls"), name="ai"),
+    path("logs/", include("intergrated_detection_logs.urls"), name="logs"),
 ]
