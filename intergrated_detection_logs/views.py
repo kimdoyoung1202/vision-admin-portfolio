@@ -87,8 +87,7 @@ def logs_list(request):
     # 최신순
     qs = qs.order_by("-create_at", "-id")
 
-    # 페이지네이션 (최초 30개)
-    paginator = Paginator(qs, 30)
+    paginator = Paginator(qs, 10)
     page_number = request.GET.get("page", "1")
     page_obj = paginator.get_page(page_number)
 

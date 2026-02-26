@@ -2,195 +2,283 @@
 {% load static %}
 
 {% block page_title %}AI 기록관{% endblock %}
-{% block page_subtitle %}FastAPI 결과/로그 조회 (기본 15개 · 변경 가능){% endblock %}
+{% block page_subtitle %}FastAPI 결과/로그 조회 (기본 12개 · 변경 가능){% endblock %}
 
 {% block extra_css %}
-    <style>
-    .table .form-select.form-select-sm{
-        border-radius:10px;
-        padding:.35rem 2rem .35rem .75rem;
-        font-weight:600;
+<style>
+    /* =========================
+        ✅ 이 페이지(기록관)만 한 화면 고정
+        ========================= */
+    :root{
+        --topbarH: 64px;          /* base 상단바 높이 */
+        --gap: 10px;
+
+        --filterH: 150px;         /* 필터 카드 높이(대략) */
+        --headerRowH: 40px;       /* 테이블 상단 정렬 버튼 줄 */
+        --pagerH: 48px;           /* 페이징 줄 높이 */
+        --theadH: 42px;           /* 테이블 헤더 높이 */
+        --rowH: 38px;             /* ✅ 12개 행 높이 */
     }
-    .btn.btn-sm{ border-radius:10px; font-weight:700; }
+
+    .ai-rec-page{
+        height: calc(100vh - var(--topbarH));
+        overflow: hidden;
+        display:flex;
+        flex-direction:column;
+    }
+    .ai-rec-wrap{
+        flex:1;
+        overflow:hidden;
+        padding: 8px 18px !important;
+        display:flex;
+        flex-direction:column;
+        gap: var(--gap);
+    }
+
+    /* container-p-y 과한 패딩 상쇄 */
+    .ai-rec-wrap.container-p-y{ padding-top: 8px !important; padding-bottom: 8px !important; }
+
+    /* =========================
+        필터 압축
+        ========================= */
+    .filter-card .card-body{ padding: 10px 12px 8px; }
+    .filter-grid .form-label{ font-weight:900; font-size:.82rem; margin-bottom:4px; line-height:1.1; }
+    .filter-grid .form-control,
+    .filter-grid .form-select{
+        height: 34px;
+        min-height: 34px;
+        padding: .32rem .6rem;
+        border-radius: 10px;
+        font-weight: 700;
+    }
+    .btn.btn-sm{ border-radius:10px; font-weight:800; }
+    .filter-grid .btn{ height:34px; padding:.42rem 1rem; font-weight:900; border-radius:10px; }
+
+    .date-range{ width:100%; }
+    .date-range input{ width:100%; min-width:0 !important; }
+
+    .input-tight{ width:100%; min-width:0; }
+
+    /* =========================
+        워크스페이스(테이블+상세)
+        ========================= */
+    .workspace{
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+    }
+    #tableCol, #detailCol{ height:100%; min-height:0; }
+    .workspace-card{
+        height:100%;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+    }
+    .workspace-card .card-body{
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        padding: 10px 12px;
+    }
+
+    /* 상단 버튼줄 */
+    .table-topbar{
+        flex:0 0 auto;
+        height: var(--headerRowH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:6px;
+    }
+
+    /* =========================
+        테이블: 12행 고정 렌더링
+        ========================= */
+    .table-viewport{
+        flex:0 0 auto;
+        height: calc(var(--theadH) + (12 * var(--rowH)));
+        overflow:hidden; /* ✅ 내부 스크롤 금지 */
+        border-radius: 10px;
+    }
+    table#aiTable thead tr{ height: var(--theadH); }
+    table#aiTable tbody tr{ height: var(--rowH); }
+    table#aiTable th, table#aiTable td{
+        padding-top: 6px;
+        padding-bottom: 6px;
+        font-size: .90rem;
+        vertical-align: middle;
+    }
+    table#aiTable thead th{ font-weight: 900; }
 
     .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* 필터 영역 보정 */
-    .filter-grid .form-label{ font-weight:700; }
-    .filter-grid .form-control,
-    .filter-grid .form-select{ min-height: 40px; }
-
-    /* 날짜 범위가 부모 col 안에서만 움직이게 */
-    .date-range{ width:100%; }
-    .date-range input{
-        width:100%;
-        min-width:0 !important;
+    /* 페이지네이션 */
+    .pager{
+        flex:0 0 auto;
+        height: var(--pagerH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-top:6px;
     }
+    .pagination{ margin-bottom:0 !important; }
 
-    /* 작성자 / 검토여부 안정화 */
-    .input-tight{
-        width:100%;
-        min-width:0;
+    /* =========================
+        상세 패널 압축
+        ========================= */
+    #detailCol .card-body{ padding: 10px 12px; }
+    #detailCol .table-sm td, #detailCol .table-sm th{
+        padding: 6px 8px;
+        font-size: .90rem;
+    }
+    #detailCol .badge{ font-weight:900; }
+
+    /* 상세 정보가 길어져도 패널 내에서만 */
+    .detail-scroll{
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+    }
+    .detail-table-wrap{
+        flex:1;
+        min-height:0;
+        overflow:auto; /* ✅ 상세만 스크롤(필요할 때만) */
     }
     </style>
     {% endblock %}
 
     {% block content %}
-    <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="ai-rec-page">
+    <div class="container-fluid ai-rec-wrap container-p-y">
 
-    <!-- =======================
-        필터 카드
-    ======================== -->
-    <div class="card mb-3">
+        <!-- =======================
+            필터 카드
+            ======================= -->
+        <div class="card filter-card">
         <div class="card-body">
-        <form method="get" class="row g-3 align-items-end filter-grid">
-
-            <!-- 1행: URL/도메인 / 판단결과 / 로그시간 / 관리자검토여부 -->
+            <form method="get" class="row g-2 align-items-end filter-grid">
+            <!-- 1행 -->
             <div class="col-4">
-            <label class="form-label">URL/도메인</label>
-            <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력 :">
+                <label class="form-label">URL/도메인</label>
+                <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력 :">
             </div>
 
             <div class="col-2">
-            <label class="form-label">판단 결과</label>
-            <select class="form-select" name="ai_judgment">
+                <label class="form-label">판단 결과</label>
+                <select class="form-select" name="ai_judgment">
                 <option value="" {% if filters.ai_judgment == "" %}selected{% endif %}>선택</option>
                 <option value="Harmful" {% if filters.ai_judgment == "Harmful" %}selected{% endif %}>Harmful</option>
                 <option value="Not harm" {% if filters.ai_judgment == "Not harm" %}selected{% endif %}>Not harm</option>
-            </select>
+                </select>
             </div>
 
             <div class="col-4">
-            <label class="form-label">로그 시간</label>
-            <div class="d-flex gap-2 date-range">
+                <label class="form-label">로그 시간</label>
+                <div class="d-flex gap-2 date-range">
                 <input class="form-control" type="date" name="log_start" value="{{ filters.log_start }}">
                 <div class="d-flex align-items-center text-muted">~</div>
                 <input class="form-control" type="date" name="log_end" value="{{ filters.log_end }}">
-            </div>
-            </div>
-
-            <div class="col-2">
-            <label class="form-label">관리자 검토 여부</label>
-            <select class="form-select input-tight" name="is_checked" id="isCheckedSelect">
-                {# ✅ 디폴트는 미검토(false)로 보이게 #}
-                <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
-                <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
-            </select>
-            </div>
-
-            <!-- 2행: 관리자검토결과 / 정책타입 / 정책추가시간 / 작성자 / 조회+초기화 -->
-            <div class="col-2">
-            <label class="form-label">관리자 검토 결과</label>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-success w-50" id="btnAdd">추가</button>
-                <button type="button" class="btn btn-outline-secondary w-50" id="btnIgnore">무시</button>
-            </div>
-            <input type="hidden" name="checked_result" id="checkedResultHidden" value="{{ filters.checked_result }}">
-            </div>
-
-            <div class="col-2">
-            <label class="form-label">정책 타입</label>
-            <select class="form-select input-tight" name="policy_type" id="policyTypeSelect">
-                <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
-                <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
-                <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
-            </select>
-            </div>
-
-            <div class="col-3">
-            <label class="form-label">정책 추가 시간</label>
-            <div class="d-flex gap-2 date-range">
-                <input class="form-control" type="date" name="applied_start" value="{{ filters.applied_start }}" id="appliedStart">
-                <div class="d-flex align-items-center text-muted">~</div>
-                <input class="form-control" type="date" name="applied_end" value="{{ filters.applied_end }}" id="appliedEnd">
-            </div>
-            </div>
-
-            <div class="col-2">
-            <label class="form-label">작성자</label>
-            <input class="form-control input-tight" name="admin" value="{{ filters.admin }}" placeholder="입력 :" id="adminInput">
-            </div>
-
-            <div class="col-3 d-flex gap-2 align-items-end">
-            <button class="btn btn-primary w-50" type="submit">조회</button>
-            <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
-            </div>
-
-            <input type="hidden" name="sort" value="{{ filters.sort }}">
-            <input type="hidden" name="per_page" value="{{ filters.per_page }}">
-
-        </form>
-        </div>
-    </div>
-
-    <!-- =======================
-        테이블 + 상세 패널
-    ======================= -->
-    <div class="row g-3">
-
-        <!-- 왼쪽: 테이블 -->
-        <div class="col-12" id="tableCol">
-        <div class="card">
-            <div class="card-body">
-
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="text-muted">조회 : {{ page_obj.paginator.count }}건</div>
-
-                <div class="d-flex gap-2">
-                <a class="btn btn-outline-success btn-sm"
-                    href="?page=1
-                    &q={{ filters.q }}
-                    &checked_result={{ filters.checked_result }}
-                    &is_checked={{ filters.is_checked }}
-                    &checked_result={{ filters.checked_result }}
-                    &policy_type={{ filters.policy_type }}
-                    &admin={{ filters.admin }}
-                    &log_start={{ filters.log_start }}
-                    &log_end={{ filters.log_end }}
-                    &applied_start={{ filters.applied_start }}
-                    &applied_end={{ filters.applied_end }}
-                    &sort=confidence
-                    &per_page={{ filters.per_page }}
-                    ">유해확률순</a>
-
-                <a class="btn btn-outline-secondary btn-sm"
-                    href="?page=1
-                    &q={{ filters.q }}
-                    &checked_result={{ filters.checked_result }}
-                    &is_checked={{ filters.is_checked }}
-                    &checked_result={{ filters.checked_result }}
-                    &policy_type={{ filters.policy_type }}
-                    &admin={{ filters.admin }}
-                    &log_start={{ filters.log_start }}
-                    &log_end={{ filters.log_end }}
-                    &applied_start={{ filters.applied_start }}
-                    &applied_end={{ filters.applied_end }}
-                    &sort=latest
-                    &per_page={{ filters.per_page }}
-                    ">최신순</a>
                 </div>
             </div>
 
-            <div class="table-responsive text-nowrap">
-                <table class="table table-hover align-middle" id="aiTable">
-                <thead>
-                    <tr>
-                    <th style="width:70px;">no</th>
-                    <th>도메인</th>
-                    <th>AI판단 결과</th>
-                    <th class="text-center">판단 확률</th>
-                    <th class="text-center">관리자 검토 결과</th>
-                    <th class="text-center">정책 타입</th>
-                    <th class="text-center">정책 추가 시간</th>
-                    <th class="text-center">AI결과 로그 시간</th>
-                    <th class="text-center">검토 여부</th>
-                    <th class="text-center">작성자</th>
-                    </tr>
-                </thead>
+            <div class="col-2">
+                <label class="form-label">관리자 검토 여부</label>
+                <select class="form-select input-tight" name="is_checked" id="isCheckedSelect">
+                <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
+                <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
+                </select>
+            </div>
 
-                <tbody>
-                {% for row in page_obj %}
+            <!-- 2행 -->
+            <div class="col-2">
+                <label class="form-label">관리자 검토 결과</label>
+                <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-success w-50" id="btnAdd">추가</button>
+                <button type="button" class="btn btn-outline-secondary w-50" id="btnIgnore">무시</button>
+                </div>
+                <input type="hidden" name="checked_result" id="checkedResultHidden" value="{{ filters.checked_result }}">
+            </div>
+
+            <div class="col-2">
+                <label class="form-label">정책 타입</label>
+                <select class="form-select input-tight" name="policy_type" id="policyTypeSelect">
+                <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
+                <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
+                <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
+                </select>
+            </div>
+
+            <div class="col-3">
+                <label class="form-label">정책 추가 시간</label>
+                <div class="d-flex gap-2 date-range">
+                <input class="form-control" type="date" name="applied_start" value="{{ filters.applied_start }}" id="appliedStart">
+                <div class="d-flex align-items-center text-muted">~</div>
+                <input class="form-control" type="date" name="applied_end" value="{{ filters.applied_end }}" id="appliedEnd">
+                </div>
+            </div>
+
+            <div class="col-2">
+                <label class="form-label">작성자</label>
+                <input class="form-control input-tight" name="admin" value="{{ filters.admin }}" placeholder="입력 :" id="adminInput">
+            </div>
+
+            <div class="col-3 d-flex gap-2 align-items-end">
+                <button class="btn btn-primary w-50" type="submit">조회</button>
+                <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
+            </div>
+
+            <input type="hidden" name="sort" value="{{ filters.sort }}">
+            {# ✅ 12개 고정 #}
+            <input type="hidden" name="per_page" value="12">
+            </form>
+        </div>
+        </div>
+
+        <!-- =======================
+            테이블 + 상세
+            ======================= -->
+        <div class="row g-2 workspace">
+
+        <!-- 왼쪽: 테이블 -->
+        <div class="col-12" id="tableCol">
+            <div class="card workspace-card">
+            <div class="card-body">
+
+                <div class="table-topbar">
+                <div class="text-muted">조회 : {{ page_obj.paginator.count }}건</div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-success btn-sm"
+                    href="?page=1&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort=confidence&per_page=12">유해확률순</a>
+
+                    <a class="btn btn-outline-secondary btn-sm"
+                    href="?page=1&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort=latest&per_page=12">최신순</a>
+                </div>
+                </div>
+
+                <div class="table-viewport table-responsive text-nowrap">
+                <table class="table table-hover align-middle mb-0" id="aiTable">
+                    <thead>
+                    <tr>
+                        <th style="width:70px;">no</th>
+                        <th>도메인</th>
+                        <th>AI판단 결과</th>
+                        <th class="text-center">판단 확률</th>
+                        <th class="text-center">관리자 검토 결과</th>
+                        <th class="text-center">정책 타입</th>
+                        <th class="text-center">정책 추가 시간</th>
+                        <th class="text-center">AI결과 로그 시간</th>
+                        <th class="text-center">검토 여부</th>
+                        <th class="text-center">작성자</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for row in page_obj %}
                     <tr class="js-row" style="cursor:pointer;"
                         data-id="{{ row.id }}"
                         data-domain="{{ row.domain|default:'' }}"
@@ -202,148 +290,117 @@
                         data-applied-at="{% if row.applied_at %}{{ row.applied_at|date:'Y-m-d H:i' }}{% endif %}"
                         data-create-at="{% if row.create_at %}{{ row.create_at|date:'Y-m-d H:i' }}{% endif %}"
                         data-admin="{{ row.admin|default:'' }}"
+                        {# ✅ 상세 스크립트가 읽는 키들 추가 #}
+                        data-ai-result="{% if row.confidence_score is not None %}{% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}{% else %}-{% endif %}"
+                        data-checked-result-hidden="{{ row.checked_result|default:'' }}"
                     >
-                    <td class="fw-semibold">{{ row.id }}</td>
-                    <td class="cell-truncate-sm">{{ row.domain }}</td>
-                    <td>
+                        <td class="fw-semibold">{{ row.id }}</td>
+                        <td class="cell-truncate-sm">{{ row.domain }}</td>
+                        <td>
                         {% if row.confidence_score is not None %}
-                            {% if row.confidence_score >= 50 %}
-                                Harmful
-                            {% else %}
-                                Not harm
-                            {% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        {% if row.confidence_score is not None %}{{ row.confidence_score }}%{% else %}-{% endif %}
-                    </td>
-                    <td class="text-center">{{ row.checked_result|default:"-" }}</td>
-                    <td class="text-center">{{ row.policy_type|default:"-" }}</td>
-                    <td class="text-center">{% if row.applied_at %}{{ row.applied_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
-                    <td class="text-center">{% if row.create_at %}{{ row.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
-                    <td class="text-center">{% if row.is_checked %}검토됨{% else %}미검토{% endif %}</td>
-                    <td class="text-center">{{ row.admin|default:"-" }}</td>
+                            {% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}
+                        {% else %}-{% endif %}
+                        </td>
+                        <td class="text-center">{% if row.confidence_score is not None %}{{ row.confidence_score }}%{% else %}-{% endif %}</td>
+                        <td class="text-center">{{ row.checked_result|default:"-" }}</td>
+                        <td class="text-center">{{ row.policy_type|default:"-" }}</td>
+                        <td class="text-center">{% if row.applied_at %}{{ row.applied_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+                        <td class="text-center">{% if row.create_at %}{{ row.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+                        <td class="text-center">{% if row.is_checked %}검토됨{% else %}미검토{% endif %}</td>
+                        <td class="text-center">{{ row.admin|default:"-" }}</td>
                     </tr>
-                {% empty %}
-                    <tr>
-                    <td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td></tr>
+                    {% endfor %}
+                    </tbody>
                 </table>
-            </div>
+                </div>
 
-            <!-- 페이지네이션 -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="pager">
                 <div class="text-muted">
-                총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+                    총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
                 </div>
 
                 <nav>
-                <ul class="pagination mb-0">
+                    <ul class="pagination mb-0">
                     {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}
-                        &q={{ filters.q }}
-                        &checked_result={{ filters.checked_result }}
-                        &is_checked={{ filters.is_checked }}
-                        &checked_result={{ filters.checked_result }}
-                        &policy_type={{ filters.policy_type }}
-                        &admin={{ filters.admin }}
-                        &log_start={{ filters.log_start }}
-                        &log_end={{ filters.log_end }}
-                        &applied_start={{ filters.applied_start }}
-                        &applied_end={{ filters.applied_end }}
-                        &sort={{ filters.sort }}
-                        &per_page={{ filters.per_page }}
-                        ">이전</a>
-                    </li>
+                        <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort={{ filters.sort }}&per_page=12">이전</a>
+                        </li>
                     {% else %}
-                    <li class="page-item disabled"><span class="page-link">이전</span></li>
+                        <li class="page-item disabled"><span class="page-link">이전</span></li>
                     {% endif %}
 
                     <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
 
                     {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}
-                        &q={{ filters.q }}
-                        &checked_result={{ filters.checked_result }}
-                        &is_checked={{ filters.is_checked }}
-                        &checked_result={{ filters.checked_result }}
-                        &policy_type={{ filters.policy_type }}
-                        &admin={{ filters.admin }}
-                        &log_start={{ filters.log_start }}
-                        &log_end={{ filters.log_end }}
-                        &applied_start={{ filters.applied_start }}
-                        &applied_end={{ filters.applied_end }}
-                        &sort={{ filters.sort }}
-                        &per_page={{ filters.per_page }}
-                        ">다음</a>
-                    </li>
+                        <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort={{ filters.sort }}&per_page=12">다음</a>
+                        </li>
                     {% else %}
-                    <li class="page-item disabled"><span class="page-link">다음</span></li>
+                        <li class="page-item disabled"><span class="page-link">다음</span></li>
                     {% endif %}
-                </ul>
+                    </ul>
                 </nav>
-            </div>
+                </div>
 
             </div>
-        </div>
+            </div>
         </div>
 
         <!-- 오른쪽: 상세 패널 -->
         <div class="col-4 d-none" id="detailCol">
-        <div class="card">
+            <div class="card workspace-card">
             <div class="card-body">
 
-            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="mb-0 fw-bold">상세 정보</h6>
                 <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                    <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
                 </div>
+                </div>
+
+                <hr class="my-2">
+                <div class="small text-muted fw-bold mb-2">선택한 AI 로그 1건의 상세정보가 표시됩니다</div>
+
+                <div class="detail-scroll">
+                <div class="detail-table-wrap table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        <tr><th class="text-muted" style="width:120px;">URL</th><td id="dRequestUrl">-</td></tr>
+                        <tr><th class="text-muted">도메인</th><td id="dDomain">-</td></tr>
+                        <tr><th class="text-muted">AI판단</th><td id="dAiResult">-</td></tr>
+                        <tr><th class="text-muted">확률</th><td id="dConfidence">-</td></tr>
+                        <tr><th class="text-muted">검토 여부</th><td id="dIsChecked">-</td></tr>
+                        <tr><th class="text-muted">검토 결과</th><td id="dcheckedResultHidden">-</td></tr>
+                        <tr><th class="text-muted">정책 타입</th><td id="dPolicyType">-</td></tr>
+                        <tr><th class="text-muted">정책 추가시간</th><td id="dAppliedAt">-</td></tr>
+                        <tr><th class="text-muted">로그시간</th><td id="dCreateAt">-</td></tr>
+                        <tr><th class="text-muted">작성자</th><td id="dAdmin">-</td></tr>
+                    </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-outline-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
+                    <button class="btn btn-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
+                </div>
+                </div>
+
             </div>
-
-            <hr class="my-2">
-
-            <div class="small text-muted fw-bold mb-2">선택한 AI 로그 1건의 상세정보가 표시됩니다</div>
-
-            <div class="table-responsive">
-                <table class="table table-sm align-middle">
-                <tbody>
-                    <tr><th class="text-muted" style="width:120px;">URL</th><td id="dRequestUrl">-</td></tr>
-                    <tr><th class="text-muted">도메인</th><td id="dDomain">-</td></tr>
-                    <tr><th class="text-muted">AI판단</th><td id="dAiResult">-</td></tr>
-                    <tr><th class="text-muted">확률</th><td id="dConfidence">-</td></tr>
-                    <tr><th class="text-muted">검토 여부</th><td id="dIsChecked">-</td></tr>
-                    <tr><th class="text-muted">검토 결과</th><td id="dcheckedResultHidden">-</td></tr>
-                    <tr><th class="text-muted">정책 타입</th><td id="dPolicyType">-</td></tr>
-                    <tr><th class="text-muted">정책 추가시간</th><td id="dAppliedAt">-</td></tr>
-                    <tr><th class="text-muted">로그시간</th><td id="dCreateAt">-</td></tr>
-                    <tr><th class="text-muted">작성자</th><td id="dAdmin">-</td></tr>
-                </tbody>
-                </table>
-            </div>
-
-            <div class="d-flex gap-2 mt-2">
-                <button class="btn btn-outline-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
-                <button class="btn btn-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
-            </div>
-
             </div>
         </div>
-        </div>
 
-    </div><!-- /row -->
+        </div><!-- /workspace -->
 
-    </div><!-- /container -->
+    </div>
+    </div>
 
     <script>
     (function(){
-    // ===== row 선택/상세패널 =====
     const rows = document.querySelectorAll(".js-row");
 
     const tableCol = document.getElementById("tableCol");
@@ -368,12 +425,10 @@
     function clearActive(){
         rows.forEach(r => r.classList.remove("table-active"));
     }
-
     function setDetailButtonsEnabled(enabled){
         btnIgnoreDetail.disabled = !enabled;
         btnAddPolicyDetail.disabled = !enabled;
     }
-
     function resetDetail(){
         badge.textContent = "선택 없음";
         dRequestUrl.textContent = "-";
@@ -428,8 +483,9 @@
 
     setDetailButtonsEnabled(false);
     })();
-</script>
-<script>
+    </script>
+
+    <script>
     (function(){
     const isCheckedSelect = document.getElementById("isCheckedSelect");
     const btnAdd = document.getElementById("btnAdd");
@@ -441,40 +497,33 @@
     const appliedEnd = document.getElementById("appliedEnd");
     const adminInput = document.getElementById("adminInput");
 
-    function syncButtons(){
-    const v = checkedResultHidden.value;
-    btnAdd.classList.toggle("btn-success", v === "ADD");
-    btnIgnore.classList.toggle("btn-secondary", v === "IGNORE");
-    }
-
     function setEnabled(){
-    const reviewed = (isCheckedSelect.value === "true");
+        const reviewed = (isCheckedSelect.value === "true");
 
-    btnAdd.disabled = !reviewed;
-    btnIgnore.disabled = !reviewed;
-    if (adminInput) adminInput.disabled = !reviewed;
+        btnAdd.disabled = !reviewed;
+        btnIgnore.disabled = !reviewed;
+        if (adminInput) adminInput.disabled = !reviewed;
 
-    const policyEnabled = (reviewed && checkedResultHidden.value === "ADD");
-    policyTypeSelect.disabled = !policyEnabled;
-    appliedStart.disabled = !policyEnabled;
-    appliedEnd.disabled = !policyEnabled;
+        const policyEnabled = (reviewed && checkedResultHidden.value === "ADD");
+        policyTypeSelect.disabled = !policyEnabled;
+        appliedStart.disabled = !policyEnabled;
+        appliedEnd.disabled = !policyEnabled;
     }
 
     btnAdd.addEventListener("click", () => {
-    checkedResultHidden.value = "ADD";
-    setEnabled();
+        checkedResultHidden.value = "ADD";
+        setEnabled();
     });
 
     btnIgnore.addEventListener("click", () => {
-    checkedResultHidden.value = "IGNORE";
-    setEnabled();
+        checkedResultHidden.value = "IGNORE";
+        setEnabled();
     });
 
     isCheckedSelect.addEventListener("change", setEnabled);
-
     setEnabled();
     })();
-</script>
+    </script>
 
     <script>
     function getCookie(name){
@@ -500,7 +549,6 @@
     const btnIgnoreDetail = document.getElementById("btnIgnoreDetail");
     const btnAddPolicyDetail = document.getElementById("btnAddPolicyDetail");
 
-    // ✅ 무시: DB 업데이트
     btnIgnoreDetail?.addEventListener("click", async () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
@@ -510,11 +558,9 @@
         alert("무시 처리 실패");
         return;
         }
-        // 가장 안전: 새로고침으로 서버 데이터와 UI 동기화
         window.location.reload();
     });
 
-    // ✅ 추가: policy add로 이동 (id만 넘김)
     btnAddPolicyDetail?.addEventListener("click", () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
@@ -522,5 +568,5 @@
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
     })();
-    </script>
+</script>
 {% endblock %}

@@ -130,10 +130,10 @@
 
     /* 차트 캔버스 자체도 높이 축소 (height 속성과 같이 쓰면 더 안정적) */
     canvas{ max-height: 140px; }
-    </style>
+</style>
 
-    <!-- 1) Timeseries -->
-    <div class="row compact mb-compact">
+<!-- 1) Timeseries -->
+<div class="row compact mb-compact">
     <div class="col-12">
         <div class="card-sneat">
         <div class="d-flex align-items-center justify-content-between mb-1">
@@ -297,7 +297,6 @@
             </div>
         </div>
 
-
         <hr class="my-2">
 
         <div class="small">
@@ -316,6 +315,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script>
+    console.log("[dashboard] script loaded", new Date().toISOString(), "Chart=", typeof Chart);
+    </script>
+    
+    <script>
     (function(){
     const REFRESH_MS = 5000;
     const state = { ts:"day", dom:"day", rx:"day" };
@@ -331,23 +334,38 @@
     const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
     const kpiTotalAi = document.getElementById("kpiTotalAi");
 
+    // ✅ (수정) JSON 응답 여부 검사 + HTML(로그인 리다이렉트 등) 감지
     async function getJSON(url){
-        const res = await fetch(url, {credentials:"same-origin"});
-        if(!res.ok) throw new Error("API Error: " + res.status);
+        const res = await fetch(url, { credentials:"same-origin" });
+
+        if(!res.ok){
+        throw new Error(`API Error ${res.status} ${url}`);
+        }
+
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        if(!ct.includes("application/json")){
+        // 302/로그인페이지/에러 HTML 등일 확률 큼
+        const text = await res.text();
+        throw new Error(`Not JSON (${ct}) from ${url}. First 120 chars: ${text.slice(0,120)}`);
+        }
+
         return await res.json();
     }
 
+    // ✅ (수정) delta null/문자열 안전
     function fmtDelta(n){
-        const sign = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
-        return `${sign} ${Math.abs(n)}`;
+        const num = Number(n ?? 0);
+        const sign = num > 0 ? "▲" : (num < 0 ? "▼" : "•");
+        return `${sign} ${Math.abs(num)}`;
     }
 
     function wrapLabel(str, maxLen=18){
         if(!str) return "";
-        const words = str.split(".");
+        const words = String(str).split(".");
         let lines = [];
         let cur = "";
         words.forEach(w=>{
+        if(!w) return;
         if((cur + w).length > maxLen){
             if(cur) lines.push(cur);
             cur = w + ".";
@@ -359,7 +377,7 @@
         return lines;
     }
 
-    // Charts
+    // ✅ (권장) Chart.js: maintainAspectRatio false로 캔버스 높이 안정화
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
         type: "bar",
         data: {
@@ -372,6 +390,7 @@
         },
         options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { position: "top" } },
         scales: { y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
         }
@@ -383,6 +402,7 @@
         options: {
         indexAxis: "y",
         responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
             x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0, stepSize: 1 } },
@@ -396,6 +416,8 @@
         data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1 }] },
         options: {
         indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: { x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
         }
@@ -416,69 +438,88 @@
     const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
         type: "bar",
         data: { labels: [], datasets: [{ label: "count", data: [], borderWidth: 1 }] },
-        options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+        options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } }
+        }
     });
 
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=day`);
+        console.log("🔥 KPI payload =", kpi);   // ← 추가
+        // ✅ (수정) 안전하게 값 채움
+        const policyCount  = Number(kpi.policy_count ?? 0);
+        const aiCount      = Number(kpi.ai_count ?? 0);
+        const blockedCount = Number(kpi.blocked_count ?? 0);
 
-        kpiPolicy.textContent = kpi.policy_count;
-        kpiAi.textContent = kpi.ai_count;
-        kpiBlocked.textContent = kpi.blocked_count;
+        kpiPolicy.textContent  = policyCount;
+        kpiAi.textContent      = aiCount;
+        kpiBlocked.textContent = blockedCount;
 
-        kpiPolicyDelta.textContent = fmtDelta(kpi.policy_delta);
-        kpiAiDelta.textContent = fmtDelta(kpi.ai_delta);
+        kpiPolicyDelta.textContent  = fmtDelta(kpi.policy_delta);
+        kpiAiDelta.textContent      = fmtDelta(kpi.ai_delta);
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
-        const total = (kpi.blocked_count || 0) + (kpi.ai_count || 0);
+        const total = blockedCount + aiCount;
         kpiTotal.textContent = total;
-        kpiTotalBlocked.textContent = kpi.blocked_count;
-        kpiTotalAi.textContent = kpi.ai_count;
+        kpiTotalBlocked.textContent = blockedCount;
+        kpiTotalAi.textContent = aiCount;
 
-        chartBlockedRatio.data.datasets[0].data = [kpi.ai_count, kpi.blocked_count];
+        chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
         chartBlockedRatio.update();
     }
 
     async function refreshTimeseries(){
         const gran = state.ts;
         const ts = await getJSON(`/api/timeseries/?gran=${gran}`);
-        chartTimeseries.data.labels = ts.labels;
-        chartTimeseries.data.datasets[0].data = ts.domain;
-        chartTimeseries.data.datasets[1].data = ts.regex;
-        chartTimeseries.data.datasets[2].data = ts.total;
+        chartTimeseries.data.labels = ts.labels ?? [];
+        chartTimeseries.data.datasets[0].data = ts.domain ?? [];
+        chartTimeseries.data.datasets[1].data = ts.regex ?? [];
+        chartTimeseries.data.datasets[2].data = ts.total ?? [];
         chartTimeseries.update();
     }
 
     async function refreshTopDomains(){
         const gran = state.dom;
         const dom = await getJSON(`/api/top-domains/?gran=${gran}&limit=10`);
-        chartTopDomains.data.labels = dom.labels.map(wrapLabel);
-        chartTopDomains.data.datasets[0].data = dom.values;
+        chartTopDomains.data.labels = (dom.labels ?? []).map(wrapLabel);
+        chartTopDomains.data.datasets[0].data = dom.values ?? [];
         chartTopDomains.update();
     }
 
     async function refreshTopRegex(){
         const gran = state.rx;
         const rx = await getJSON(`/api/top-regex/?gran=${gran}&limit=10`);
-        chartTopRegex.data.labels = rx.labels.map(wrapLabel);
-        chartTopRegex.data.datasets[0].data = rx.values;
+        chartTopRegex.data.labels = (rx.labels ?? []).map(wrapLabel);
+        chartTopRegex.data.datasets[0].data = rx.values ?? [];
         chartTopRegex.update();
     }
 
     async function refreshIps(){
         const ip = await getJSON(`/api/top-ips/?window_minutes=10&limit=10`);
-        ipWindowText.textContent = `최근 ${ip.window_minutes}분`;
-        chartTopIps.data.labels = ip.labels;
-        chartTopIps.data.datasets[0].data = ip.values;
+        ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
+        chartTopIps.data.labels = ip.labels ?? [];
+        chartTopIps.data.datasets[0].data = ip.values ?? [];
         chartTopIps.update();
     }
 
+    // ✅ (수정) 하나 터져도 전체가 멈추지 않게
+    async function safe(fn){
+        try { await fn(); }
+        catch(e){ console.error(e); }
+    }
+
     async function refreshAll(){
-        try{
-        await Promise.all([refreshKpi(), refreshTimeseries(), refreshTopDomains(), refreshTopRegex(), refreshIps()]);
-        }catch(err){
-        console.error(err);
-        }
+        await Promise.all([
+        safe(refreshKpi),
+        safe(refreshTimeseries),
+        safe(refreshTopDomains),
+        safe(refreshTopRegex),
+        safe(refreshIps),
+        ]);
     }
 
     function bindGranButtons(){
@@ -490,9 +531,9 @@
             btn.classList.add("active");
             state[ctl] = btn.dataset.gran;
 
-            if(ctl === "ts") await refreshTimeseries();
-            if(ctl === "dom") await refreshTopDomains();
-            if(ctl === "rx") await refreshTopRegex();
+            if(ctl === "ts") await safe(refreshTimeseries);
+            if(ctl === "dom") await safe(refreshTopDomains);
+            if(ctl === "rx") await safe(refreshTopRegex);
             });
         });
         });
@@ -503,6 +544,7 @@
     setInterval(refreshAll, REFRESH_MS);
     })();
 
+    // (기존) 시스템 CPU/MEM 더미 그래프는 그대로 유지
     (function(){
     function makeDonut(ctx, pct){
         return new Chart(ctx, {

@@ -12,6 +12,8 @@ from datetime import timedelta
 from django.db.models import Count
 
 from .models import AiAnalysisResult
+from policy.utils_engine import send_reload_signal  # ✅ 너 프로젝트 구조 기준
+# from .models import AiAnalysisResult  # 필요 없음(그냥 신호만 보냄)
 
 
 class AiRecordsView(View):
@@ -40,17 +42,19 @@ class AiRecordsView(View):
         sort = (request.GET.get("sort") or "latest").strip()  # latest / confidence
 
         # 페이지네이션
-        per_page = request.GET.get("per_page") or "15"
+        per_page = request.GET.get("per_page") or "13"
         try:
             per_page = int(per_page)
         except ValueError:
-            per_page = 15
+            per_page = 13
         per_page = max(5, min(per_page, 100))  # 5~100 안전장치
 
         # ======================
         # 2) QS 만들기
         # ======================
         qs = AiAnalysisResult.objects.all()
+        
+        qs = qs.filter(confidence_score__gte=0)
 
         # URL/도메인 검색
         if q:
@@ -170,91 +174,7 @@ class AiIgnoreView(View):
         return JsonResponse({"ok": True})
     
     
-    class AiStatusApiView(View):
-        """
-        5초마다 호출되는 실시간 통계 API
-        """
 
-        def get(self, request):
-            now = timezone.now()
-            today = now.date()
-            last_24h = now - timedelta(hours=24)
-
-            # ==============================
-            # 1) KPI 계산
-            # ==============================
-
-            today_qs = AiAnalysisResult.objects.filter(create_at__date=today)
-            total_today = today_qs.count()
-
-            # 분당 처리량 (RPM)
-            last_minute = now - timedelta(minutes=1)
-            rpm = AiAnalysisResult.objects.filter(create_at__gte=last_minute).count()
-
-            # 정확도 계산 (관리자 검토 기준)
-            reviewed = AiAnalysisResult.objects.filter(is_checked=True)
-            reviewed_count = reviewed.count()
-            correct_count = reviewed.filter(
-                checked_result__in=["ADD", "IGNORE"]
-            ).count()
-
-            accuracy = 0
-            if reviewed_count > 0:
-                accuracy = round((correct_count / reviewed_count) * 100, 1)
-
-            # TODO: FastAPI 엔진 latency 연동 위치
-            avg_latency_ms = 128  # 임시값
-
-            # TODO: FastAPI 시스템 모니터링 연동 위치
-            cpu_usage = 65
-            memory_usage = 54
-
-            # ==============================
-            # 2) 최근 24시간 라인차트 데이터
-            # ==============================
-            labels = []
-            request_counts = []
-            throughput_counts = []
-
-            for i in range(24):
-                hour_start = now - timedelta(hours=23 - i)
-                hour_end = hour_start + timedelta(hours=1)
-
-                count = AiAnalysisResult.objects.filter(
-                    create_at__gte=hour_start,
-                    create_at__lt=hour_end
-                ).count()
-
-                labels.append(hour_start.strftime("%H:%M"))
-                request_counts.append(count)
-                throughput_counts.append(count)  # 동일 데이터 재사용
-
-            # ==============================
-            # 3) 최근 로그 테이블
-            # ==============================
-            recent_logs = list(
-                AiAnalysisResult.objects.order_by("-create_at")
-                .values("create_at", "request_url", "confidence_score")[:10]
-            )
-
-            return JsonResponse({
-                "kpi": {
-                    "total_today": total_today,
-                    "rpm": rpm,
-                    "accuracy": accuracy,
-                    "latency": avg_latency_ms,
-                    "cpu": cpu_usage,
-                    "memory": memory_usage,
-                },
-                "chart": {
-                    "labels": labels,
-                    "requests": request_counts,
-                    "throughput": throughput_counts,
-                },
-                "recent_logs": recent_logs,
-            })
-            
-            
 class AiStatusApiView(View):
     """
     5초마다 호출되는 실시간 통계 API
@@ -318,7 +238,9 @@ class AiStatusApiView(View):
         # 3) 최근 로그 테이블
         # ==============================
         recent_errors = list(
-            AiAnalysisResult.objects.order_by("-create_at")
+            AiAnalysisResult.objects
+            .filter(confidence_score__lt=0)            # ✅ [핵심] 오류만
+            .order_by("-create_at")
             .values("create_at", "request_url", "confidence_score")[:10]
         )
 
@@ -348,3 +270,20 @@ class AiStatusApiView(View):
             "recent_errors": recent_errors,
             "system_info": system_info,
         })
+        
+        
+        
+
+@method_decorator(csrf_protect, name="dispatch")
+class AiRecheckErrorsView(View):
+    """
+    관리자 '재검토' 버튼:
+    - 엔진에게 정책 reload가 아니라 '오류(-) 재검토 작업'만 큐에 넣으라고 신호
+    """
+    def post(self, request):
+        try:
+            # ✅ A-1: recheck 전용 신호
+            send_reload_signal("recheck_errors")
+            return JsonResponse({"ok": True})
+        except Exception as e:
+            return JsonResponse({"ok": False, "error": str(e)}, status=500)

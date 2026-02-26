@@ -1,12 +1,14 @@
 from django.urls import path
-from . import views
-from .views import AiStatusView, AiStatusApiView
+from .views import AiStatusView, AiStatusApiView, AiRecordsView, AiIgnoreView, AiRecheckErrorsView
 
 app_name = "ai"
 
 urlpatterns = [
-    path("records/", views.AiRecordsView.as_view(), name="records"),   # AI 기록관
-    path("status/", views.AiStatusView.as_view(), name="status"),    # AI 성능 현황 (나중에)
-    path("records/<int:pk>/ignore/", views.AiIgnoreView.as_view(), name="ignore"), # 무시
-    path("status/api/", views.AiStatusApiView.as_view(), name="status_api"),
+    path("records/", AiRecordsView.as_view(), name="records"),
+    path("records/<int:pk>/ignore/", AiIgnoreView.as_view(), name="ignore"),
+    path("status/", AiStatusView.as_view(), name="status"),
+    path("status/api/", AiStatusApiView.as_view(), name="status_api"),
+
+    # ✅ 재검토 버튼용
+    path("status/recheck/", AiRecheckErrorsView.as_view(), name="recheck_errors"),
 ]
