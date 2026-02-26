@@ -33,5 +33,5 @@ urlpatterns = [
     path("policy/", include("policy.urls")),
     path("policy-history/", include("policy_history.urls")),
     path("ai/", include("ai_analysis_result.urls"), name="ai"),
-    path("logs/", include("intergrated_detection_logs.urls"), name="logs"),
+    path("logs/", include("integrated_detection_logs.urls"), name="logs"),
 ]

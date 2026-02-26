@@ -8,7 +8,7 @@ from django.core.cache import cache
 
 from policy.models import Policy
 from ai_analysis_result.models import AiAnalysisResult
-from intergrated_detection_logs.models import IntegratedDetectionLogs  # 너 실제 모델명으로 교체
+from integrated_detection_logs.models import IntegratedDetectionLogs  # 너 실제 모델명으로 교체
 
 @require_GET
 def kpis_api(request):

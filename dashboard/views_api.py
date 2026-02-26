@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncHour, TruncDay
 
 from dashboard.utils import get_range, get_prev_range
-from intergrated_detection_logs.models import IntegratedDetectionLogs
+from integrated_detection_logs.models import IntegratedDetectionLogs
 from ai_analysis_result.models import AiAnalysisResult
 from policy.models import Policy
 

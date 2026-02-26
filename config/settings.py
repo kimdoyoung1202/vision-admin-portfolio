@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'policy',
     'policy_history',
-    'intergrated_detection_logs',
+    'integrated_detection_logs',
     'ai_analysis_result',
     'dashboard',
 ]
