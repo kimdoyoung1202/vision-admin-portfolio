@@ -1,197 +1,195 @@
 {% extends "base.html" %}
+{% load static %}
 
+{# ✅ 대시보드는 페이지 헤더(타이틀 영역) 숨김 #}
 {% block page_header %}{% endblock %}
 
 {% block content %}
-
 <style>
     /* =========================
-        ✅ 한 화면(스크롤 최소) 압축 세팅
+        ✅ base.html이 감싸는 "바깥 card-sneat" 무력화
+        - 대시보드는 안에 여러 카드가 있으니까,
+        바깥 래퍼는 투명/패딩0으로 만들기
         ========================= */
-    .card-sneat{
-        padding: 10px;             /* ✅ 전체 패딩 축소 */
+    .main{
+        overflow: hidden !important;   /* base의 main overflow:auto 제거 */
+        padding: 10px !important;      /* 대시보드 전체 여백 */
+        min-height: 0;
+    }
+    .main > .card-sneat{
+        height: 100%;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        overflow: hidden !important;
     }
 
-    /* Row 간격 전반 축소 */
-    .row.compact{ --bs-gutter-x: .5rem; --bs-gutter-y: .5rem; } /* g-2 느낌 */
-    .mb-compact{ margin-bottom: .5rem !important; }             /* mb-2 느낌 */
+    /* =========================
+        ✅ 대시보드: 한 화면 고정
+        ========================= */
+    :root { --topbar-h: 64px; }
 
-    /* KPI/도넛 높이 축소 */
-    .kpi-card, .ratio-card{
-        height: 92px;              /* ✅ 120 -> 92 */
+    .dash-page{
+        height: calc(100vh - var(--topbar-h) - 20px); /* main padding(10*2) 감안 */
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        overflow: hidden;
+        min-height: 0;
     }
-    .kpi-card .display-6{
-        line-height: 1;
-        margin: 0;
-        font-size: 28px;           /* ✅ 숫자 약간 축소 */
-    }
+
+    /* 섹션 비율 */
+    .sec{ min-height:0; }
+    .sec.ts  { flex: 2.1; }
+    .sec.top { flex: 2.4; }
+    .sec.kpi { flex: 0.85; }
+    .sec.bot { flex: 2.4; }
+
+    /* row compact */
+    .row.compact{ --bs-gutter-x: .6rem; --bs-gutter-y: .6rem; margin: 0; }
+    .row.compact > *{ padding-left:.3rem; padding-right:.3rem; }
+    .sec > .row, .sec > .row > div{ height:100%; min-height:0; }
+
+    /* 카드/폰트 압축 */
+    .card-sneat{ padding: 10px; height:100%; }
+    .fw-bold{ font-weight: 800 !important; }
+    .btn-group-sm>.btn, .btn-sm{ padding:.2rem .5rem; font-size:12px; }
+    .badge{ font-size:11px; }
     .text-muted.small{ font-size: 12px; }
 
-    /* 도넛: 더 작게 */
-    .ratio-donut-wrap{
-        width: 74px;               /* ✅ 92 -> 74 */
-        height: 74px;
-        position: relative;
-        flex-shrink: 0;
-    }
-    .ratio-inner{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap: 8px;
-    }
-    .ratio-left{
-        display:flex;
-        flex-direction:column;
-        gap:2px;
-        width:auto;
-        min-width:0;
-    }
-    .ratio-title{
-        font-size: 13px;
-        line-height: 1;
-        margin-bottom: 0 !important;
-        white-space: nowrap;
-    }
-    .ratio-number-line{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap: nowrap;
-    }
-    .ratio-badges{
-        display:flex;
-        align-items:center;
-        gap:6px;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-        font-size: 12px;
-    }
-
-    /* Timeseries/Top Chart 영역 높이 축소 */
-    .chart-tight{
-        height: 70px !important;   /* canvas height와 별개로 레이아웃 안정 */
-    }
-
-    /* 시스템 카드 압축 */
-    .sys-card{ padding: 10px; }
-    .sys-card hr{ margin: .4rem 0; }
-
-    .sys-mini-wrap{
-        border: 1px solid rgba(67,89,113,.18);
-        border-radius: 12px;
-        background:#fff;
-        padding:8px;
-        height: 140px;            /* ✅ 170 -> 140 */
-        overflow:hidden;
-    }
-
-    .sys-donut{
+    /* 차트는 부모 높이에 100%로 */
+    .chart-box{
         position: relative;
         width: 100%;
-        height: 70px;             /* ✅ 92 -> 70 */
+        height: calc(100% - 28px); /* 제목줄 */
+        min-height: 0;
+        overflow: hidden;
     }
-    .sys-donut canvas{
+    canvas{
         width:100% !important;
         height:100% !important;
+        max-height:none !important;
     }
-    .sys-donut-center{
-        position:absolute;
-        inset:0;
+
+    /* KPI */
+    .kpi-card{
         display:flex;
-        align-items:center;
-        justify-content:center;
-        pointer-events:none;
+        flex-direction:column;
+        justify-content:space-between;
+        height:100%;
     }
-    .sys-pct{
-        font-weight:900;
-        font-size:15px;           /* ✅ 18 -> 15 */
+    .kpi-card .display-6{
+        line-height:1;
+        margin:0;
+        font-size:30px;
+    }
+
+    /* 우측 통합 카드(도넛+미니추이) */
+    .pkt-card{
+        display:flex;
+        flex-direction:column;
+        height:100%;
+        min-height:0;
+    }
+    .pkt-donut{
+        flex: 1;
+        min-height: 0;
+        position: relative;
+    }
+    .donut-center{
+        position:absolute; inset:0;
+        display:flex; align-items:center; justify-content:center;
+        pointer-events:none;
+        text-align:center;
         color:#566a7f;
     }
-    .sys-spark canvas{
-        width:100% !important;
+    .donut-center .t1{ font-size:12px; font-weight:800; opacity:.85; }
+    .donut-center .t2{ font-size:20px; font-weight:900; }
+
+    .pkt-mini{
+        height: 90px;            /* 고정 미니 높이 */
+        margin-top: 6px;
     }
 
-    .sys-meta{
-        border-top: 1px solid rgba(67,89,113,.12);
-        padding-top:8px;
-        font-size: 12px;
+    /* 작은 화면 추가 압축 */
+    @media (max-height: 820px){
+        .main{ padding: 8px !important; }
+        .dash-page{ height: calc(100vh - var(--topbar-h) - 16px); }
+        .kpi-card .display-6{ font-size:26px; }
+        .pkt-mini{ height: 78px; }
     }
+    </style>
 
-    /* 제목/버튼 크기 살짝 축소 */
-    .fw-bold{ font-weight: 800 !important; }
-    .btn-group-sm>.btn, .btn-sm{
-        padding: .2rem .45rem;
-        font-size: 12px;
-    }
-    .badge{
-        font-size: 11px;
-    }
+    <div class="dash-page">
 
-    /* 차트 캔버스 자체도 높이 축소 (height 속성과 같이 쓰면 더 안정적) */
-    canvas{ max-height: 140px; }
-</style>
+    <!-- 1) Timeseries -->
+    <section class="sec ts">
+        <div class="row compact">
+        <div class="col-12">
+            <div class="card-sneat">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
+                <div class="d-flex align-items-center gap-2">
+                <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
+                    <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                    <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                    <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                </div>
+                <span class="badge text-bg-primary">도메인</span>
+                <span class="badge text-bg-danger">정규표현식</span>
+                </div>
+            </div>
 
-<!-- 1) Timeseries -->
-<div class="row compact mb-compact">
-    <div class="col-12">
-        <div class="card-sneat">
-        <div class="d-flex align-items-center justify-content-between mb-1">
-            <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
+            <div class="chart-box">
+                <canvas id="chartTimeseries"></canvas>
+            </div>
+            </div>
+        </div>
+        </div>
+    </section>
 
-            <div class="d-flex align-items-center gap-2">
-            <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
+    <!-- 2) Top10 2개 -->
+    <section class="sec top">
+        <div class="row compact">
+        <div class="col-md-6 h-100">
+            <div class="card-sneat">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-bold">도메인 탐지로그 (Top10)</div>
+                <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
                 <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
                 <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
                 <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                </div>
             </div>
-
-            <span class="badge text-bg-primary">DOMAIN</span>
-            <span class="badge text-bg-danger">REGEX</span>
+            <div class="chart-box">
+                <canvas id="chartTopDomains"></canvas>
             </div>
-        </div>
-
-        <canvas id="chartTimeseries" height="70"></canvas>
-        </div>
-    </div>
-    </div>
-
-    <!-- 2) Top10 2개 -->
-    <div class="row compact mb-compact">
-    <div class="col-md-6">
-        <div class="card-sneat">
-        <div class="d-flex align-items-center justify-content-between mb-1">
-            <div class="fw-bold">도메인 탐지로그 (Top10)</div>
-            <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
-            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
             </div>
         </div>
-        <canvas id="chartTopDomains" height="95"></canvas>
-        </div>
-    </div>
 
-    <div class="col-md-6">
-        <div class="card-sneat">
-        <div class="d-flex align-items-center justify-content-between mb-1">
-            <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
-            <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
-            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+        <div class="col-md-6 h-100">
+            <div class="card-sneat">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
+                <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
+                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                </div>
+            </div>
+            <div class="chart-box">
+                <canvas id="chartTopRegex"></canvas>
+            </div>
             </div>
         </div>
-        <canvas id="chartTopRegex" height="95"></canvas>
         </div>
-    </div>
-    </div>
+    </section>
 
-    <!-- KPI + 도넛 -->
-    <div class="row compact mb-compact">
-    <div class="col-lg-8">
+    <!-- 3) KPI 3개 -->
+    <section class="sec kpi">
         <div class="row compact">
-        <div class="col-md-4">
+        <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
             <div class="text-muted fw-bold">policy</div>
             <div class="d-flex align-items-end justify-content-between">
@@ -202,7 +200,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
             <div class="text-muted fw-bold">ai_analysis_result</div>
             <div class="d-flex align-items-end justify-content-between">
@@ -213,7 +211,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
             <div class="text-muted fw-bold">integrated_detection_logs</div>
             <div class="d-flex align-items-end justify-content-between">
@@ -224,99 +222,64 @@
             </div>
         </div>
         </div>
-    </div>
+    </section>
 
-    <div class="col-lg-4">
-        <div class="card-sneat ratio-card">
-        <div class="ratio-inner">
-            <div class="ratio-left">
-            <div class="ratio-title">일일 수집한 패킷 수</div>
-            <div class="ratio-number-line">
-                <div class="display-6 fw-bold" id="kpiTotal">-</div>
+    <!-- 4) 하단: IP + 우측(통합카드 1개) -->
+    <section class="sec bot">
+        <div class="row compact">
+        <div class="col-lg-8 h-100">
+            <div class="card-sneat h-100">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
+                <div class="text-muted small" id="ipWindowText">최근 10분</div>
+            </div>
+            <div class="chart-box">
+                <canvas id="chartTopIps"></canvas>
+            </div>
+            </div>
+        </div>
 
-                <div class="ratio-badges">
+        <div class="col-lg-4 h-100">
+            <div class="card-sneat pkt-card">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-bold">일일 패킷 현황</div>
+                <div class="text-muted small" id="dailyGranText">일별</div>
+            </div>
+
+            <!-- 도넛 -->
+            <div class="pkt-donut">
+                <canvas id="chartBlockedRatio"></canvas>
+                <div class="donut-center">
+                <div>
+                    <div class="t1">TOTAL</div>
+                    <div class="t2" id="sysTotalText">-</div>
+                </div>
+                </div>
+            </div>
+
+            <!-- 숫자 -->
+            <div class="text-center mt-1">
                 <span class="badge text-bg-primary">통과</span>
                 <span class="fw-bold" id="kpiTotalAi">-</span>
-                <span class="badge text-bg-danger ms-2">차단</span>
+
+                <span class="badge text-bg-danger ms-3">차단</span>
                 <span class="fw-bold" id="kpiTotalBlocked">-</span>
-                </div>
-            </div>
             </div>
 
-            <div class="ratio-donut-wrap">
-            <canvas id="chartBlockedRatio"></canvas>
+            <!-- 미니 추이 -->
+            <div class="pkt-mini">
+                <canvas id="chartDailyMini"></canvas>
+            </div>
             </div>
         </div>
         </div>
+    </section>
+
     </div>
-    </div>
-
-    <!-- IP Top + 시스템정보 -->
-    <div class="row compact">
-    <div class="col-lg-8">
-        <div class="card-sneat h-100">
-        <div class="d-flex align-items-center justify-content-between mb-1">
-            <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
-            <div class="text-muted small" id="ipWindowText">최근 10분</div>
-        </div>
-        <canvas id="chartTopIps" height="95"></canvas>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card-sneat h-100 sys-card">
-        <div class="fw-bold mb-1">시스템 정보</div>
-
-        <div class="row compact mb-1">
-            <!-- CPU -->
-            <div class="col-6">
-            <div class="sys-mini-wrap">
-                <div class="sys-donut">
-                <canvas id="cpuDonut"></canvas>
-                <div class="sys-donut-center"><div id="cpuPctText" class="sys-pct">65%</div></div>
-                </div>
-                <div class="sys-spark mt-1">
-                <canvas id="cpuSpark" height="34"></canvas>
-                </div>
-            </div>
-            <div class="text-center small mt-1">CPU</div>
-            </div>
-
-            <!-- MEM -->
-            <div class="col-6">
-            <div class="sys-mini-wrap">
-                <div class="sys-donut">
-                <canvas id="memDonut"></canvas>
-                <div class="sys-donut-center"><div id="memPctText" class="sys-pct">54%</div></div>
-                </div>
-                <div class="sys-spark mt-1">
-                <canvas id="memSpark" height="34"></canvas>
-                </div>
-            </div>
-            <div class="text-center small mt-1">MEM</div>
-            </div>
-        </div>
-
-        <hr class="my-2">
-
-        <div class="small">
-            <div class="d-flex justify-content-between"><span class="text-muted">시스템 이름</span><span id="sysName">-</span></div>
-            <div class="d-flex justify-content-between"><span class="text-muted">연결 DB</span><span id="sysDb">-</span></div>
-            <div class="d-flex justify-content-between"><span class="text-muted">로그 백업</span><span id="sysBackup">-</span></div>
-            <div class="d-flex justify-content-between"><span class="text-muted">엔진 상태</span><span id="sysEngine">-</span></div>
-        </div>
-        </div>
-    </div>
-    </div>
-
     {% endblock %}
 
     {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-    <script>
-    console.log("[dashboard] script loaded", new Date().toISOString(), "Chart=", typeof Chart);
-    </script>
 
     <script>
     (function(){
@@ -329,30 +292,25 @@
     const kpiPolicyDelta = document.getElementById("kpiPolicyDelta");
     const kpiAiDelta = document.getElementById("kpiAiDelta");
     const kpiBlockedDelta = document.getElementById("kpiBlockedDelta");
+
     const ipWindowText = document.getElementById("ipWindowText");
-    const kpiTotal = document.getElementById("kpiTotal");
     const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
     const kpiTotalAi = document.getElementById("kpiTotalAi");
+    const sysTotalText = document.getElementById("sysTotalText");
+    const dailyGranText = document.getElementById("dailyGranText");
 
-    // ✅ (수정) JSON 응답 여부 검사 + HTML(로그인 리다이렉트 등) 감지
     async function getJSON(url){
         const res = await fetch(url, { credentials:"same-origin" });
-
-        if(!res.ok){
-        throw new Error(`API Error ${res.status} ${url}`);
-        }
+        if(!res.ok) throw new Error(`API Error ${res.status} ${url}`);
 
         const ct = (res.headers.get("content-type") || "").toLowerCase();
         if(!ct.includes("application/json")){
-        // 302/로그인페이지/에러 HTML 등일 확률 큼
         const text = await res.text();
         throw new Error(`Not JSON (${ct}) from ${url}. First 120 chars: ${text.slice(0,120)}`);
         }
-
         return await res.json();
     }
 
-    // ✅ (수정) delta null/문자열 안전
     function fmtDelta(n){
         const num = Number(n ?? 0);
         const sign = num > 0 ? "▲" : (num < 0 ? "▼" : "•");
@@ -377,7 +335,6 @@
         return lines;
     }
 
-    // ✅ (권장) Chart.js: maintainAspectRatio false로 캔버스 높이 안정화
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
         type: "bar",
         data: {
@@ -423,6 +380,18 @@
         }
     });
 
+    const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "count", data: [], borderWidth: 1 }] },
+        options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+        }
+    });
+
     const chartBlockedRatio = new Chart(document.getElementById("chartBlockedRatio"), {
         type: "doughnut",
         data: { labels: ["통과", "차단"], datasets: [{ data: [0,0], borderWidth: 1 }] },
@@ -435,22 +404,20 @@
         }
     });
 
-    const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
-        type: "bar",
-        data: { labels: [], datasets: [{ label: "count", data: [], borderWidth: 1 }] },
+    const chartDailyMini = new Chart(document.getElementById("chartDailyMini"), {
+        type: "line",
+        data: { labels: [], datasets: [{ label: "TOTAL", data: [], tension: 0.35, borderWidth: 2, pointRadius: 0 }] },
         options: {
-        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true } }
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false, beginAtZero: true } }
         }
     });
 
     async function refreshKpi(){
-        const kpi = await getJSON(`/api/kpis/?gran=day`);
-        console.log("🔥 KPI payload =", kpi);   // ← 추가
-        // ✅ (수정) 안전하게 값 채움
+        const kpi = await getJSON(`/api/kpis/?gran=total`);
+
         const policyCount  = Number(kpi.policy_count ?? 0);
         const aiCount      = Number(kpi.ai_count ?? 0);
         const blockedCount = Number(kpi.blocked_count ?? 0);
@@ -464,9 +431,9 @@
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
         const total = blockedCount + aiCount;
-        kpiTotal.textContent = total;
-        kpiTotalBlocked.textContent = blockedCount;
-        kpiTotalAi.textContent = aiCount;
+        if (kpiTotalBlocked) kpiTotalBlocked.textContent = blockedCount;
+        if (kpiTotalAi) kpiTotalAi.textContent = aiCount;
+        if (sysTotalText) sysTotalText.textContent = total;
 
         chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
         chartBlockedRatio.update();
@@ -480,6 +447,13 @@
         chartTimeseries.data.datasets[1].data = ts.regex ?? [];
         chartTimeseries.data.datasets[2].data = ts.total ?? [];
         chartTimeseries.update();
+
+        if (dailyGranText) dailyGranText.textContent =
+        (gran === "day" ? "일별" : (gran === "week" ? "주별" : "월별"));
+
+        chartDailyMini.data.labels = ts.labels ?? [];
+        chartDailyMini.data.datasets[0].data = ts.total ?? [];
+        chartDailyMini.update();
     }
 
     async function refreshTopDomains(){
@@ -500,13 +474,12 @@
 
     async function refreshIps(){
         const ip = await getJSON(`/api/top-ips/?window_minutes=10&limit=10`);
-        ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
+        if (ipWindowText) ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
         chartTopIps.data.labels = ip.labels ?? [];
         chartTopIps.data.datasets[0].data = ip.values ?? [];
         chartTopIps.update();
     }
 
-    // ✅ (수정) 하나 터져도 전체가 멈추지 않게
     async function safe(fn){
         try { await fn(); }
         catch(e){ console.error(e); }
@@ -542,66 +515,6 @@
     bindGranButtons();
     refreshAll();
     setInterval(refreshAll, REFRESH_MS);
-    })();
-
-    // (기존) 시스템 CPU/MEM 더미 그래프는 그대로 유지
-    (function(){
-    function makeDonut(ctx, pct){
-        return new Chart(ctx, {
-        type: "doughnut",
-        data: { datasets: [{ data: [pct, 100 - pct], borderWidth: 0, hoverOffset: 0 }] },
-        options: {
-            cutout: "75%",
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } }
-        }
-        });
-    }
-
-    function makeSpark(ctx, initial){
-        return new Chart(ctx, {
-        type: "line",
-        data: { labels: initial.map((_,i)=>i), datasets: [{ data: initial, tension: 0.35, pointRadius: 0, borderWidth: 2, fill: false }] },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: { x: { display: false }, y: { display: false, suggestedMin: 0, suggestedMax: 100 } }
-        }
-        });
-    }
-
-    let cpuPct = 65;
-    let memPct = 54;
-
-    const cpuSeries = Array.from({length: 24}, () => cpuPct);
-    const memSeries = Array.from({length: 24}, () => memPct);
-
-    const cpuDonut = makeDonut(document.getElementById("cpuDonut"), cpuPct);
-    const memDonut = makeDonut(document.getElementById("memDonut"), memPct);
-    const cpuSpark = makeSpark(document.getElementById("cpuSpark"), cpuSeries);
-    const memSpark = makeSpark(document.getElementById("memSpark"), memSeries);
-
-    setInterval(() => {
-        cpuPct = Math.max(0, Math.min(100, cpuPct + (Math.random()*10 - 5)));
-        memPct = Math.max(0, Math.min(100, memPct + (Math.random()*6 - 3)));
-
-        document.getElementById("cpuPctText").textContent = Math.round(cpuPct) + "%";
-        document.getElementById("memPctText").textContent = Math.round(memPct) + "%";
-
-        cpuDonut.data.datasets[0].data = [cpuPct, 100-cpuPct];
-        memDonut.data.datasets[0].data = [memPct, 100-memPct];
-        cpuDonut.update("none");
-        memDonut.update("none");
-
-        cpuSeries.push(cpuPct); cpuSeries.shift();
-        memSeries.push(memPct); memSeries.shift();
-        cpuSpark.data.datasets[0].data = cpuSeries;
-        memSpark.data.datasets[0].data = memSeries;
-        cpuSpark.update("none");
-        memSpark.update("none");
-    }, 1000);
     })();
 </script>
 {% endblock %}

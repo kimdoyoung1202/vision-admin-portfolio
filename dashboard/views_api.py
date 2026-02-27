@@ -27,9 +27,9 @@ def kpis_api(request):
     start, end = get_range(gran)
     pstart, pend = get_prev_range(gran)
 
-    policy_cnt = Policy.objects.filter(create_at__gte=start, create_at__lte=end).count()
-    ai_cnt = AiAnalysisResult.objects.filter(create_at__gte=start, create_at__lte=end).count()
-    blocked_cnt = IntegratedDetectionLogs.objects.filter(create_at__gte=start, create_at__lte=end).count()
+    policy_cnt = Policy.objects.filter(is_deleted=False).count()
+    ai_cnt = AiAnalysisResult.objects.count()
+    blocked_cnt = IntegratedDetectionLogs.objects.count()
 
     policy_prev = Policy.objects.filter(create_at__gte=pstart, create_at__lte=pend).count()
     ai_prev = AiAnalysisResult.objects.filter(create_at__gte=pstart, create_at__lte=pend).count()

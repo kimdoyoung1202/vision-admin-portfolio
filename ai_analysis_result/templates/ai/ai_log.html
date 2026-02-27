@@ -127,27 +127,54 @@
     .pagination{ margin-bottom:0 !important; }
 
     /* =========================
-        상세 패널 압축
-        ========================= */
-    #detailCol .card-body{ padding: 10px 12px; }
-    #detailCol .table-sm td, #detailCol .table-sm th{
-        padding: 6px 8px;
-        font-size: .90rem;
-    }
-    #detailCol .badge{ font-weight:900; }
+    ✅ 상세 패널: 리스트 톤 동일 + 값은 전부 표시(길면 행 증가)
+    ========================= */
 
-    /* 상세 정보가 길어져도 패널 내에서만 */
+    /* 1) 상세 패널 내부에서만 스크롤 */
     .detail-scroll{
-        flex:1;
-        min-height:0;
-        overflow:hidden;
-        display:flex;
-        flex-direction:column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     }
     .detail-table-wrap{
-        flex:1;
-        min-height:0;
-        overflow:auto; /* ✅ 상세만 스크롤(필요할 때만) */
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;          /* ✅ 세로 스크롤 */
+    overflow-x: hidden !important;  /* ✅ 가로 스크롤 금지 */
+    }
+
+    /* 2) 리스트(왼쪽)와 같은 톤 */
+    #detailCol .table-sm th,
+    #detailCol .table-sm td{
+    padding: 6px 8px;          /* ← 리스트와 동일 계열 */
+    font-size: .90rem;
+    line-height: 1.25;
+    vertical-align: top;       /* ✅ 여러 줄일 때 보기 좋게 */
+    }
+
+    /* 3) th(라벨) 폭 고정 + 세로깨짐 방지 */
+    #detailCol .table-sm th{
+    width: 120px !important;   /* 필요하면 130까지 늘려도 됨 */
+    min-width: 120px !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    font-weight: 900;
+    color: #6c757d;
+    }
+
+    /* 4) td는 무조건 줄바꿈 허용 → 값 전체 표시 */
+    #detailCol .table-sm td{
+    white-space: normal !important;
+    overflow-wrap: anywhere;   /* ✅ 긴 문자열도 줄바꿈 */
+    word-break: break-word;
+    }
+
+    /* 5) URL은 특수: 아주 긴 토큰도 있으니 더 강하게 */
+    #dRequestUrl{
+    word-break: break-all;     /* ✅ URL은 중간에서도 끊기게 */
+    overflow-wrap: anywhere;
     }
     </style>
     {% endblock %}
