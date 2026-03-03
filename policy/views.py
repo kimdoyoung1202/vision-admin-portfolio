@@ -151,6 +151,7 @@ def policy_add(request):
                 "ai_id": ai_id,
                 "return_to": return_to,
                 "initial_content": ai_row.request_url if ai_row else "",
+                "initial_domain": ai_row.domain if ai_row else "",
                 "form": {
                     "policy_type": {"value": policy_type},
                     "content": {"value": content},
@@ -220,6 +221,7 @@ def policy_add(request):
             "ai_id": ai_id,
             "return_to": return_to,
             "initial_content": ai_row.request_url if ai_row else "",
+            "initial_domain": ai_row.domain if ai_row else "",
         },
     )
 
