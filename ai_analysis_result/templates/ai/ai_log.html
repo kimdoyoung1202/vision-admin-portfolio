@@ -472,7 +472,7 @@
 
         const data = row.dataset;
         window.__selectedAiId = data.id;
-        window.__selectedDomain = data.domain;
+        window.__selectedUrl = data.requestUrl;
 
         badge.textContent = `ID: ${data.id}`;
         dRequestUrl.textContent = data.requestUrl || "-";

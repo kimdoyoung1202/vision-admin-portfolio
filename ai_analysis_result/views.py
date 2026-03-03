@@ -88,13 +88,13 @@ class AiRecordsView(View):
         base = qs  # ✅ 필터가 모두 적용된 상태의 원본
 
         rep_id_subq = (
-            base.filter(domain=OuterRef("domain"))
+            base.filter(request_url=OuterRef("request_url"))
                 .order_by("-confidence_score", "-create_at", "-id")
                 .values("id")[:1]
         )
 
         rep_ids = (
-            base.values("domain")
+            base.values("request_url")
                 .annotate(rep_id=Subquery(rep_id_subq))
                 .values("rep_id")
         )
@@ -102,8 +102,8 @@ class AiRecordsView(View):
         qs = AiAnalysisResult.objects.filter(id__in=Subquery(rep_ids))
 
         dup_count_subq = (
-            base.filter(domain=OuterRef("domain"))
-                .values("domain")
+            base.filter(domain=OuterRef("request_url"))
+                .values("request_url")
                 .annotate(c=Count("id"))
                 .values("c")[:1]
         )
