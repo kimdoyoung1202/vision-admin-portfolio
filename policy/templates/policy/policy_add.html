@@ -125,10 +125,13 @@
             </div>
 
             <!-- 1) 정책 URL/표현식 -->
+            <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
+            <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
+
             <div class="mb-3">
                 <label class="form-label pa-label pa-required">정책 URL/표현식</label>
-                <input type="text" name="content" class="form-control"
-                    value="{{ form.content.value|default:initial_content|default_if_none:'' }}"
+                <input type="text" id="policy_content" name="content" class="form-control"
+                    value="{{ form.content.value|default:initial_domain|default_if_none:'' }}"
                     placeholder="예) https://example.com/path">
             </div>
 
@@ -193,13 +196,26 @@
     <script>
     // nav-pills 라벨 클릭 시 active 토글 (라디오 기반)
     (function () {
-        const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
-        labels.forEach(lb => {
+    const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
+    const input = document.getElementById("policy_content");
+
+    const initialUrl = (document.getElementById("initial_url")?.value || "").trim();
+    const initialDomain = (document.getElementById("initial_domain")?.value || "").trim();
+
+    labels.forEach(lb => {
         lb.addEventListener("click", () => {
+            // active 토글
             labels.forEach(x => x.classList.remove("active"));
             lb.classList.add("active");
+
+            // ✅ 값 스왑
+            if (lb.getAttribute("for") === "type_regex") {
+                if (initialUrl) input.value = initialUrl;
+            } else if (lb.getAttribute("for") === "type_domain") {
+                if (initialDomain) input.value = initialDomain;
+            }
         });
-        });
-    })();
+    });
+})();
 </script>
 {% endblock %}
