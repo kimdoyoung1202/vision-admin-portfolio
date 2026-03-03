@@ -28,22 +28,19 @@ def logs_list(request):
     qs = IntegratedDetectionLogs.objects.select_related("policy_id").all()
 
     # ===== filters from GET =====
-    f_url_or_domain = (request.GET.get("url_domain") or "").strip()     # (1) URL/도메인 입력
-    f_start_date = (request.GET.get("start_date") or "").strip()        # (2) 시작일
-    f_end_date = (request.GET.get("end_date") or "").strip()            # (2) 종료일
-    f_policy_keyword = (request.GET.get("policy_kw") or "").strip()     # (3) 정책 이름/ID
-    f_client_ip = (request.GET.get("client_ip") or "").strip()          # (4) 사용자 IP
-    f_policy_type = (request.GET.get("policy_type") or "").strip()  # (5) ALL / DOMAIN / REGEX
-    f_method = (request.GET.get("method") or "").strip()            # (6) ALL / GET / POST
-    f_query = (request.GET.get("query_string") or "").strip()           # (7) URL쿼리 스트링
+    f_url_or_domain   = (request.GET.get("url_domain") or "").strip()
+    f_start_dt        = (request.GET.get("start_dt") or "").strip()     # ✅ log.html과 이름 맞춤 (datetime-local)
+    f_end_dt          = (request.GET.get("end_dt") or "").strip()       # ✅ log.html과 이름 맞춤 (datetime-local)
+    f_policy_keyword  = (request.GET.get("policy_kw") or "").strip()
+    f_client_ip       = (request.GET.get("client_ip") or "").strip()
+    f_policy_type     = (request.GET.get("policy_type") or "").strip()  # DOMAIN / REGEX / ''
+    f_method          = (request.GET.get("method") or "").strip()       # GET / POST / ''
+    f_query           = (request.GET.get("query_string") or "").strip()
 
     # ===== apply filters =====
 
-    # 1) URL/도메인: exact 먼저 → 없으면 contains
-    # - 입력값이 URL일 수도/도메인일 수도 있으니 OR로 처리
+    # 1) URL/도메인: exact 먼저 → 없으면 contains (OR)
     if f_url_or_domain:
-        # exact 우선 전략을 OR에 적용하기 위해:
-        # exact URL/도메인 결과가 있으면 그걸 쓰고, 없으면 contains로 fallback
         exact_qs = qs.filter(
             Q(request_url__exact=f_url_or_domain) | Q(domain__exact=f_url_or_domain)
         )
@@ -55,11 +52,12 @@ def logs_list(request):
             )
 
     # 2) 탐지 기간/시간 (create_at)
-    # date input(YYYY-MM-DD)이면, create_at__date 범위로 처리
-    if f_start_date:
-        qs = qs.filter(create_at__date__gte=f_start_date)
-    if f_end_date:
-        qs = qs.filter(create_at__date__lte=f_end_date)
+    # datetime-local(YYYY-MM-DDTHH:MM) 문자열은 Django가 DateTimeField 필터에 그대로 파싱해줌
+    # (만약 DB가 timezone-aware면 settings.USE_TZ에 맞춰 처리됨)
+    if f_start_dt:
+        qs = qs.filter(create_at__gte=f_start_dt)
+    if f_end_dt:
+        qs = qs.filter(create_at__lte=f_end_dt)
 
     # 3) 정책 이름 또는 정책 ID (JOIN)
     if f_policy_keyword:
@@ -72,7 +70,7 @@ def logs_list(request):
     if f_client_ip:
         qs = qs.filter(client_ip__icontains=f_client_ip)
 
-    # 5) 도메인/정규표현식 라디오 (policy.policy_type 기준)
+    # 5) 도메인/정규 라디오
     if f_policy_type in ("DOMAIN", "REGEX"):
         qs = qs.filter(policy_id__policy_type=f_policy_type)
 
@@ -93,8 +91,8 @@ def logs_list(request):
 
     filters = {
         "url_domain": f_url_or_domain,
-        "start_date": f_start_date,
-        "end_date": f_end_date,
+        "start_dt": f_start_dt,   # ✅ 템플릿에서 그대로 value로 사용
+        "end_dt": f_end_dt,       # ✅
         "policy_kw": f_policy_keyword,
         "client_ip": f_client_ip,
         "policy_type": f_policy_type,
@@ -102,9 +100,13 @@ def logs_list(request):
         "query_string": f_query,
     }
 
+    # ✅ Ajax(비동기) 요청이면 partial만 반환
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    template = "integrated_detection_logs/log_partial.html" if is_ajax else "integrated_detection_logs/logs_list.html"
+
     return render(
         request,
-        "integrated_detection_logs/logs_list.html",
+        template,
         {
             "page_obj": page_obj,
             "filters": filters,

@@ -2,7 +2,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 def get_range(range_key: str):
-    now = timezone.localtime()
+    now = timezone.now()
 
     if range_key == "month":
         # 이번달 1일 0시 ~ 현재
@@ -27,7 +27,7 @@ def get_prev_range(range_key: str):
     - day : 어제 0시 ~ 어제 0시+오늘 경과시간
     - week: 지난주 월요일 0시 ~ 지난주 월요일+이번주 경과시간
     """
-    now = timezone.localtime()
+    now = timezone.now()
 
     if range_key == "week":
         cur_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())

@@ -2,135 +2,113 @@
 {% load static %}
 
 {% block page_title %}AI 기록관{% endblock %}
-{% block page_subtitle %}FastAPI 결과/로그 조회 (기본 12개 · 변경 가능){% endblock %}
+{% block page_subtitle %}FastAPI 결과/로그 조회{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* =========================
-        ✅ 이 페이지(기록관)만 한 화면 고정
-        ========================= */
     :root{
-        --topbarH: 64px;          /* base 상단바 높이 */
-        --gap: 10px;
-
-        --filterH: 150px;         /* 필터 카드 높이(대략) */
-        --headerRowH: 40px;       /* 테이블 상단 정렬 버튼 줄 */
-        --pagerH: 48px;           /* 페이징 줄 높이 */
-        --theadH: 42px;           /* 테이블 헤더 높이 */
-        --rowH: 38px;             /* ✅ 12개 행 높이 */
+    --topbarH: 64px;
+    --gap: 10px;
+    --headerRowH: 40px;
+    --pagerH: 48px;
+    --theadH: 42px;
+    --rowH: 38px;
     }
 
     .ai-rec-page{
-        height: calc(100vh - var(--topbarH));
-        overflow: hidden;
-        display:flex;
-        flex-direction:column;
+    height: calc(100vh - var(--topbarH));
+    overflow: hidden;
+    display:flex;
+    flex-direction:column;
     }
     .ai-rec-wrap{
-        flex:1;
-        overflow:hidden;
-        padding: 8px 18px !important;
-        display:flex;
-        flex-direction:column;
-        gap: var(--gap);
+    flex:1;
+    overflow:hidden;
+    padding: 8px 18px !important;
+    display:flex;
+    flex-direction:column;
+    gap: var(--gap);
     }
-
-    /* container-p-y 과한 패딩 상쇄 */
     .ai-rec-wrap.container-p-y{ padding-top: 8px !important; padding-bottom: 8px !important; }
 
-    /* =========================
-        필터 압축
-        ========================= */
+    /* 필터 */
     .filter-card .card-body{ padding: 10px 12px 8px; }
     .filter-grid .form-label{ font-weight:900; font-size:.82rem; margin-bottom:4px; line-height:1.1; }
     .filter-grid .form-control,
     .filter-grid .form-select{
-        height: 34px;
-        min-height: 34px;
-        padding: .32rem .6rem;
-        border-radius: 10px;
-        font-weight: 700;
+    height: 34px;
+    min-height: 34px;
+    padding: .32rem .6rem;
+    border-radius: 10px;
+    font-weight: 700;
     }
     .btn.btn-sm{ border-radius:10px; font-weight:800; }
     .filter-grid .btn{ height:34px; padding:.42rem 1rem; font-weight:900; border-radius:10px; }
 
     .date-range{ width:100%; }
     .date-range input{ width:100%; min-width:0 !important; }
-
     .input-tight{ width:100%; min-width:0; }
 
-    /* =========================
-        워크스페이스(테이블+상세)
-        ========================= */
-    .workspace{
-        flex:1;
-        min-height:0;
-        overflow:hidden;
-    }
+    /* workspace */
+    .workspace{ flex:1; min-height:0; overflow:hidden; }
     #tableCol, #detailCol{ height:100%; min-height:0; }
     .workspace-card{
-        height:100%;
-        display:flex;
-        flex-direction:column;
-        overflow:hidden;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
     }
     .workspace-card .card-body{
-        flex:1;
-        min-height:0;
-        display:flex;
-        flex-direction:column;
-        overflow:hidden;
-        padding: 10px 12px;
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    padding: 10px 12px;
     }
 
-    /* 상단 버튼줄 */
+    /* topbar */
     .table-topbar{
-        flex:0 0 auto;
-        height: var(--headerRowH);
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        margin-bottom:6px;
+    flex:0 0 auto;
+    height: var(--headerRowH);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
     }
 
-    /* =========================
-        테이블: 12행 고정 렌더링
-        ========================= */
+    /* table viewport (12 rows fixed) */
     .table-viewport{
-        flex:0 0 auto;
-        height: calc(var(--theadH) + (12 * var(--rowH)));
-        overflow:hidden; /* ✅ 내부 스크롤 금지 */
-        border-radius: 10px;
+    flex:0 0 auto;
+    height: calc(var(--theadH) + (12 * var(--rowH)));
+    overflow:hidden;
+    border-radius: 10px;
     }
     table#aiTable thead tr{ height: var(--theadH); }
     table#aiTable tbody tr{ height: var(--rowH); }
     table#aiTable th, table#aiTable td{
-        padding-top: 6px;
-        padding-bottom: 6px;
-        font-size: .90rem;
-        vertical-align: middle;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: .90rem;
+    vertical-align: middle;
     }
     table#aiTable thead th{ font-weight: 900; }
 
     .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* 페이지네이션 */
+    /* pager */
     .pager{
-        flex:0 0 auto;
-        height: var(--pagerH);
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        margin-top:6px;
+    flex:0 0 auto;
+    height: var(--pagerH);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:6px;
     }
     .pagination{ margin-bottom:0 !important; }
 
-    /* =========================
-    ✅ 상세 패널: 리스트 톤 동일 + 값은 전부 표시(길면 행 증가)
-    ========================= */
-
-    /* 1) 상세 패널 내부에서만 스크롤 */
+    /* detail */
     .detail-scroll{
     flex: 1;
     min-height: 0;
@@ -141,40 +119,59 @@
     .detail-table-wrap{
     flex: 1;
     min-height: 0;
-    overflow-y: auto;          /* ✅ 세로 스크롤 */
-    overflow-x: hidden !important;  /* ✅ 가로 스크롤 금지 */
+    overflow-y: auto;
+    overflow-x: hidden !important;
     }
 
-    /* 2) 리스트(왼쪽)와 같은 톤 */
     #detailCol .table-sm th,
     #detailCol .table-sm td{
-    padding: 6px 8px;          /* ← 리스트와 동일 계열 */
+    padding: 6px 8px;
     font-size: .90rem;
     line-height: 1.25;
-    vertical-align: top;       /* ✅ 여러 줄일 때 보기 좋게 */
+    vertical-align: top;
     }
-
-    /* 3) th(라벨) 폭 고정 + 세로깨짐 방지 */
     #detailCol .table-sm th{
-    width: 120px !important;   /* 필요하면 130까지 늘려도 됨 */
+    width: 120px !important;
     min-width: 120px !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
     font-weight: 900;
     color: #6c757d;
     }
-
-    /* 4) td는 무조건 줄바꿈 허용 → 값 전체 표시 */
     #detailCol .table-sm td{
     white-space: normal !important;
-    overflow-wrap: anywhere;   /* ✅ 긴 문자열도 줄바꿈 */
+    overflow-wrap: anywhere;
     word-break: break-word;
     }
-
-    /* 5) URL은 특수: 아주 긴 토큰도 있으니 더 강하게 */
     #dRequestUrl{
-    word-break: break-all;     /* ✅ URL은 중간에서도 끊기게 */
+    word-break: break-all;
     overflow-wrap: anywhere;
+    }
+
+    .domain-cell {
+    position: relative;
+    }
+
+/* 기본 숨김 */
+    .dup-badge {
+        margin-left: 6px;
+        padding: 2px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 12px;
+
+        background: rgba(105, 108, 255, 0.12); /* Sneat primary 연한톤 */
+        color: #696cff; /* Sneat 기본 primary */
+
+        opacity: 0;
+        transform: translateY(2px);
+        transition: all 0.18s ease;
+    }
+
+    /* hover 시 등장 */
+    tr:hover .dup-badge {
+        opacity: 1;
+        transform: translateY(0);
     }
     </style>
     {% endblock %}
@@ -183,12 +180,10 @@
     <div class="ai-rec-page">
     <div class="container-fluid ai-rec-wrap container-p-y">
 
-        <!-- =======================
-            필터 카드
-            ======================= -->
+        <!-- 필터 -->
         <div class="card filter-card">
         <div class="card-body">
-            <form method="get" class="row g-2 align-items-end filter-grid">
+            <form method="get" class="row g-2 align-items-end filter-grid" id="filterForm">
             <!-- 1행 -->
             <div class="col-4">
                 <label class="form-label">URL/도메인</label>
@@ -259,16 +254,13 @@
                 <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
             </div>
 
-            <input type="hidden" name="sort" value="{{ filters.sort }}">
-            {# ✅ 12개 고정 #}
+            <input type="hidden" name="sort" id="sortHidden" value="{{ filters.sort }}">
             <input type="hidden" name="per_page" value="12">
             </form>
         </div>
         </div>
 
-        <!-- =======================
-            테이블 + 상세
-            ======================= -->
+        <!-- 테이블 + 상세 -->
         <div class="row g-2 workspace">
 
         <!-- 왼쪽: 테이블 -->
@@ -276,108 +268,16 @@
             <div class="card workspace-card">
             <div class="card-body">
 
-                <div class="table-topbar">
-                <div class="text-muted">조회 : {{ page_obj.paginator.count }}건</div>
-                <div class="d-flex gap-2">
-                    <a class="btn btn-outline-success btn-sm"
-                    href="?page=1&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort=confidence&per_page=12">유해확률순</a>
-
-                    <a class="btn btn-outline-secondary btn-sm"
-                    href="?page=1&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort=latest&per_page=12">최신순</a>
-                </div>
-                </div>
-
-                <div class="table-viewport table-responsive text-nowrap">
-                <table class="table table-hover align-middle mb-0" id="aiTable">
-                    <thead>
-                    <tr>
-                        <th style="width:70px;">no</th>
-                        <th>도메인</th>
-                        <th>AI판단 결과</th>
-                        <th class="text-center">판단 확률</th>
-                        <th class="text-center">관리자 검토 결과</th>
-                        <th class="text-center">정책 타입</th>
-                        <th class="text-center">정책 추가 시간</th>
-                        <th class="text-center">AI결과 로그 시간</th>
-                        <th class="text-center">검토 여부</th>
-                        <th class="text-center">작성자</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {% for row in page_obj %}
-                    <tr class="js-row" style="cursor:pointer;"
-                        data-id="{{ row.id }}"
-                        data-domain="{{ row.domain|default:'' }}"
-                        data-request-url="{{ row.request_url|default:'' }}"
-                        data-confidence="{{ row.confidence_score|default:'' }}"
-                        data-is-checked="{% if row.is_checked %}true{% else %}false{% endif %}"
-                        data-admin-action="{{ row.checked_result|default:'' }}"
-                        data-policy-type="{{ row.policy_type|default:'' }}"
-                        data-applied-at="{% if row.applied_at %}{{ row.applied_at|date:'Y-m-d H:i' }}{% endif %}"
-                        data-create-at="{% if row.create_at %}{{ row.create_at|date:'Y-m-d H:i' }}{% endif %}"
-                        data-admin="{{ row.admin|default:'' }}"
-                        {# ✅ 상세 스크립트가 읽는 키들 추가 #}
-                        data-ai-result="{% if row.confidence_score is not None %}{% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}{% else %}-{% endif %}"
-                        data-checked-result-hidden="{{ row.checked_result|default:'' }}"
-                    >
-                        <td class="fw-semibold">{{ row.id }}</td>
-                        <td class="cell-truncate-sm">{{ row.domain }}</td>
-                        <td>
-                        {% if row.confidence_score is not None %}
-                            {% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}
-                        {% else %}-{% endif %}
-                        </td>
-                        <td class="text-center">{% if row.confidence_score is not None %}{{ row.confidence_score }}%{% else %}-{% endif %}</td>
-                        <td class="text-center">{{ row.checked_result|default:"-" }}</td>
-                        <td class="text-center">{{ row.policy_type|default:"-" }}</td>
-                        <td class="text-center">{% if row.applied_at %}{{ row.applied_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
-                        <td class="text-center">{% if row.create_at %}{{ row.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
-                        <td class="text-center">{% if row.is_checked %}검토됨{% else %}미검토{% endif %}</td>
-                        <td class="text-center">{{ row.admin|default:"-" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td></tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                </div>
-
-                <div class="pager">
-                <div class="text-muted">
-                    총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-                </div>
-
-                <nav>
-                    <ul class="pagination mb-0">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                        <a class="page-link"
-                            href="?page={{ page_obj.previous_page_number }}&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort={{ filters.sort }}&per_page=12">이전</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">이전</span></li>
-                    {% endif %}
-
-                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                        <a class="page-link"
-                            href="?page={{ page_obj.next_page_number }}&q={{ filters.q }}&checked_result={{ filters.checked_result }}&is_checked={{ filters.is_checked }}&policy_type={{ filters.policy_type }}&admin={{ filters.admin }}&log_start={{ filters.log_start }}&log_end={{ filters.log_end }}&applied_start={{ filters.applied_start }}&applied_end={{ filters.applied_end }}&sort={{ filters.sort }}&per_page=12">다음</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">다음</span></li>
-                    {% endif %}
-                    </ul>
-                </nav>
+                <!-- ✅ 비동기 교체 영역 -->
+                <div id="listArea">
+                {% include "ai/ai_log_partial.html" %}
                 </div>
 
             </div>
             </div>
         </div>
 
-        <!-- 오른쪽: 상세 패널 -->
+        <!-- 오른쪽: 상세 -->
         <div class="col-4 d-none" id="detailCol">
             <div class="card workspace-card">
             <div class="card-body">
@@ -428,7 +328,8 @@
 
     <script>
     (function(){
-    const rows = document.querySelectorAll(".js-row");
+    const filterForm = document.getElementById("filterForm");
+    const listArea = document.getElementById("listArea");
 
     const tableCol = document.getElementById("tableCol");
     const detailCol = document.getElementById("detailCol");
@@ -449,13 +350,22 @@
     const btnIgnoreDetail = document.getElementById("btnIgnoreDetail");
     const btnAddPolicyDetail = document.getElementById("btnAddPolicyDetail");
 
-    function clearActive(){
-        rows.forEach(r => r.classList.remove("table-active"));
+    const isCheckedSelect = document.getElementById("isCheckedSelect");
+    const btnAdd = document.getElementById("btnAdd");
+    const btnIgnore = document.getElementById("btnIgnore");
+    const checkedResultHidden = document.getElementById("checkedResultHidden");
+
+    const policyTypeSelect = document.getElementById("policyTypeSelect");
+    const appliedStart = document.getElementById("appliedStart");
+    const appliedEnd = document.getElementById("appliedEnd");
+    const adminInput = document.getElementById("adminInput");
+
+    function openDetail(){
+        detailCol.classList.remove("d-none");
+        tableCol.classList.remove("col-12");
+        tableCol.classList.add("col-8");
     }
-    function setDetailButtonsEnabled(enabled){
-        btnIgnoreDetail.disabled = !enabled;
-        btnAddPolicyDetail.disabled = !enabled;
-    }
+
     function resetDetail(){
         badge.textContent = "선택 없음";
         dRequestUrl.textContent = "-";
@@ -468,62 +378,45 @@
         dAppliedAt.textContent = "-";
         dCreateAt.textContent = "-";
         dAdmin.textContent = "-";
+        btnIgnoreDetail.disabled = true;
+        btnAddPolicyDetail.disabled = true;
+        window.__selectedAiId = null;
     }
 
-    rows.forEach(row => {
-        row.addEventListener("click", () => {
-        detailCol.classList.remove("d-none");
-        tableCol.classList.remove("col-12");
-        tableCol.classList.add("col-8");
-
-        clearActive();
-        row.classList.add("table-active");
-
-        const data = row.dataset;
-        window.__selectedAiId = data.id;
-
-        badge.textContent = `ID: ${data.id}`;
-        dRequestUrl.textContent = data.requestUrl || "-";
-        dDomain.textContent = data.domain || "-";
-        dAiResult.textContent = data.aiResult || "-";
-        dConfidence.textContent = data.confidence ? `${data.confidence}%` : "-";
-        dIsChecked.textContent = (data.isChecked === "true") ? "검토됨" : "미검토";
-        dcheckedResultHidden.textContent = data.checkedResultHidden || "-";
-        dPolicyType.textContent = data.policyType || "-";
-        dAppliedAt.textContent = data.appliedAt || "-";
-        dCreateAt.textContent = data.createAt || "-";
-        dAdmin.textContent = data.admin || "-";
-
-        setDetailButtonsEnabled(true);
-        });
-    });
-
-    detailCloseBtn.addEventListener("click", () => {
+    function closeDetail(){
         detailCol.classList.add("d-none");
         tableCol.classList.remove("col-8");
         tableCol.classList.add("col-12");
-        clearActive();
+        listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
         resetDetail();
-        setDetailButtonsEnabled(false);
-        window.__selectedAiId = null;
-    });
+    }
 
-    setDetailButtonsEnabled(false);
-    })();
-    </script>
+    function buildQuery(extra){
+        const fd = new FormData(filterForm);
+        const params = new URLSearchParams(fd);
+        params.set("per_page", "12");   // 고정
+        params.set("partial", "1");     // partial fetch
+        if(extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
+        return params.toString();
+    }
 
-    <script>
-    (function(){
-    const isCheckedSelect = document.getElementById("isCheckedSelect");
-    const btnAdd = document.getElementById("btnAdd");
-    const btnIgnore = document.getElementById("btnIgnore");
-    const checkedResultHidden = document.getElementById("checkedResultHidden");
+    async function loadPage(page, extra={}){
+        // 페이지 이동/정렬/검색 시 상세 닫기
+        closeDetail();
 
-    const policyTypeSelect = document.getElementById("policyTypeSelect");
-    const appliedStart = document.getElementById("appliedStart");
-    const appliedEnd = document.getElementById("appliedEnd");
-    const adminInput = document.getElementById("adminInput");
+        const qs = buildQuery({ page, ...extra });
+        const url = `${window.location.pathname}?${qs}`;
 
+        const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+        if(!res.ok) throw new Error("partial load failed");
+        listArea.innerHTML = await res.text();
+
+        // 주소창 동기화 (partial 제거)
+        const fullQs = buildQuery({ page, ...extra }).replace("&partial=1", "");
+        history.replaceState({}, "", `${window.location.pathname}?${fullQs}`);
+    }
+
+    // ---- 필터 버튼 활성/비활성 로직 (너 기존 그대로)
     function setEnabled(){
         const reviewed = (isCheckedSelect.value === "true");
 
@@ -541,42 +434,84 @@
         checkedResultHidden.value = "ADD";
         setEnabled();
     });
-
     btnIgnore.addEventListener("click", () => {
         checkedResultHidden.value = "IGNORE";
         setEnabled();
     });
-
     isCheckedSelect.addEventListener("change", setEnabled);
     setEnabled();
-    })();
-    </script>
 
-    <script>
+    // ---- 검색 submit -> 1페이지 비동기
+    filterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loadPage(1).catch(console.error);
+    });
+
+    // ✅ 이벤트 위임: 페이징/정렬/row클릭
+    listArea.addEventListener("click", (e) => {
+        const pageLink = e.target.closest("a[data-page]");
+        if(pageLink){
+        e.preventDefault();
+        loadPage(pageLink.dataset.page).catch(console.error);
+        return;
+        }
+
+        const sortLink = e.target.closest("a[data-sort]");
+        if(sortLink){
+        e.preventDefault();
+        loadPage(1, { sort: sortLink.dataset.sort }).catch(console.error);
+        return;
+        }
+
+        const row = e.target.closest("tr.js-row");
+        if(!row) return;
+
+        openDetail();
+        listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
+        row.classList.add("table-active");
+
+        const data = row.dataset;
+        window.__selectedAiId = data.id;
+        window.__selectedDomain = data.domain;
+
+        badge.textContent = `ID: ${data.id}`;
+        dRequestUrl.textContent = data.requestUrl || "-";
+        dDomain.textContent = data.domain || "-";
+        dAiResult.textContent = data.aiResult || "-";
+        dConfidence.textContent = data.confidence ? `${data.confidence}%` : "-";
+        dIsChecked.textContent = (data.isChecked === "true") ? "검토됨" : "미검토";
+        dcheckedResultHidden.textContent = data.checkedResultHidden || "-";
+        dPolicyType.textContent = data.policyType || "-";
+        dAppliedAt.textContent = data.appliedAt || "-";
+        dCreateAt.textContent = data.createAt || "-";
+        dAdmin.textContent = data.admin || "-";
+
+        btnIgnoreDetail.disabled = false;
+        btnAddPolicyDetail.disabled = false;
+    });
+
+    detailCloseBtn.addEventListener("click", closeDetail);
+
+    // ---- csrf
     function getCookie(name){
-    const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
-    return v ? decodeURIComponent(v.split("=")[1]) : null;
+        const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+        return v ? decodeURIComponent(v.split("=")[1]) : null;
     }
 
     async function postIgnore(aiId){
-    const res = await fetch(`/ai/records/${aiId}/ignore/`, {
+        const res = await fetch(`/ai/records/${aiId}/ignore/`, {
         method: "POST",
         headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify({}),
-    });
-    return await res.json();
+        });
+        return await res.json();
     }
-    </script>
 
-    <script>
-    (function(){
-    const btnIgnoreDetail = document.getElementById("btnIgnoreDetail");
-    const btnAddPolicyDetail = document.getElementById("btnAddPolicyDetail");
-
-    btnIgnoreDetail?.addEventListener("click", async () => {
+    // ---- 상세 버튼: 무시 / 추가
+    btnIgnoreDetail.addEventListener("click", async () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
 
@@ -585,15 +520,24 @@
         alert("무시 처리 실패");
         return;
         }
-        window.location.reload();
+
+        // ✅ 현재 상태 유지한 채 partial 재조회
+        const qs = new URLSearchParams(window.location.search);
+        const page = qs.get("page") || "1";
+        const sort = qs.get("sort") || (document.getElementById("sortHidden")?.value || "latest");
+
+        loadPage(page, { sort }).catch(console.error);
     });
 
-    btnAddPolicyDetail?.addEventListener("click", () => {
+    btnAddPolicyDetail.addEventListener("click", () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
+
+    // 초기
+    resetDetail();
     })();
 </script>
 {% endblock %}

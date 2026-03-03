@@ -78,9 +78,9 @@
     ========================================= */
     :root{
         --theadH: 44px;
-        --rowH: 42px;     /* 12개면 42*12=504 */
+        --rowH: 42px;
         --pagerH: 44px;
-        --tablePadding: 12px; /* card-body padding */
+        --tablePadding: 12px;
     }
 
     .list-card{
@@ -144,15 +144,15 @@
     }
     .detail-v{
         font-weight:800;
-        margin-bottom:.45rem; /* ✅ 여백 줄임 */
+        margin-bottom:.45rem;
         font-size: .92rem;
         line-height: 1.25;
+        word-break: break-word; /* ✅ 길면 줄바꿈 */
     }
     .detail-card hr{ margin: .65rem 0; }
 
     .clickable-row{ cursor:pointer; }
     .table-active{ background: rgba(105,108,255,.08) !important; }
-
     </style>
     {% endblock %}
 
@@ -162,7 +162,7 @@
     <!-- ✅ 필터 카드 -->
     <div class="card filter-card">
         <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get" class="row g-2 align-items-end" id="logsFilterForm">
 
             <!-- 1행 -->
             <div class="col-xl-4 col-lg-6">
@@ -219,7 +219,7 @@
             </div>
 
             <div class="col-xl-4 col-lg-12">
-            <label class="form-label">탐지 기간(날짜)</label>
+            <label class="form-label">탐지 기간(날짜/시간)</label>
             <div class="d-flex gap-2 align-items-center">
                 <input class="form-control" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
                 <div class="text-muted">~</div>
@@ -228,7 +228,7 @@
             </div>
 
             <div class="col-auto ms-auto d-flex gap-2">
-            <button class="btn btn-primary" type="submit" style="min-width:80px;height:38px;">조회</button>
+            <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
             <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
             </div>
 
@@ -244,101 +244,9 @@
         <div class="card list-card">
             <div class="card-body">
 
-            <div class="table-responsive text-nowrap">
-                <table class="table table-hover align-middle mb-0" id="logsTable">
-                <thead>
-                    <tr>
-                    <th style="width:80px;">번호</th>
-                    <th style="width:360px;">URL</th>
-                    <th style="width:160px;">도메인</th>
-                    <th style="width:160px;">쿼리</th>
-                    <th style="width:140px;">사용자 IP</th>
-                    <th style="width:100px;">정책 ID</th>
-                    <th style="width:160px;">정책 이름</th>
-                    <th style="width:90px;">타입</th>
-                    <th style="width:170px;">로그시간</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for r in page_obj %}
-                    <tr class="clickable-row js-row"
-                        data-id="{{ r.id }}"
-                        data-request-url="{{ r.request_url|default_if_none:'' }}"
-                        data-domain="{{ r.domain|default_if_none:'' }}"
-                        data-query="{{ r.query_string|default_if_none:'' }}"
-                        data-client-ip="{{ r.client_ip|default_if_none:'' }}"
-                        data-policy-id="{{ r.policy_id.policy_id|default_if_none:'' }}"
-                        data-policy-name="{{ r.policy_id.policy_name|default_if_none:'' }}"
-                        data-policy-type="{{ r.policy_id.policy_type|default_if_none:'' }}"
-                        data-policy-desc="{{ r.policy_id.description|default_if_none:'' }}"
-                        data-dst-port="{{ r.dst_port|default_if_none:'' }}"
-                        data-method="{{ r.http_method|default_if_none:'' }}"
-                        data-create-at="{{ r.create_at|date:'Y/m/d H:i' }}">
-                    <td class="fw-semibold">{{ r.id }}</td>
-                    <td class="cell-truncate">{{ r.request_url }}</td>
-                    <td class="cell-truncate-sm">{{ r.domain }}</td>
-                    <td class="cell-truncate-sm">{{ r.query_string }}</td>
-                    <td>{{ r.client_ip }}</td>
-                    <td class="fw-semibold">{{ r.policy_id.policy_id }}</td>
-                    <td class="cell-truncate-sm">{{ r.policy_id.policy_name }}</td>
-                    <td>{{ r.policy_id.policy_type }}</td>
-                    <td>{{ r.create_at|date:"Y/m/d H:i" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                    <td colspan="9" class="text-center text-muted py-4">조회된 데이터가 없습니다.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                </table>
-            </div>
-
-            <!-- 페이지네이션 -->
-            <div class="pager-bar">
-                <div class="text-muted">
-                총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-                </div>
-
-                <nav>
-                <ul class="pagination mb-0">
-                    {% if page_obj.has_previous %}
-                    <li class="page-item">
-                    <a class="page-link"
-                        href="?page={{ page_obj.previous_page_number }}
-                        &url_domain={{ filters.url_domain }}
-                        &policy_kw={{ filters.policy_kw }}
-                        &client_ip={{ filters.client_ip }}
-                        &policy_type={{ filters.policy_type }}
-                        &method={{ filters.method }}
-                        &query_string={{ filters.query_string }}
-                        &start_dt={{ filters.start_dt }}
-                        &end_dt={{ filters.end_dt }}">이전</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">이전</span></li>
-                    {% endif %}
-
-                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
-
-                    {% if page_obj.has_next %}
-                    <li class="page-item">
-                    <a class="page-link"
-                        href="?page={{ page_obj.next_page_number }}
-                        &url_domain={{ filters.url_domain }}
-                        &policy_kw={{ filters.policy_kw }}
-                        &client_ip={{ filters.client_ip }}
-                        &policy_type={{ filters.policy_type }}
-                        &method={{ filters.method }}
-                        &query_string={{ filters.query_string }}
-                        &start_dt={{ filters.start_dt }}
-                        &end_dt={{ filters.end_dt }}">다음</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">다음</span></li>
-                    {% endif %}
-                </ul>
-                </nav>
+            {# ✅ 비동기 갱신 대상 영역 #}
+            <div id="logsPartial">
+                {% include "integrated_detection_logs/log_partial.html" %}
             </div>
 
             </div>
@@ -396,7 +304,9 @@
 
     <script>
     (function(){
-    const rows = document.querySelectorAll(".js-row");
+    const form = document.getElementById("logsFilterForm");
+    const partialEl = document.getElementById("logsPartial");
+
     const tableCol = document.getElementById("tableCol");
     const detailCol = document.getElementById("detailCol");
     const detailCloseBtn = document.getElementById("detailCloseBtn");
@@ -413,15 +323,16 @@
     const dMethod = document.getElementById("dMethod");
     const dCreateAt = document.getElementById("dCreateAt");
 
-    function clearActive(){
-        rows.forEach(r => r.classList.remove("table-active"));
-    }
+    function bindRowClicks(){
+        const rows = document.querySelectorAll(".js-row");
 
-    function openDetail(row){
+        function clearActive(){
+        rows.forEach(r => r.classList.remove("table-active"));
+        }
+
+        function openDetail(row){
         clearActive();
         row.classList.add("table-active");
-
-        tableCol.style.flex = "1 1 auto";
         detailCol.classList.remove("d-none");
 
         dId.textContent = `ID ${row.dataset.id || "-"}`;
@@ -435,15 +346,63 @@
         dDstPort.textContent = row.dataset.dstPort || "-";
         dMethod.textContent = row.dataset.method || "-";
         dCreateAt.textContent = row.dataset.createAt || "-";
-    }
+        }
 
-    function closeDetail(){
+        rows.forEach(r => r.addEventListener("click", () => openDetail(r)));
+
+        detailCloseBtn.addEventListener("click", () => {
         detailCol.classList.add("d-none");
         clearActive();
+        }, { once: true });
     }
 
-    rows.forEach(r => r.addEventListener("click", () => openDetail(r)));
-    detailCloseBtn.addEventListener("click", closeDetail);
+    function bindPagerClicks(){
+        const links = partialEl.querySelectorAll("a.js-page");
+        links.forEach(a => {
+        a.addEventListener("click", (e) => {
+            e.preventDefault();
+            const url = a.getAttribute("href");
+            if(url) loadPartial(url);
+        });
+        });
+    }
+
+    async function loadPartial(url){
+        try{
+        // 상세 열려있으면 닫기(데이터 바뀌니 혼동 방지)
+        detailCol.classList.add("d-none");
+        document.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
+
+        const res = await fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if(!res.ok) throw new Error("partial fetch failed");
+
+        const html = await res.text();
+        partialEl.innerHTML = html;
+
+        // partial 교체 후 재바인딩
+        bindRowClicks();
+        bindPagerClicks();
+        }catch(err){
+        console.error(err);
+        // 실패 시에는 그냥 기존 화면 유지
+        alert("조회 중 오류가 발생했습니다. 콘솔 로그를 확인하세요.");
+        }
+    }
+
+    // 폼 submit 가로채기
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams(new FormData(form));
+        params.set("page", "1");
+        const url = `${window.location.pathname}?${params.toString()}`;
+        loadPartial(url);
+    });
+
+    // 초기 바인딩
+    bindRowClicks();
+    bindPagerClicks();
     })();
 </script>
 {% endblock %}

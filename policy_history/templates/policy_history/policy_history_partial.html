@@ -1,0 +1,106 @@
+{# policy_history/policy_history_partial.html #}
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="text-muted">조회 결과</div>
+        <div class="count-pill">조회 : {{ page_obj.paginator.count }}건</div>
+        </div>
+
+        <div class="table-responsive text-nowrap">
+        <table class="table table-hover align-middle">
+            <thead>
+            <tr>
+                <th>정책 아이디</th>
+                <th>정책 타입</th>
+                <th>정책 이름</th>
+                <th>정책 URL/표현식</th>
+                <th class="td-center" style="width:110px">정책 적용 여부</th>
+                <th class="td-center" style="width:100px">처리 유형</th>
+                <th>정책 삭제자 id</th>
+                <th>삭제 시간</th>
+                <th>정책 설명</th>
+                <th class="text-end">복구</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            {% for h in page_obj %}
+            <tr>
+                <td class="fw-semibold">{{ h.policy_id }}</td>
+                <td>{{ h.policy_type }}</td>
+                <td>{{ h.policy_name }}</td>
+                <td class="cell-truncate">{{ h.content }}</td>
+
+                <td class="td-center">
+                {% if h.is_active %}
+                    <span class="pill pill-active">적용</span>
+                {% else %}
+                    <span class="pill pill-inactive">미적용</span>
+                {% endif %}
+                </td>
+
+                <td class="td-center">
+                {% if h.handling_type == "block" %}
+                    <span class="pill pill-block">BLOCK</span>
+                {% else %}
+                    <span class="pill pill-log">LOG</span>
+                {% endif %}
+                </td>
+
+                <td>{{ h.delete_by }}</td>
+                <td>{{ h.delete_at|date:"Y/m/d H:i" }}</td>
+                <td class="cell-truncate-sm">{{ h.description|default:"" }}</td>
+
+                <td class="text-end">
+                <form method="post"
+                        class="js-restore"
+                        action="{% url 'policy_history:restore' h.policy_id %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-success" type="submit">복구</button>
+                </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        <!-- 페이지네이션 (필터 유지) -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+        </div>
+
+        <nav>
+            <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                <a class="page-link js-page"
+                    href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">이전</span></li>
+            {% endif %}
+
+            <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                <a class="page-link js-page"
+                    href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">다음</span></li>
+            {% endif %}
+            </ul>
+        </nav>
+        </div>
+
+    </div>
+</div>

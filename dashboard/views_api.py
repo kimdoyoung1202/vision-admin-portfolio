@@ -55,24 +55,15 @@ def kpis_api(request):
     })
 
 
-@login_required
+
 @login_required
 def timeseries_api(request):
-    """
-    gran:
-        - day   : 오늘(0~23시)
-        - week  : 이번주(월~일) 요일별
-        - month : 올해(1~12월) 월별
+    gran = request.GET.get("gran", "day")
+    now = timezone.now()
 
-    ptype:
-        - all | DOMAIN | REGEX
-    """
-    gran = request.GET.get("gran", "day")     # day|week|month
-    ptype = request.GET.get("ptype", "all")  # all|DOMAIN|REGEX
-
-    now = timezone.localtime()
-
-    # ---- 기준 기간 계산 ----
+    # ----------------------------
+    # 기간 계산
+    # ----------------------------
     if gran == "day":
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end = now
@@ -83,54 +74,63 @@ def timeseries_api(request):
         start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         end = now
 
-    qs = IntegratedDetectionLogs.objects.filter(create_at__gte=start, create_at__lte=end)
+    base_qs = IntegratedDetectionLogs.objects.filter(
+        create_at__gte=start,
+        create_at__lte=end
+    )
 
-    if ptype != "all":
-        qs = qs.filter(policy_id__policy_type=ptype)
+    # DOMAIN / REGEX 분리
+    domain_qs = base_qs.filter(policy_id__policy_type="DOMAIN")
+    regex_qs = base_qs.filter(policy_id__policy_type="REGEX")
 
-    # ---- 집계 단위별 labels/values ----
+    # ----------------------------
+    # 집계 단위별 처리
+    # ----------------------------
     if gran == "day":
-        rows = (qs.annotate(h=ExtractHour("create_at"))
-                .values("h")
-                .annotate(cnt=Count("id"))
-                .order_by("h"))
-        m = {r["h"]: r["cnt"] for r in rows}
+        # 0~23시
+        domain_rows = domain_qs.annotate(h=ExtractHour("create_at")).values("h").annotate(cnt=Count("id"))
+        regex_rows = regex_qs.annotate(h=ExtractHour("create_at")).values("h").annotate(cnt=Count("id"))
+
+        domain_map = {r["h"]: r["cnt"] for r in domain_rows}
+        regex_map = {r["h"]: r["cnt"] for r in regex_rows}
+
         labels = [f"{h:02d}:00" for h in range(24)]
-        values = [m.get(h, 0) for h in range(24)]
+        domain_values = [domain_map.get(h, 0) for h in range(24)]
+        regex_values = [regex_map.get(h, 0) for h in range(24)]
 
     elif gran == "week":
-        # ExtractWeekDay: 일=1, 월=2 ... 토=7 (Django/DB에 따라 동일)
-        rows = (qs.annotate(w=ExtractWeekDay("create_at"))
-                .values("w")
-                .annotate(cnt=Count("id"))
-                .order_by("w"))
-        m = {r["w"]: r["cnt"] for r in rows}
+        # 월~일
+        domain_rows = domain_qs.annotate(w=ExtractWeekDay("create_at")).values("w").annotate(cnt=Count("id"))
+        regex_rows = regex_qs.annotate(w=ExtractWeekDay("create_at")).values("w").annotate(cnt=Count("id"))
 
-        # 월~일 순서로 보여주고 싶으니까 매핑
-        # ExtractWeekDay 기준: 월=2, 화=3, 수=4, 목=5, 금=6, 토=7, 일=1
+        domain_map = {r["w"]: r["cnt"] for r in domain_rows}
+        regex_map = {r["w"]: r["cnt"] for r in regex_rows}
+
         order = [2, 3, 4, 5, 6, 7, 1]  # 월~일
         labels = ["월", "화", "수", "목", "금", "토", "일"]
-        values = [m.get(k, 0) for k in order]
 
-        # ⚠️ 월~금만 원하면 아래로 바꾸면 됨:
-        # order = [2,3,4,5,6]
-        # labels = ["월","화","수","목","금"]
-        # values = [m.get(k,0) for k in order]
+        domain_values = [domain_map.get(k, 0) for k in order]
+        regex_values = [regex_map.get(k, 0) for k in order]
 
-    else:  # month: 1~12
-        rows = (qs.annotate(mo=ExtractMonth("create_at"))
-                .values("mo")
-                .annotate(cnt=Count("id"))
-                .order_by("mo"))
-        m = {r["mo"]: r["cnt"] for r in rows}
+    else:  # month (1~12월)
+        domain_rows = domain_qs.annotate(mo=ExtractMonth("create_at")).values("mo").annotate(cnt=Count("id"))
+        regex_rows = regex_qs.annotate(mo=ExtractMonth("create_at")).values("mo").annotate(cnt=Count("id"))
+
+        domain_map = {r["mo"]: r["cnt"] for r in domain_rows}
+        regex_map = {r["mo"]: r["cnt"] for r in regex_rows}
+
         labels = [f"{i}월" for i in range(1, 13)]
-        values = [m.get(i, 0) for i in range(1, 13)]
+        domain_values = [domain_map.get(i, 0) for i in range(1, 13)]
+        regex_values = [regex_map.get(i, 0) for i in range(1, 13)]
+
+    # TOTAL = DOMAIN + REGEX
+    total_values = [d + r for d, r in zip(domain_values, regex_values)]
 
     return JsonResponse({
-        "gran": gran,
-        "ptype": ptype,
         "labels": labels,
-        "values": values,
+        "domain": domain_values,
+        "regex": regex_values,
+        "total": total_values,
     })
 
 
@@ -188,14 +188,19 @@ def top_ips_api(request):
     window_minutes = int(request.GET.get("window_minutes", 10))
     limit = int(request.GET.get("limit", 10))
 
-    # "최근 N분"
-    from django.utils import timezone
-    now = timezone.localtime()
+    now = timezone.now()
     start = now - timedelta(minutes=window_minutes)
+    
+    qs = IntegratedDetectionLogs.objects.filter(create_at__range=(start, now))
+    print("TOP_IPS window:", window_minutes, "start:", start, "now:", now, "count:", qs.count())
 
-    rows = (IntegratedDetectionLogs.objects
-            .filter(create_at__gte=start, create_at__lte=now)
-            .values("client_ip")
+    #rows = (IntegratedDetectionLogs.objects
+            #.filter(create_at__gte=start, create_at__lte=now)
+            #.values("client_ip")
+            #.annotate(cnt=Count("id"))
+            #.order_by("-cnt")[:limit])
+            
+    rows = (qs.values("client_ip")
             .annotate(cnt=Count("id"))
             .order_by("-cnt")[:limit])
 

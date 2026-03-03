@@ -12,7 +12,7 @@ from integrated_detection_logs.models import IntegratedDetectionLogs  # 너 실�
 
 @login_required
 def kpis_api(request):
-    now = timezone.localtime(timezone.now())
+    now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yday_start = today_start - timedelta(days=1)
 

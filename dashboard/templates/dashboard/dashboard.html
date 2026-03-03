@@ -1,76 +1,57 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# ✅ 대시보드는 페이지 헤더(타이틀 영역) 숨김 #}
 {% block page_header %}{% endblock %}
 
 {% block content %}
 <style>
-    /* =========================
-        ✅ base.html이 감싸는 "바깥 card-sneat" 무력화
-        - 대시보드는 안에 여러 카드가 있으니까,
-        바깥 래퍼는 투명/패딩0으로 만들기
-        ========================= */
-    .main{
-        overflow: hidden !important;   /* base의 main overflow:auto 제거 */
-        padding: 10px !important;      /* 대시보드 전체 여백 */
-        min-height: 0;
-    }
+    /* base wrapper 무력화 */
+    .main{ overflow:hidden !important; padding:10px !important; min-height:0; }
     .main > .card-sneat{
-        height: 100%;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-        overflow: hidden !important;
+        height:100%;
+        padding:0 !important;
+        border:none !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        overflow:hidden !important;
     }
 
-    /* =========================
-        ✅ 대시보드: 한 화면 고정
-        ========================= */
     :root { --topbar-h: 64px; }
 
     .dash-page{
-        height: calc(100vh - var(--topbar-h) - 20px); /* main padding(10*2) 감안 */
-        display: flex;
-        flex-direction: column;
-        gap: .6rem;
-        overflow: hidden;
-        min-height: 0;
+        height: calc(100vh - var(--topbar-h) - 20px);
+        display:flex;
+        flex-direction:column;
+        gap:.6rem;
+        overflow:hidden;
+        min-height:0;
     }
 
-    /* 섹션 비율 */
+    /* ✅ 비율: 상단 좀 키우고 / 하단(IP+일일패킷) 조금 줄임 */
     .sec{ min-height:0; }
-    .sec.ts  { flex: 2.1; }
-    .sec.top { flex: 2.4; }
-    .sec.kpi { flex: 0.85; }
-    .sec.bot { flex: 2.4; }
+    .sec.ts  { flex: 2.6; }   /* 상단 더 크게 */
+    .sec.top { flex: 2.2; }
+    .sec.kpi { flex: 0.95; }
+    .sec.bot { flex: 1.6; }   /* 하단 조금 줄임 */
 
-    /* row compact */
-    .row.compact{ --bs-gutter-x: .6rem; --bs-gutter-y: .6rem; margin: 0; }
+    .row.compact{ --bs-gutter-x:.6rem; --bs-gutter-y:.6rem; margin:0; }
     .row.compact > *{ padding-left:.3rem; padding-right:.3rem; }
     .sec > .row, .sec > .row > div{ height:100%; min-height:0; }
 
-    /* 카드/폰트 압축 */
-    .card-sneat{ padding: 10px; height:100%; }
-    .fw-bold{ font-weight: 800 !important; }
+    .card-sneat{ padding:10px; height:100%; }
+    .fw-bold{ font-weight:800 !important; }
     .btn-group-sm>.btn, .btn-sm{ padding:.2rem .5rem; font-size:12px; }
     .badge{ font-size:11px; }
-    .text-muted.small{ font-size: 12px; }
+    .text-muted.small{ font-size:12px; }
 
-    /* 차트는 부모 높이에 100%로 */
     .chart-box{
-        position: relative;
-        width: 100%;
-        height: calc(100% - 28px); /* 제목줄 */
-        min-height: 0;
-        overflow: hidden;
+        position:relative;
+        width:100%;
+        height: calc(100% - 28px);
+        min-height:0;
+        overflow:hidden;
     }
-    canvas{
-        width:100% !important;
-        height:100% !important;
-        max-height:none !important;
-    }
+    canvas{ width:100% !important; height:100% !important; max-height:none !important; }
 
     /* KPI */
     .kpi-card{
@@ -78,46 +59,109 @@
         flex-direction:column;
         justify-content:space-between;
         height:100%;
+        min-height:0;
     }
-    .kpi-card .display-6{
-        line-height:1;
-        margin:0;
-        font-size:30px;
-    }
+    .kpi-card .display-6{ line-height:1; margin:0; font-size:30px; }
 
-    /* 우측 통합 카드(도넛+미니추이) */
-    .pkt-card{
+    /* ✅ 일일 패킷 KPI형 + 오른쪽 도넛 */
+    .pkt-kpi{
         display:flex;
-        flex-direction:column;
+        align-items:stretch;
+        justify-content:space-between;
+        gap: 12px;
         height:100%;
         min-height:0;
     }
-    .pkt-donut{
-        flex: 1;
-        min-height: 0;
-        position: relative;
+    .pkt-left{
+        flex:1;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        gap:6px;
     }
-    .donut-center{
+    .pkt-title{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+    }
+    .pkt-title .t{ font-weight:900; }
+    .pkt-title .g{ font-size:12px; font-weight:800; color:#a1acb8; }
+
+    .pkt-total{
+        display:flex;
+        align-items:flex-end;
+        justify-content:space-between;
+        gap:10px;
+    }
+    .pkt-total .n{
+        font-size:30px;
+        font-weight:900;
+        line-height:1;
+        color:#2f3a45;
+    }
+    .pkt-total .d{
+        font-weight:900;
+        white-space:nowrap;
+    }
+
+    .pkt-mini{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+    .pkt-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight:900;
+        font-size:12px;
+        border:1px solid rgba(105,108,255,.25);
+        background: rgba(105,108,255,.08);
+    }
+    .pkt-pill.danger{
+        border-color: rgba(255,99,132,.28);
+        background: rgba(255,99,132,.10);
+    }
+
+    .pkt-right{
+        width: 120px;
+        flex-shrink:0;
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .pkt-donut{
+        width: 110px;
+        height: 110px;
+        position:relative;
+    }
+    .pkt-donut canvas{
+        width:100% !important;
+        height:100% !important;
+    }
+    .pkt-center{
         position:absolute; inset:0;
         display:flex; align-items:center; justify-content:center;
         pointer-events:none;
         text-align:center;
         color:#566a7f;
     }
-    .donut-center .t1{ font-size:12px; font-weight:800; opacity:.85; }
-    .donut-center .t2{ font-size:20px; font-weight:900; }
+    .pkt-center .t1{ font-size:11px; font-weight:900; opacity:.85; line-height:1; }
+    .pkt-center .t2{ font-size:18px; font-weight:900; line-height:1.1; }
 
-    .pkt-mini{
-        height: 90px;            /* 고정 미니 높이 */
-        margin-top: 6px;
-    }
-
-    /* 작은 화면 추가 압축 */
     @media (max-height: 820px){
-        .main{ padding: 8px !important; }
+        .main{ padding:8px !important; }
         .dash-page{ height: calc(100vh - var(--topbar-h) - 16px); }
         .kpi-card .display-6{ font-size:26px; }
-        .pkt-mini{ height: 78px; }
+        .pkt-total .n{ font-size:26px; }
+        .pkt-right{ width: 110px; }
+        .pkt-donut{ width: 98px; height: 98px; }
     }
     </style>
 
@@ -140,7 +184,6 @@
                 <span class="badge text-bg-danger">정규표현식</span>
                 </div>
             </div>
-
             <div class="chart-box">
                 <canvas id="chartTimeseries"></canvas>
             </div>
@@ -149,7 +192,7 @@
         </div>
     </section>
 
-    <!-- 2) Top10 2개 -->
+    <!-- 2) Top10 -->
     <section class="sec top">
         <div class="row compact">
         <div class="col-md-6 h-100">
@@ -224,9 +267,10 @@
         </div>
     </section>
 
-    <!-- 4) 하단: IP + 우측(통합카드 1개) -->
+    <!-- 4) 하단: IP + ✅ KPI형 "일일 패킷 현황(도넛)" -->
     <section class="sec bot">
         <div class="row compact">
+
         <div class="col-lg-8 h-100">
             <div class="card-sneat h-100">
             <div class="d-flex align-items-center justify-content-between mb-1">
@@ -240,38 +284,46 @@
         </div>
 
         <div class="col-lg-4 h-100">
-            <div class="card-sneat pkt-card">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <div class="fw-bold">일일 패킷 현황</div>
-                <div class="text-muted small" id="dailyGranText">일별</div>
-            </div>
+            <div class="card-sneat pkt-kpi">
 
-            <!-- 도넛 -->
-            <div class="pkt-donut">
-                <canvas id="chartBlockedRatio"></canvas>
-                <div class="donut-center">
+            <!-- 왼쪽 KPI -->
+            <div class="pkt-left">
+                <div class="pkt-title">
+                <div class="t">일일 패킷 현황</div>
+                <div class="g" id="dailyGranText">일별</div>
+                </div>
+
                 <div>
+                <div class="text-muted small">TOTAL</div>
+                <div class="pkt-total">
+                    <div class="n" id="sysTotalText">-</div>
+                    <div class="d" id="dailyDeltaText">-</div>
+                </div>
+                <div class="text-muted small">전일 대비</div>
+                </div>
+
+                <div class="pkt-mini">
+                <span class="pkt-pill"><span class="badge text-bg-primary">통과</span><span id="kpiTotalAi">-</span></span>
+                <span class="pkt-pill danger"><span class="badge text-bg-danger">차단</span><span id="kpiTotalBlocked">-</span></span>
+                </div>
+            </div>
+
+            <!-- 오른쪽 도넛 -->
+            <div class="pkt-right">
+                <div class="pkt-donut">
+                <canvas id="chartBlockedRatio"></canvas>
+                <div class="pkt-center">
+                    <div>
                     <div class="t1">TOTAL</div>
-                    <div class="t2" id="sysTotalText">-</div>
+                    <div class="t2" id="donutTotalText">-</div>
+                    </div>
                 </div>
                 </div>
             </div>
 
-            <!-- 숫자 -->
-            <div class="text-center mt-1">
-                <span class="badge text-bg-primary">통과</span>
-                <span class="fw-bold" id="kpiTotalAi">-</span>
-
-                <span class="badge text-bg-danger ms-3">차단</span>
-                <span class="fw-bold" id="kpiTotalBlocked">-</span>
-            </div>
-
-            <!-- 미니 추이 -->
-            <div class="pkt-mini">
-                <canvas id="chartDailyMini"></canvas>
-            </div>
             </div>
         </div>
+
         </div>
     </section>
 
@@ -280,7 +332,6 @@
 
     {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
     <script>
     (function(){
     const REFRESH_MS = 5000;
@@ -294,15 +345,18 @@
     const kpiBlockedDelta = document.getElementById("kpiBlockedDelta");
 
     const ipWindowText = document.getElementById("ipWindowText");
+
+    // ✅ 일일 패킷 KPI형 카드 요소
     const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
     const kpiTotalAi = document.getElementById("kpiTotalAi");
     const sysTotalText = document.getElementById("sysTotalText");
+    const donutTotalText = document.getElementById("donutTotalText");
+    const dailyDeltaText = document.getElementById("dailyDeltaText");
     const dailyGranText = document.getElementById("dailyGranText");
 
     async function getJSON(url){
         const res = await fetch(url, { credentials:"same-origin" });
         if(!res.ok) throw new Error(`API Error ${res.status} ${url}`);
-
         const ct = (res.headers.get("content-type") || "").toLowerCase();
         if(!ct.includes("application/json")){
         const text = await res.text();
@@ -404,17 +458,6 @@
         }
     });
 
-    const chartDailyMini = new Chart(document.getElementById("chartDailyMini"), {
-        type: "line",
-        data: { labels: [], datasets: [{ label: "TOTAL", data: [], tension: 0.35, borderWidth: 2, pointRadius: 0 }] },
-        options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { display: false }, y: { display: false, beginAtZero: true } }
-        }
-    });
-
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=total`);
 
@@ -430,10 +473,17 @@
         kpiAiDelta.textContent      = fmtDelta(kpi.ai_delta);
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
+        // ✅ 일일 패킷 KPI형 카드: TOTAL=통과+차단
         const total = blockedCount + aiCount;
         if (kpiTotalBlocked) kpiTotalBlocked.textContent = blockedCount;
         if (kpiTotalAi) kpiTotalAi.textContent = aiCount;
         if (sysTotalText) sysTotalText.textContent = total;
+        if (donutTotalText) donutTotalText.textContent = total;
+
+        // 전일대비를 "TOTAL 기준"으로 보여주고 싶으면 서버에서 total_delta 내려주는게 베스트.
+        // 일단은 blocked_delta + ai_delta 를 합산해서 "대충" total delta로 표시.
+        const totalDelta = Number(kpi.blocked_delta ?? 0) + Number(kpi.ai_delta ?? 0);
+        if (dailyDeltaText) dailyDeltaText.textContent = fmtDelta(totalDelta);
 
         chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
         chartBlockedRatio.update();
@@ -450,10 +500,6 @@
 
         if (dailyGranText) dailyGranText.textContent =
         (gran === "day" ? "일별" : (gran === "week" ? "주별" : "월별"));
-
-        chartDailyMini.data.labels = ts.labels ?? [];
-        chartDailyMini.data.datasets[0].data = ts.total ?? [];
-        chartDailyMini.update();
     }
 
     async function refreshTopDomains(){
@@ -480,10 +526,7 @@
         chartTopIps.update();
     }
 
-    async function safe(fn){
-        try { await fn(); }
-        catch(e){ console.error(e); }
-    }
+    async function safe(fn){ try { await fn(); } catch(e){ console.error(e); } }
 
     async function refreshAll(){
         await Promise.all([

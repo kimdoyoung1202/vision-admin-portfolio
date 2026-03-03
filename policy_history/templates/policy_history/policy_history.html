@@ -5,11 +5,11 @@
 {% block page_title %}정책 삭제 기록 관리{% endblock %}
 {% block page_subtitle %}삭제된 정책 조회 및 복구{% endblock %}
 {% block page_actions %}
-    <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">정책 관리로</a>
+  <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">정책 관리로</a>
 {% endblock %}
 
 {% block extra_css %}
-    <style>
+<style>
     /* policy_list 톤 유지 */
     .table .form-select.form-select-sm{
         border-radius:10px;
@@ -33,48 +33,49 @@
         white-space:nowrap;
     }
 
-    /* ====== 상태 Pill (Completed/Pending/Failed 느낌) ====== */
     /* ===== 슬림 상태 배지 ===== */
-.pill{
-    display:inline-block;
-    padding:3px 10px;
-    border-radius:8px;
-    font-weight:700;
-    font-size:11px;
-    letter-spacing:.3px;
-    border:1px solid transparent;
-}
+    .pill{
+        display:inline-block;
+        padding:3px 10px;
+        border-radius:8px;
+        font-weight:700;
+        font-size:11px;
+        letter-spacing:.3px;
+        border:1px solid transparent;
+    }
+    .pill-active{
+        background: rgba(40,199,111,.12);
+        color:#28c76f;
+        border-color: rgba(40,199,111,.25);
+    }
+    .pill-inactive{
+        background: rgba(133,146,163,.12);
+        color:#8592a3;
+        border-color: rgba(133,146,163,.25);
+    }
+    .pill-block{
+        background: rgba(255,62,29,.10);
+        color:#ff3e1d;
+        border-color: rgba(255,62,29,.25);
+    }
+    .pill-log{
+        background: rgba(3,195,236,.10);
+        color:#03c3ec;
+        border-color: rgba(3,195,236,.25);
+    }
 
-/* 적용 */
-.pill-active{
-    background: rgba(40,199,111,.12);
-    color:#28c76f;
-    border-color: rgba(40,199,111,.25);
-}
-
-/* 미적용 */
-.pill-inactive{
-    background: rgba(133,146,163,.12);
-    color:#8592a3;
-    border-color: rgba(133,146,163,.25);
-}
-
-/* BLOCK */
-.pill-block{
-    background: rgba(255,62,29,.10);
-    color:#ff3e1d;
-    border-color: rgba(255,62,29,.25);
-}
-
-/* LOG */
-.pill-log{
-    background: rgba(3,195,236,.10);
-    color:#03c3ec;
-    border-color: rgba(3,195,236,.25);
-}
-
-    /* 작은 폭에서도 중앙 정렬 보기 좋게 */
     .td-center{ text-align:center; }
+
+    /* ✅ 비동기 로딩중 느낌(선택) */
+    .dim-loading{
+        position: relative;
+    }
+    .dim-loading:after{
+        content:"";
+        position:absolute; inset:0;
+        background:rgba(255,255,255,.55);
+        backdrop-filter: blur(1px);
+    }
     </style>
     {% endblock %}
 
@@ -85,23 +86,23 @@
     <div class="card mb-3">
         <div class="card-body">
 
-        <!-- 탭(전체/도메인/정규표현식) -->
-        <ul class="nav nav-pills mb-3">
+        <!-- 탭(전체/도메인/정규표현식) : ✅ 탭도 비동기 링크로 사용 -->
+        <ul class="nav nav-pills mb-3" id="typeTabs">
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '' %}active{% endif %}"
+            <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
                 href="{% url 'policy_history:list' %}?policy_type=">전체</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '도메인' %}active{% endif %}"
+            <a class="nav-link {% if filters.policy_type == '도메인' %}active{% endif %} js-tab"
                 href="{% url 'policy_history:list' %}?policy_type=도메인">도메인</a>
             </li>
             <li class="nav-item">
-            <a class="nav-link {% if filters.policy_type == '정규표현식' %}active{% endif %}"
+            <a class="nav-link {% if filters.policy_type == '정규표현식' %}active{% endif %} js-tab"
                 href="{% url 'policy_history:list' %}?policy_type=정규표현식">정규 표현식</a>
             </li>
         </ul>
 
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" class="row g-3 align-items-end" id="historyFilterForm">
             <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
 
             <!-- 1줄 -->
@@ -154,7 +155,7 @@
             </div>
 
             <div class="col-2 d-flex gap-2 align-items-end">
-            <button class="btn btn-primary w-100" type="submit">검색</button>
+            <button class="btn btn-primary w-100" type="submit" id="btnSearch">검색</button>
             <a class="btn btn-outline-secondary w-100" href="{% url 'policy_history:list' %}">초기화</a>
             </div>
         </form>
@@ -162,116 +163,130 @@
         </div>
     </div>
 
-    <!-- 테이블 카드 -->
-    <div class="card">
-        <div class="card-body">
-
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="text-muted">조회 결과</div>
-            <div class="count-pill">조회 : {{ page_obj.paginator.count }}건</div>
-        </div>
-
-        <div class="table-responsive text-nowrap">
-            <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                <th>정책 아이디</th>
-                <th>정책 타입</th>
-                <th>정책 이름</th>
-                <th>정책 URL/표현식</th>
-                <th class="td-center" style="width:110px">정책 적용 여부</th>
-                <th class="td-center" style="width:100px">처리 유형</th>
-                <th>정책 삭제자 id</th>
-                <th>삭제 시간</th>
-                <th>정책 설명</th>
-                <th class="text-end">복구</th>
-                </tr>
-            </thead>
-
-            <tbody>
-            {% for h in page_obj %}
-                <tr>
-                <td class="fw-semibold">{{ h.policy_id }}</td>
-                <td>{{ h.policy_type }}</td>
-                <td>{{ h.policy_name }}</td>
-                <td class="cell-truncate">{{ h.content }}</td>
-
-                <!-- ✅ 적용/미적용: pill -->
-                <td class="td-center">
-                    {% if h.is_active %}
-                    <span class="pill pill-active">적용</span>
-                    {% else %}
-                    <span class="pill pill-inactive">미적용</span>
-                    {% endif %}
-                </td>
-
-                <!-- ✅ block/log: pill -->
-                <td class="td-center">
-                    {% if h.handling_type == "block" %}
-                    <span class="pill pill-block">BLOCK</span>
-                    {% else %}
-                    <span class="pill pill-log">LOG</span>
-                    {% endif %}
-                </td>
-
-                <!-- ✅ delete_by는 문자열이라 date 필터 X -->
-                <td>{{ h.delete_by }}</td>
-                <td>{{ h.delete_at|date:"Y/m/d H:i" }}</td>
-
-                <!-- ✅ 정책 설명은 맨 뒤 유지 -->
-                <td class="cell-truncate-sm">{{ h.description|default:"" }}</td>
-
-                <td class="text-end">
-                    <form method="post"
-                        action="{% url 'policy_history:restore' h.policy_id %}"
-                        onsubmit="return confirm('정말 복구하시겠습니까?');">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-success" type="submit">복구</button>
-                    </form>
-                </td>
-                </tr>
-            {% empty %}
-                <tr>
-                <td colspan="10" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-            </table>
-        </div>
-
-        <!-- 페이지네이션 (필터 유지) -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <div class="text-muted">
-            총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-            </div>
-
-            <nav>
-            <ul class="pagination mb-0">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link"
-                    href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">이전</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled"><span class="page-link">이전</span></li>
-                {% endif %}
-
-                <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link"
-                    href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_id={{ filters.policy_id }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">다음</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled"><span class="page-link">다음</span></li>
-                {% endif %}
-            </ul>
-            </nav>
-        </div>
-
-        </div>
+    <!-- ✅ 비동기 갱신 영역 -->
+    <div id="historyPartial">
+        {% include "policy_history/policy_history_partial.html" %}
     </div>
 
-</div>
+    </div>
+
+    <script>
+    (function(){
+    const form = document.getElementById("historyFilterForm");
+    const partialEl = document.getElementById("historyPartial");
+
+    function getCSRFToken(){
+        const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        return el ? el.value : "";
+    }
+
+    async function loadPartial(url){
+        try{
+        partialEl.classList.add("dim-loading");
+        const res = await fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if(!res.ok) throw new Error("partial fetch failed");
+        partialEl.innerHTML = await res.text();
+        bindPagerClicks();
+        bindRestoreForms();
+        bindTabs();
+        }catch(e){
+        console.error(e);
+        alert("조회 중 오류가 발생했습니다. 콘솔을 확인하세요.");
+        }finally{
+        partialEl.classList.remove("dim-loading");
+        }
+    }
+
+    function bindPagerClicks(){
+        partialEl.querySelectorAll("a.js-page").forEach(a => {
+        a.addEventListener("click", (e) => {
+            e.preventDefault();
+            const url = a.getAttribute("href");
+            if(url) loadPartial(url);
+        });
+        });
+    }
+
+    function bindTabs(){
+        // 탭은 페이지 상단에 있으므로 전체에서 잡고, 클릭 시 form hidden값 갱신 + partial 로드
+        document.querySelectorAll("a.js-tab").forEach(a => {
+        a.addEventListener("click", (e) => {
+            e.preventDefault();
+
+            // active 처리
+            document.querySelectorAll("a.js-tab").forEach(x => x.classList.remove("active"));
+            a.classList.add("active");
+
+            // hidden policy_type 갱신
+            const url = new URL(a.href, window.location.origin);
+            const pt = url.searchParams.get("policy_type") ?? "";
+            form.querySelector('input[name="policy_type"]').value = pt;
+
+            // 현재 폼 값 기반으로 다시 조회
+            const params = new URLSearchParams(new FormData(form));
+            params.set("page", "1");
+            loadPartial(`${window.location.pathname}?${params.toString()}`);
+        });
+        });
+    }
+
+    function bindRestoreForms(){
+        partialEl.querySelectorAll("form.js-restore").forEach(f => {
+        f.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if(!confirm("정말 복구하시겠습니까?")) return;
+
+            try{
+            partialEl.classList.add("dim-loading");
+            const res = await fetch(f.action, {
+                method: "POST",
+                headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": getCSRFToken(),
+                },
+                body: new FormData(f),
+            });
+
+            // restore는 JSON으로 응답하도록 만들 거야
+            const data = await res.json().catch(() => null);
+            if(!res.ok || !data || !data.ok){
+                const msg = (data && data.error) ? data.error : "복구 실패";
+                alert(msg);
+                return;
+            }
+
+            // ✅ 복구 성공 -> 현재 필터 조건으로 partial 재조회
+            const params = new URLSearchParams(new FormData(form));
+            // 현재 페이지가 비었을 수 있으니 1페이지로 보내고 싶으면 아래 주석 해제
+            // params.set("page", "1");
+
+            const url = `${window.location.pathname}?${params.toString()}`;
+            await loadPartial(url);
+
+            }catch(err){
+            console.error(err);
+            alert("복구 중 오류가 발생했습니다. 콘솔을 확인하세요.");
+            }finally{
+            partialEl.classList.remove("dim-loading");
+            }
+        });
+        });
+    }
+
+    // 폼 submit 비동기
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams(new FormData(form));
+        params.set("page", "1");
+        loadPartial(`${window.location.pathname}?${params.toString()}`);
+    });
+
+    // 초기 바인딩
+    bindPagerClicks();
+    bindRestoreForms();
+    bindTabs();
+    })();
+</script>
 {% endblock %}
