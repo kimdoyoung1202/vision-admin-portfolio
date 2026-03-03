@@ -210,7 +210,7 @@ def top_ips_api(request):
 
     qs = IntegratedDetectionLogs.objects.filter(create_at__gte=start, create_at__lte=now)
 
-
+    #TODO 10분동안 5회 이상 된 ip만 나오게 나중엔 수정
     rows = (qs.values("client_ip")
             .annotate(cnt=Count("id"))
             .order_by("-cnt")[:limit])

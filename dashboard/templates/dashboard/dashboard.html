@@ -29,10 +29,10 @@
 
     /* ✅ 비율: 상단 좀 키우고 / 하단(IP+일일패킷) 조금 줄임 */
     .sec{ min-height:0; }
-    .sec.ts  { flex: 2.6; }   /* 상단 더 크게 */
+    .sec.ts  { flex: 2.6; }
     .sec.top { flex: 2.2; }
     .sec.kpi { flex: 0.95; }
-    .sec.bot { flex: 1.6; }   /* 하단 조금 줄임 */
+    .sec.bot { flex: 1.6; }
 
     .row.compact{ --bs-gutter-x:.6rem; --bs-gutter-y:.6rem; margin:0; }
     .row.compact > *{ padding-left:.3rem; padding-right:.3rem; }
@@ -164,9 +164,8 @@
         .pkt-donut{ width: 98px; height: 98px; }
     }
 
-    .sec.top .chart-box {
-        height: 200px !important;
-    }
+    /* Top10 영역 세로 살짝 줄임 */
+    .sec.top .chart-box { height: 210px !important; }
     </style>
 
     <div class="dash-page">
@@ -199,6 +198,7 @@
     <!-- 2) Top10 -->
     <section class="sec top">
         <div class="row compact">
+
         <div class="col-md-6 h-100">
             <div class="card-sneat">
             <div class="d-flex align-items-center justify-content-between mb-1">
@@ -230,6 +230,7 @@
             </div>
             </div>
         </div>
+
         </div>
     </section>
 
@@ -271,7 +272,7 @@
         </div>
     </section>
 
-    <!-- 4) 하단: IP + ✅ KPI형 "일일 패킷 현황(도넛)" -->
+    <!-- 4) 하단 -->
     <section class="sec bot">
         <div class="row compact">
 
@@ -290,7 +291,6 @@
         <div class="col-lg-4 h-100">
             <div class="card-sneat pkt-kpi">
 
-            <!-- 왼쪽 KPI -->
             <div class="pkt-left">
                 <div class="pkt-title">
                 <div class="t">일일 패킷 현황</div>
@@ -312,7 +312,6 @@
                 </div>
             </div>
 
-            <!-- 오른쪽 도넛 -->
             <div class="pkt-right">
                 <div class="pkt-donut">
                 <canvas id="chartBlockedRatio"></canvas>
@@ -341,6 +340,11 @@
     const REFRESH_MS = 5000;
     const state = { ts:"day", dom:"day", rx:"day" };
 
+    // Top10 라벨칸(왼쪽) 폭 / 오른쪽 여백
+    const TOP_LEFT_W_DOM = 200;
+    const TOP_LEFT_W_RX  = 220;
+    const TOP_RIGHT_PAD  = 18;
+
     const kpiPolicy = document.getElementById("kpiPolicy");
     const kpiAi = document.getElementById("kpiAi");
     const kpiBlocked = document.getElementById("kpiBlocked");
@@ -350,7 +354,6 @@
 
     const ipWindowText = document.getElementById("ipWindowText");
 
-    // ✅ 일일 패킷 KPI형 카드 요소
     const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
     const kpiTotalAi = document.getElementById("kpiTotalAi");
     const sysTotalText = document.getElementById("sysTotalText");
@@ -375,96 +378,139 @@
         return `${sign} ${Math.abs(num)}`;
     }
 
-    function wrapLabel(str, maxLen=18){
-        if(!str) return "";
-        const words = String(str).split(".");
-        let lines = [];
-        let cur = "";
-        words.forEach(w=>{
-        if(!w) return;
-        if((cur + w).length > maxLen){
-            if(cur) lines.push(cur);
-            cur = w + ".";
-        }else{
-            cur += w + ".";
-        }
-        });
-        if(cur) lines.push(cur);
-        return lines;
-    }
-
+    // ---------- Charts ----------
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
         type: "bar",
         data: {
-            labels: [],
-            datasets: [
+        labels: [],
+        datasets: [
             { label: "DOMAIN", data: [], borderWidth: 1 },
             { label: "REGEX", data: [], borderWidth: 1 },
             {
-                label: "TOTAL",
-                type: "line",
-                data: [],
-                tension: 0.35,
-                borderWidth: 2,
-                pointRadius: 0,      // 점은 숨김 유지
-                pointHitRadius: 12,  // ✅ 마우스 감지 범위 넓힘(중요)
+            label: "TOTAL",
+            type: "line",
+            data: [],
+            tension: 0.35,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHitRadius: 12
             }
-            ]
+        ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-
-            interaction: {
-            mode: "nearest",
-            intersect: true,
-            },
-
-            plugins: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: true },
+        plugins: {
             legend: { position: "top" },
-            tooltip: {
-                enabled: true,
-                mode: "nearest",
-                intersect: true,
-            },
-            },
-
-            scales: {
+            tooltip: { enabled: true, mode: "nearest", intersect: true }
+        },
+        scales: {
             y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
-            }
+        }
         }
     });
 
     const chartTopDomains = new Chart(document.getElementById("chartTopDomains"), {
         type: "bar",
-        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1, maxBarThickness: 14, categoryPercentage: 0.7, barPercentage: 0.7 }] },
+        data: {
+        labels: [],
+        datasets: [{
+            label: "차단 횟수",
+            data: [],
+            borderWidth: 1,
+            maxBarThickness: 14,
+            categoryPercentage: 0.7,
+            barPercentage: 0.7
+        }]
+        },
         options: {
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
+        layout: { padding: { right: TOP_RIGHT_PAD } },
         scales: {
-            x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0, stepSize: 1 } },
-            y: { grid: { display: false } }
+            x: {
+            beginAtZero: true,
+            grace: "15%",
+            grid: { display: false },
+            ticks: { precision: 0, stepSize: 1 }
+            },
+            y: {
+                grid: { display: false },
+                afterFit: (scale) => { scale.width = 170; },
+
+                ticks: {
+                    autoSkip: false,      // ✅ 라벨 10개 전부 표시
+                    padding: 6,
+                    callback: function(value){
+                    const label = this.getLabelForValue(value);
+                    if (!label) return "";
+                    return label.length > 22 ? label.slice(0, 22) + "…" : label;
+                    }
+                }
+            }
         }
         }
     });
 
     const chartTopRegex = new Chart(document.getElementById("chartTopRegex"), {
         type: "bar",
-        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1, barThickness: 18, maxBarThickness: 20, categoryPercentage: 0.6, barPercentage: 0.6 }] },
+        data: {
+        labels: [],
+        datasets: [{
+            label: "차단 횟수",
+            data: [],
+            borderWidth: 1,
+            maxBarThickness: 14,
+            categoryPercentage: 0.7,
+            barPercentage: 0.7
+        }]
+        },
         options: {
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+        layout: { padding: { right: TOP_RIGHT_PAD } },
+        scales: {
+            x: {
+            beginAtZero: true,
+            grace: "15%",
+            ticks: { precision: 0, stepSize: 1 }
+            },
+            y: {
+                grid: { display: false },
+                afterFit: (scale) => { scale.width = 170; },
+
+                ticks: {
+                    autoSkip: false,
+                    padding: 6,
+                    callback: function(value){
+                    const label = this.getLabelForValue(value);
+                    if (!label) return "";
+                    return label.length > 26 ? label.slice(0, 26) + "…" : label;
+                    }
+                }
+            }
+        }
         }
     });
 
     const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
         type: "bar",
-        data: { labels: [], datasets: [{ label: "count", data: [], borderWidth: 1 }] },
+        data: {
+        labels: [],
+        datasets: [{
+            label: "차단 횟수",
+            data: [],
+            borderWidth: 1,
+            maxBarThickness: 14,
+            categoryPercentage: 0.7,
+            barPercentage: 0.7
+        }]
+        },
         options: {
         indexAxis: "y",
         responsive: true,
@@ -486,6 +532,7 @@
         }
     });
 
+    // ---------- Refreshers ----------
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=total`);
 
@@ -501,15 +548,12 @@
         kpiAiDelta.textContent      = fmtDelta(kpi.ai_delta);
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
-        // ✅ 일일 패킷 KPI형 카드: TOTAL=통과+차단
         const total = blockedCount + aiCount;
         if (kpiTotalBlocked) kpiTotalBlocked.textContent = blockedCount;
         if (kpiTotalAi) kpiTotalAi.textContent = aiCount;
         if (sysTotalText) sysTotalText.textContent = total;
         if (donutTotalText) donutTotalText.textContent = total;
 
-        // 전일대비를 "TOTAL 기준"으로 보여주고 싶으면 서버에서 total_delta 내려주는게 베스트.
-        // 일단은 blocked_delta + ai_delta 를 합산해서 "대충" total delta로 표시.
         const totalDelta = Number(kpi.blocked_delta ?? 0) + Number(kpi.ai_delta ?? 0);
         if (dailyDeltaText) dailyDeltaText.textContent = fmtDelta(totalDelta);
 
@@ -533,7 +577,8 @@
     async function refreshTopDomains(){
         const gran = state.dom;
         const dom = await getJSON(`/api/top-domains/?gran=${gran}&limit=10`);
-        chartTopDomains.data.labels = (dom.labels ?? []).map(wrapLabel);
+
+        chartTopDomains.data.labels = (dom.labels ?? []).map(v => String(v ?? ""));
         chartTopDomains.data.datasets[0].data = dom.values ?? [];
         chartTopDomains.update();
     }
@@ -541,7 +586,8 @@
     async function refreshTopRegex(){
         const gran = state.rx;
         const rx = await getJSON(`/api/top-regex/?gran=${gran}&limit=10`);
-        chartTopRegex.data.labels = (rx.labels ?? []).map(wrapLabel);
+
+        chartTopRegex.data.labels = (rx.labels ?? []).map(v => String(v ?? ""));
         chartTopRegex.data.datasets[0].data = rx.values ?? [];
         chartTopRegex.update();
     }
@@ -586,6 +632,6 @@
     bindGranButtons();
     refreshAll();
     setInterval(refreshAll, REFRESH_MS);
-    })();
+})();
 </script>
 {% endblock %}
