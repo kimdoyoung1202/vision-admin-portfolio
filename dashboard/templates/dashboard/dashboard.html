@@ -163,6 +163,10 @@
         .pkt-right{ width: 110px; }
         .pkt-donut{ width: 98px; height: 98px; }
     }
+
+    .sec.top .chart-box {
+        height: 200px !important;
+    }
     </style>
 
     <div class="dash-page">
@@ -392,24 +396,48 @@
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
         type: "bar",
         data: {
-        labels: [],
-        datasets: [
+            labels: [],
+            datasets: [
             { label: "DOMAIN", data: [], borderWidth: 1 },
             { label: "REGEX", data: [], borderWidth: 1 },
-            { label: "TOTAL", type: "line", data: [], tension: 0.35, borderWidth: 2, pointRadius: 0 }
-        ]
+            {
+                label: "TOTAL",
+                type: "line",
+                data: [],
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 0,      // 점은 숨김 유지
+                pointHitRadius: 12,  // ✅ 마우스 감지 범위 넓힘(중요)
+            }
+            ]
         },
         options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: "top" } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+            mode: "nearest",
+            intersect: true,
+            },
+
+            plugins: {
+            legend: { position: "top" },
+            tooltip: {
+                enabled: true,
+                mode: "nearest",
+                intersect: true,
+            },
+            },
+
+            scales: {
+            y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+            }
         }
     });
 
     const chartTopDomains = new Chart(document.getElementById("chartTopDomains"), {
         type: "bar",
-        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1 }] },
+        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1, maxBarThickness: 14, categoryPercentage: 0.7, barPercentage: 0.7 }] },
         options: {
         indexAxis: "y",
         responsive: true,
@@ -424,7 +452,7 @@
 
     const chartTopRegex = new Chart(document.getElementById("chartTopRegex"), {
         type: "bar",
-        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1 }] },
+        data: { labels: [], datasets: [{ label: "차단 횟수", data: [], borderWidth: 1, barThickness: 18, maxBarThickness: 20, categoryPercentage: 0.6, barPercentage: 0.6 }] },
         options: {
         indexAxis: "y",
         responsive: true,

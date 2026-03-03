@@ -210,9 +210,6 @@ def top_ips_api(request):
 
     qs = IntegratedDetectionLogs.objects.filter(create_at__gte=start, create_at__lte=now)
 
-    # ✅ 디버깅: localtime() 절대 쓰지 말기
-    print("TOP_IPS window:", window_minutes, "start:", start, "now:", now, "count:", qs.count())
-    print("LATEST:", IntegratedDetectionLogs.objects.order_by("-create_at").values("create_at")[:1])
 
     rows = (qs.values("client_ip")
             .annotate(cnt=Count("id"))
