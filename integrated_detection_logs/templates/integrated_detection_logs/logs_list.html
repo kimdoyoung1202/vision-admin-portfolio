@@ -50,7 +50,22 @@
         gap: 12px;
         flex-wrap: nowrap;
     }
-    .radio-line .form-check{ margin: 0; }
+    .radio-line{
+        display:flex;
+        gap:8px;            /* 기존보다 줄임 */
+    }
+
+    .radio-line .form-check{
+        margin:0;
+    }
+
+    .radio-line input{
+        margin-top:0;
+    }
+
+    input[type="datetime-local"]{
+        max-width:220px;
+    }
 
     /* =========================================
         ✅ 메인 작업영역: (필터 아래) 남은 높이를 딱 채움
@@ -218,7 +233,7 @@
             </div>
             </div>
 
-            <div class="col-xl-4 col-lg-12">
+            <div class="col-xl-3 col-lg-12">
             <label class="form-label">탐지 기간(날짜/시간)</label>
             <div class="d-flex gap-2 align-items-center">
                 <input class="form-control" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
@@ -227,7 +242,7 @@
             </div>
             </div>
 
-            <div class="col-auto ms-auto d-flex gap-2">
+            <div class="col-auto ms-auto d-flex gap-1">
             <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
             <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
             </div>

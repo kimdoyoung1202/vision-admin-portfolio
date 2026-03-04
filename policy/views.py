@@ -55,7 +55,7 @@ def policy_list(request):
     if ed:
         qs = qs.filter(create_at__date__lte=ed)
 
-    paginator = Paginator(qs, 11)  # ✅ 10개 고정
+    paginator = Paginator(qs, 12)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
 
