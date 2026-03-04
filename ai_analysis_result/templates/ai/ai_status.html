@@ -299,7 +299,7 @@
         </div>
         </div>
 
-        <!-- 하단: 최근 오류 (고정 높이 + 내부 스크롤) -->
+        <!-- 하단: 최근 오류 -->
         <div class="ai-bot">
         <div class="panel bot-panel">
             <div class="section-head">
@@ -332,13 +332,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
     (function(){
-    const charts = {
-        latency: null,
-        throughput: null,
-        cpu: null,
-        mem: null,
-    };
-    // ✅ 콘솔에서 상태 확인용(원하면 나중에 지워도 됨)
+    const charts = { latency:null, throughput:null, cpu:null, mem:null };
     window.__AI_STATUS__ = charts;
 
     function el(id){
@@ -375,9 +369,7 @@
     function makeLine(canvas){
         return new Chart(canvas, {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
+        data: { labels: [], datasets: [{
             data: [],
             tension: .35,
             pointRadius: 0,
@@ -385,8 +377,7 @@
             borderColor: "#696cff",
             backgroundColor: "rgba(105,108,255,0.12)",
             fill: true
-            }]
-        },
+        }]},
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -438,7 +429,7 @@
     }
 
     async function loadStatus(){
-        const res = await fetch("{% url 'ai:status_api' %}", { credentials: "same-origin" });
+        const res = await fetch("{% url 'ai:status_api' %}", { credentials: "same-origin", cache:"no-store" });
         if(!res.ok) throw new Error("status_api error: " + res.status);
         const data = await res.json();
 
@@ -451,7 +442,6 @@
         el("sysVersion").textContent = data.system_info?.version ?? "-";
         el("sysDev").textContent     = data.system_info?.developer ?? "-";
 
-        // ✅ 여기서 무조건 Chart 인스턴스 확보
         if(!isChart(charts.latency))    charts.latency    = makeLine(el("latencyChart"));
         if(!isChart(charts.throughput)) charts.throughput = makeLine(el("throughputChart"));
         if(!isChart(charts.cpu))        charts.cpu        = makeDonut(el("cpuDonut"));
@@ -467,11 +457,15 @@
         charts.throughput.data.datasets[0].data = data.chart?.throughput_series ?? [];
         charts.throughput.update("none");
 
-        const cpu = Number(data.kpi?.cpu ?? 0);
-        const mem = Number(data.kpi?.memory ?? 0);
+        // ✅ CPU/MEM: 값 안정화(클램프)
+        const cpuRaw = Number(data.kpi?.cpu ?? 0);
+        const memRaw = Number(data.kpi?.memory ?? 0);
 
-        el("cpuPct").textContent = `${Math.round(cpu)}%`;
-        el("memPct").textContent = `${Math.round(mem)}%`;
+        const cpu = Number.isFinite(cpuRaw) ? Math.max(0, Math.min(100, cpuRaw)) : 0;
+        const mem = Number.isFinite(memRaw) ? Math.max(0, Math.min(100, memRaw)) : 0;
+
+        el("cpuPct").textContent = data.kpi?.engine_ok ? `${Math.round(cpu)}%` : "-";
+        el("memPct").textContent = data.kpi?.engine_ok ? `${Math.round(mem)}%` : "-";
 
         charts.cpu.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
         charts.cpu.options.plugins.centerText.value = Math.round(cpu);
@@ -494,11 +488,9 @@
         `).join("");
     }
 
-    // ✅ 초기 실행 + 반복
     loadStatus().catch(e => console.error("loadStatus failed:", e));
     setInterval(() => loadStatus().catch(e => console.error("loadStatus failed:", e)), 5000);
 
-    // 재검토 버튼
     document.getElementById("btnRecheck")?.addEventListener("click", async () => {
         const btn = document.getElementById("btnRecheck");
         btn.disabled = true;

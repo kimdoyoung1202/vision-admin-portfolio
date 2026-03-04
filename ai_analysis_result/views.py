@@ -1,18 +1,46 @@
 import json
+import requests
+
+from datetime import timedelta
+
 from django.views import View
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import timedelta
+from django.db.models.functions import TruncHour
 from django.db.models import OuterRef, Subquery, Count, Q
 
 from .models import AiAnalysisResult
 from policy.utils_engine import send_reload_signal  # ✅ 너 프로젝트 구조 기준
-# from .models import AiAnalysisResult  # 필요 없음(그냥 신호만 보냄)
+
+
+# =========================
+# 공통: 엔진(FastAPI) CPU/MEM 조회
+# =========================
+def _get_engine_usage():
+    """
+    FastAPI 엔진의 /system/usage 호출해서 CPU/MEM 가져오기
+    settings.ENGINE_USAGE_URL 사용
+    - 성공: (True, cpu, mem)
+    - 실패: (False, 0, 0)
+    """
+    url = getattr(settings, "ENGINE_USAGE_URL", "http://127.0.0.1:8000/system/usage")
+    timeout = getattr(settings, "ENGINE_USAGE_TIMEOUT", 1.5)
+    try:
+        r = requests.get(url, timeout=1.5)
+        r.raise_for_status()
+        data = r.json() or {}
+        if data.get("ok") is True:
+            cpu = float(data.get("cpu", 0) or 0)
+            mem = float(data.get("memory", 0) or 0)
+            return True, cpu, mem
+        return False, 0.0, 0.0
+    except Exception:
+        return False, 0.0, 0.0
 
 
 class AiRecordsView(View):
@@ -48,6 +76,8 @@ class AiRecordsView(View):
         # 2) QS 만들기 (필터)
         # ======================
         qs = AiAnalysisResult.objects.all()
+
+        # ✅ 너 기존 로직 유지: confidence_score >= 0만 기본 리스트로
         qs = qs.filter(confidence_score__gte=0)
 
         if q:
@@ -81,11 +111,11 @@ class AiRecordsView(View):
             qs = qs.filter(applied_at__date__lte=applied_end)
 
         # ======================
-        # ✅ 2.5) Domain 기준 대표 1개만 남기기 (MySQL 대응)
+        # ✅ 2.5) request_url 기준 대표 1개만 남기기 (MySQL 대응)
         #   - 대표 조건: confidence_score DESC -> create_at DESC -> id DESC
-        #   - dup_count(도메인별 총 건수)도 함께 annotate
+        #   - dup_count(동일 request_url 총 건수)도 annotate
         # ======================
-        base = qs  # ✅ 필터가 모두 적용된 상태의 원본
+        base = qs  # ✅ 필터가 모두 적용된 원본
 
         rep_id_subq = (
             base.filter(request_url=OuterRef("request_url"))
@@ -101,8 +131,9 @@ class AiRecordsView(View):
 
         qs = AiAnalysisResult.objects.filter(id__in=Subquery(rep_ids))
 
+        # ✅ dup_count: 동일 request_url의 전체 건수
         dup_count_subq = (
-            base.filter(domain=OuterRef("request_url"))
+            base.filter(request_url=OuterRef("request_url"))
                 .values("request_url")
                 .annotate(c=Count("id"))
                 .values("c")[:1]
@@ -154,7 +185,8 @@ class AiRecordsView(View):
             return render(request, self.partial_template_name, context)
 
         return render(request, self.template_name, context)
-    
+
+
 class AiStatusView(View):
     def get(self, request):
         context = {
@@ -162,22 +194,21 @@ class AiStatusView(View):
             "active_menu": "ai_status",
         }
         return render(request, "ai/ai_status.html", context)
-    
-    
+
+
 def _admin_name(request) -> str:
     u = getattr(request, "user", None)
     if u and getattr(u, "is_authenticated", False):
         return getattr(u, "username", None) or "ADMIN"
     return "ADMIN"
 
+
 @method_decorator(csrf_protect, name="dispatch")
 class AiIgnoreView(View):
-
     def post(self, request, pk):
         print("IGNORE POST HIT:", pk)
 
         row = get_object_or_404(AiAnalysisResult, pk=pk)
-
         admin_name = _admin_name(request)
 
         # ✅ 같은 domain 전체에 IGNORE 적용
@@ -185,7 +216,7 @@ class AiIgnoreView(View):
             is_checked=True,
             checked_result="IGNORE",
             admin=admin_name,
-            policy_type="",   # None 대신 빈값 유지
+            policy_type="",  # None 대신 빈값 유지
         )
 
         return JsonResponse({
@@ -193,8 +224,7 @@ class AiIgnoreView(View):
             "domain": row.domain,
             "updated": updated
         })
-    
-    
+
 
 class AiStatusApiView(View):
     """
@@ -202,70 +232,83 @@ class AiStatusApiView(View):
     """
 
     def get(self, request):
-        now = timezone.now()
-        today = now.date()
-        last_24h = now - timedelta(hours=24)
+        # ✅ KST 기준 now를 보장 (USE_TZ=True면 timezone.now()는 UTC라 localtime 필요)
+        now_utc = timezone.now()
+        now = timezone.localtime(now_utc) if getattr(settings, "USE_TZ", False) else now_utc
+
+        # ✅ '오늘' 범위(로컬 기준)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
 
         # ==============================
         # 1) KPI 계산
         # ==============================
+        total_today = AiAnalysisResult.objects.filter(
+            create_at__gte=today_start,
+            create_at__lt=tomorrow_start
+        ).count()
 
-        today_qs = AiAnalysisResult.objects.filter(create_at__date=today)
-        total_today = today_qs.count()
-
-        # 분당 처리량 (RPM)
         last_minute = now - timedelta(minutes=1)
         rpm = AiAnalysisResult.objects.filter(create_at__gte=last_minute).count()
 
-        # 정확도 계산 (관리자 검토 기준)
         reviewed = AiAnalysisResult.objects.filter(is_checked=True)
         reviewed_count = reviewed.count()
-        correct_count = reviewed.filter(
-            checked_result__in=["ADD", "IGNORE"]
-        ).count()
+        correct_count = reviewed.filter(checked_result__in=["ADD", "IGNORE"]).count()
 
-        accuracy = 0
-        if reviewed_count > 0:
+        accuracy = 0.0
+        if reviewed_count:
             accuracy = round((correct_count / reviewed_count) * 100, 1)
 
-        # TODO: FastAPI 엔진 latency 연동 위치
-        avg_latency_ms = 128  # 임시값
+        # ✅ 엔진 CPU/MEM (FastAPI에서 실시간 조회)
+        engine_ok, cpu_usage, memory_usage = _get_engine_usage()
 
-        # TODO: FastAPI 시스템 모니터링 연동 위치
-        cpu_usage = 65
-        memory_usage = 54
+        # TODO 연동 전 임시값(진짜 latency 계산 붙이면 이거 제거)
+        avg_latency_ms = 128
 
         # ==============================
-        # 2) 최근 24시간 라인차트 데이터
+        # 2) 최근 24시간 라인차트 데이터 (✅ 1번 쿼리로 집계)
         # ==============================
+        end_hour = now.replace(minute=0, second=0, microsecond=0)  # 현재 시각의 시간 시작점(로컬)
+        start_hour = end_hour - timedelta(hours=23)
+
+        chart_qs = AiAnalysisResult.objects.filter(
+            create_at__gte=start_hour,
+            create_at__lt=end_hour + timedelta(hours=1),
+        )
+
+        tz = timezone.get_current_timezone() if getattr(settings, "USE_TZ", False) else None
+
+        hourly = (
+            chart_qs
+            .annotate(h=TruncHour("create_at", tzinfo=tz))
+            .values("h")
+            .annotate(cnt=Count("id"))
+            .order_by("h")
+        )
+
+        hourly_map = {row["h"]: row["cnt"] for row in hourly}
+
         labels = []
         request_counts = []
         throughput_counts = []
 
         for i in range(24):
-            hour_start = now - timedelta(hours=23 - i)
-            hour_end = hour_start + timedelta(hours=1)
-
-            count = AiAnalysisResult.objects.filter(
-                create_at__gte=hour_start,
-                create_at__lt=hour_end
-            ).count()
-
-            labels.append(hour_start.strftime("%H:%M"))
-            request_counts.append(count)
-            throughput_counts.append(count)  # 동일 데이터 재사용
+            h = start_hour + timedelta(hours=i)
+            labels.append(h.strftime("%H:%M"))
+            c = hourly_map.get(h, 0)
+            request_counts.append(c)
+            throughput_counts.append(c)
 
         # ==============================
-        # 3) 최근 로그 테이블
+        # 3) 최근 로그 테이블 (오류만)
         # ==============================
         recent_errors = list(
             AiAnalysisResult.objects
-            .filter(confidence_score__lt=0)            # ✅ [핵심] 오류만
+            .filter(confidence_score__lt=0)
             .order_by("-create_at")
             .values("create_at", "request_url", "confidence_score")[:10]
         )
 
-        # 시스템 정보(임시)
         system_info = {
             "version": "v0.1 (TODO)",
             "developer": "Vision (TODO)",
@@ -276,24 +319,22 @@ class AiStatusApiView(View):
                 "total_today": total_today,
                 "rpm": rpm,
                 "accuracy": accuracy,
-                "latency": avg_latency_ms,  # TODO: FastAPI latency 연동
-                "cpu": cpu_usage,           # TODO: 시스템 모니터링 연동
-                "memory": memory_usage,     # TODO: 시스템 모니터링 연동
-                "engine_ok": True,          # TODO: FastAPI healthcheck 연동
+                "latency": avg_latency_ms,
+                "cpu": cpu_usage,
+                "memory": memory_usage,
+                "engine_ok": engine_ok,
             },
             "chart": {
                 "labels": labels,
-                "latency_series": request_counts,     # TODO: 나중에 진짜 latency 시계열로 교체
+                "latency_series": request_counts,      # TODO: 진짜 latency 시계열로 교체
                 "throughput_series": throughput_counts,
-                "cpu_spark": request_counts,          # TODO: CPU sparkline으로 교체
-                "mem_spark": throughput_counts,       # TODO: MEM sparkline으로 교체
+                "cpu_spark": request_counts,           # TODO: CPU sparkline로 교체
+                "mem_spark": throughput_counts,        # TODO: MEM sparkline로 교체
             },
             "recent_errors": recent_errors,
             "system_info": system_info,
-        })
-        
-        
-        
+        }, json_dumps_params={"ensure_ascii": False})
+
 
 @method_decorator(csrf_protect, name="dispatch")
 class AiRecheckErrorsView(View):
@@ -303,7 +344,6 @@ class AiRecheckErrorsView(View):
     """
     def post(self, request):
         try:
-            # ✅ A-1: recheck 전용 신호
             send_reload_signal("recheck_errors")
             return JsonResponse({"ok": True})
         except Exception as e:
