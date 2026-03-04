@@ -173,6 +173,12 @@
         opacity: 1;
         transform: translateY(0);
     }
+
+    .btn-filter-active{
+        background-color: #696cff !important; 
+        color: #fff !important;
+        border-color: #696cff !important;
+    }
     </style>
     {% endblock %}
 
@@ -430,12 +436,30 @@
         appliedEnd.disabled = !policyEnabled;
     }
 
+    function updateCheckedResultUI(type){
+
+        // 버튼 초기화
+        btnAdd.classList.remove("btn-filter-active");
+        btnIgnore.classList.remove("btn-filter-active");
+
+        if(type === "ADD"){
+            btnAdd.classList.add("btn-filter-active");
+        }
+
+        if(type === "IGNORE"){
+            btnIgnore.classList.add("btn-filter-active");
+        }
+    }
+
     btnAdd.addEventListener("click", () => {
         checkedResultHidden.value = "ADD";
+        updateCheckedResultUI("ADD");
         setEnabled();
     });
+
     btnIgnore.addEventListener("click", () => {
         checkedResultHidden.value = "IGNORE";
+        updateCheckedResultUI("IGNORE");
         setEnabled();
     });
     isCheckedSelect.addEventListener("change", setEnabled);

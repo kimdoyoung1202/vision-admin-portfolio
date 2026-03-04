@@ -60,7 +60,7 @@ def policy_history_list(request):
         qs = qs.filter(delete_at__date__lte=end_date)
 
     # ✅ 페이지네이션
-    paginator = Paginator(qs, 30)
+    paginator = Paginator(qs, 12)
     page_number = request.GET.get("page", "1")
     page_obj = paginator.get_page(page_number)
 
