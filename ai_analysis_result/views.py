@@ -2,6 +2,8 @@ import json
 import requests
 
 from datetime import timedelta
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 
 from django.views import View
 from django.shortcuts import render, get_object_or_404
@@ -12,36 +14,47 @@ from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.db.models.functions import TruncHour
-from django.db.models import OuterRef, Subquery, Count, Q
+from django.db.models import OuterRef, Subquery, Count, Q, Avg, FloatField
+from django.db.models.functions import Coalesce
+from django.db.models import Value
 
 from .models import AiAnalysisResult
-from policy.utils_engine import send_reload_signal  # ✅ 너 프로젝트 구조 기준
+from policy.utils_engine import send_reload_signal  
 
-
+FASTAPI_STATUS_URL = "http://192.168.100.25:8000/status"
 # =========================
 # 공통: 엔진(FastAPI) CPU/MEM 조회
 # =========================
-def _get_engine_usage():
+def _get_engine_usage(timeout=1.5):
     """
-    FastAPI 엔진의 /system/usage 호출해서 CPU/MEM 가져오기
-    settings.ENGINE_USAGE_URL 사용
-    - 성공: (True, cpu, mem)
-    - 실패: (False, 0, 0)
+    return: (engine_ok, cpu, mem, rpm, p95, err)
     """
-    url = getattr(settings, "ENGINE_USAGE_URL", "http://127.0.0.1:8000/system/usage")
-    timeout = getattr(settings, "ENGINE_USAGE_TIMEOUT", 1.5)
     try:
-        r = requests.get(url, timeout=1.5)
-        r.raise_for_status()
-        data = r.json() or {}
-        if data.get("ok") is True:
-            cpu = float(data.get("cpu", 0) or 0)
-            mem = float(data.get("memory", 0) or 0)
-            return True, cpu, mem
-        return False, 0.0, 0.0
-    except Exception:
-        return False, 0.0, 0.0
+        req = Request(
+            FASTAPI_STATUS_URL,
+            headers={"User-Agent": "django-dashboard"},
+            method="GET",
+        )
+        with urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+            data = json.loads(raw)
 
+        if not data.get("ok"):
+            return False, None, None, None, None, "fastapi ok=false"
+
+        cpu = data.get("proc", {}).get("cpu_percent")
+        mem = data.get("proc", {}).get("mem_percent")
+        rpm = data.get("traffic", {}).get("rpm_1m")
+        p95 = data.get("latency_ms", {}).get("p95")
+
+        return True, cpu, mem, rpm, p95, None
+
+    except HTTPError as e:
+        return False, None, None, None, None, f"HTTPError {e.code}"
+    except URLError as e:
+        return False, None, None, None, None, f"URLError {e.reason}"
+    except Exception as e:
+        return False, None, None, None, None, f"{type(e).__name__}: {e}"
 
 class AiRecordsView(View):
     template_name = "ai/ai_log.html"
@@ -228,47 +241,97 @@ class AiIgnoreView(View):
 
 class AiStatusApiView(View):
     """
-    5초마다 호출되는 실시간 통계 API
+    실시간 통계 API
+    - KPI: FastAPI /status 우선
+    - 차트: (1) 최근 60초 실시간용(초당) + (2) 최근 24시간(시간당)
     """
 
     def get(self, request):
-        # ✅ KST 기준 now를 보장 (USE_TZ=True면 timezone.now()는 UTC라 localtime 필요)
+        # ✅ KST 기준 now
         now_utc = timezone.now()
         now = timezone.localtime(now_utc) if getattr(settings, "USE_TZ", False) else now_utc
 
-        # ✅ '오늘' 범위(로컬 기준)
+        # ✅ 오늘 범위
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
 
         # ==============================
-        # 1) KPI 계산
+        # 0) FastAPI 실시간 지표
+        # ==============================
+        engine_ok, cpu_usage, memory_usage, rpm_fastapi, p95_fastapi, engine_err = _get_engine_usage()
+
+        # ==============================
+        # 1) KPI
         # ==============================
         total_today = AiAnalysisResult.objects.filter(
             create_at__gte=today_start,
             create_at__lt=tomorrow_start
         ).count()
 
+        # RPM: FastAPI 우선, 실패 시 DB 1분 count
         last_minute = now - timedelta(minutes=1)
-        rpm = AiAnalysisResult.objects.filter(create_at__gte=last_minute).count()
+        rpm = rpm_fastapi if rpm_fastapi is not None else AiAnalysisResult.objects.filter(create_at__gte=last_minute).count()
 
         reviewed = AiAnalysisResult.objects.filter(is_checked=True)
         reviewed_count = reviewed.count()
         correct_count = reviewed.filter(checked_result__in=["ADD", "IGNORE"]).count()
+        accuracy = round((correct_count / reviewed_count) * 100, 1) if reviewed_count else 0.0
 
-        accuracy = 0.0
-        if reviewed_count:
-            accuracy = round((correct_count / reviewed_count) * 100, 1)
-
-        # ✅ 엔진 CPU/MEM (FastAPI에서 실시간 조회)
-        engine_ok, cpu_usage, memory_usage = _get_engine_usage()
-
-        # TODO 연동 전 임시값(진짜 latency 계산 붙이면 이거 제거)
-        avg_latency_ms = 128
+        # Latency(KPI): FastAPI p95 우선(없으면 0)
+        avg_latency_ms = p95_fastapi if (engine_ok and p95_fastapi is not None) else 0
 
         # ==============================
-        # 2) 최근 24시간 라인차트 데이터 (✅ 1번 쿼리로 집계)
+        # 2-A) ✅ 실시간 차트(최근 60초)
+        #   - 처리량: 초당 count
+        #   - 응답속도: 초당 avg(ai_latency_ms) (0/NULL/음수 제외)
         # ==============================
-        end_hour = now.replace(minute=0, second=0, microsecond=0)  # 현재 시각의 시간 시작점(로컬)
+        sec_end = now.replace(microsecond=0)
+        sec_start = sec_end - timedelta(seconds=59)
+
+        rt_qs = AiAnalysisResult.objects.filter(
+            create_at__gte=sec_start,
+            create_at__lt=sec_end + timedelta(seconds=1),
+        )
+
+        # MySQL에서도 안전하게 "초" 단위 그룹핑: TruncSecond 사용
+        from django.db.models.functions import TruncSecond  # 여기서 import해도 됨
+
+        rt_rows = (
+            rt_qs
+            .annotate(s=TruncSecond("create_at", tzinfo=timezone.get_current_timezone() if getattr(settings, "USE_TZ", False) else None))
+            .values("s")
+            .annotate(
+                cnt=Count("id"),
+                avg_latency=Coalesce(
+                    Avg("ai_latency_ms", filter=Q(ai_latency_ms__gt=0), output_field=FloatField()),
+                    Value(0.0)
+                )
+            )
+            .order_by("s")
+        )
+
+        rt_map = {r["s"]: r for r in rt_rows}
+
+        rt_labels = []
+        rt_throughput = []
+        rt_latency = []
+
+        for i in range(60):
+            t = sec_start + timedelta(seconds=i)
+            rt_labels.append(t.strftime("%H:%M:%S"))
+
+            row = rt_map.get(t)
+            if row:
+                rt_throughput.append(int(row["cnt"] or 0))
+                rt_latency.append(float(row["avg_latency"] or 0.0))
+            else:
+                rt_throughput.append(0)
+                rt_latency.append(0.0)  # ✅ None 금지(차트 끊김 방지)
+
+        # ==============================
+        # 2-B) ✅ 24시간(시간단위) 차트 (원하면 유지)
+        # ==============================
+        end_hour = now.replace(minute=0, second=0, microsecond=0)
         start_hour = end_hour - timedelta(hours=23)
 
         chart_qs = AiAnalysisResult.objects.filter(
@@ -282,25 +345,36 @@ class AiStatusApiView(View):
             chart_qs
             .annotate(h=TruncHour("create_at", tzinfo=tz))
             .values("h")
-            .annotate(cnt=Count("id"))
+            .annotate(
+                cnt=Count("id"),
+                avg_latency=Coalesce(
+                    Avg("ai_latency_ms", filter=Q(ai_latency_ms__gt=0), output_field=FloatField()),
+                    Value(0.0)
+                ),
+            )
             .order_by("h")
         )
 
-        hourly_map = {row["h"]: row["cnt"] for row in hourly}
+        hourly_map = {row["h"]: row for row in hourly}
 
         labels = []
-        request_counts = []
-        throughput_counts = []
+        throughput_series = []
+        latency_series = []
 
         for i in range(24):
             h = start_hour + timedelta(hours=i)
             labels.append(h.strftime("%H:%M"))
-            c = hourly_map.get(h, 0)
-            request_counts.append(c)
-            throughput_counts.append(c)
+
+            row = hourly_map.get(h)
+            if row:
+                throughput_series.append(int(row["cnt"] or 0))
+                latency_series.append(float(row["avg_latency"] or 0.0))
+            else:
+                throughput_series.append(0)
+                latency_series.append(0.0)  # ✅ None 금지
 
         # ==============================
-        # 3) 최근 로그 테이블 (오류만)
+        # 3) 최근 오류
         # ==============================
         recent_errors = list(
             AiAnalysisResult.objects
@@ -323,13 +397,21 @@ class AiStatusApiView(View):
                 "cpu": cpu_usage,
                 "memory": memory_usage,
                 "engine_ok": engine_ok,
+                "engine_err": engine_err,
             },
             "chart": {
+                # ✅ 기존 24시간 차트(유지)
                 "labels": labels,
-                "latency_series": request_counts,      # TODO: 진짜 latency 시계열로 교체
-                "throughput_series": throughput_counts,
-                "cpu_spark": request_counts,           # TODO: CPU sparkline로 교체
-                "mem_spark": throughput_counts,        # TODO: MEM sparkline로 교체
+                "latency_series": latency_series,
+                "throughput_series": throughput_series,
+
+                # ✅ 새로 추가: 실시간 60초 차트
+                "rt_labels": rt_labels,
+                "rt_latency_series": rt_latency,
+                "rt_throughput_series": rt_throughput,
+
+                "cpu_spark": throughput_series,  # TODO
+                "mem_spark": throughput_series,  # TODO
             },
             "recent_errors": recent_errors,
             "system_info": system_info,

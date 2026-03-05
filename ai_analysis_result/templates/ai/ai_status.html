@@ -1,522 +1,587 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block page_title %}AI 성능 현황{% endblock %}
-{% block page_subtitle %}실시간 모니터링 대시보드{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* ===== 전체 페이지(한 화면 고정) ===== */
-    .ai-page{
-        height: calc(100vh - 64px);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    .ai-wrap{
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        padding: 10px 18px !important;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        width: 100%;
-        max-width: none;
-    }
+  .main{
+    overflow: hidden !important;
+    min-height: 0 !important;
+    height: calc(100vh - var(--header-h)) !important;
+    padding: 18px !important;
+  }
+  .card-sneat{
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 16px !important;
+  }
 
-    .panel{
-        border: 1px solid rgba(67, 89, 113, .18);
-        border-radius: 14px;
-        background: #fff;
-        box-shadow: 0 2px 10px rgba(67,89,113,.06);
-    }
+  .ai-page{
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    /* ===== 상단 상태 pill 작게 ===== */
-    .status-pill{
-        display:inline-flex;
-        align-items:center;
-        gap:6px;
-        border:1px solid rgba(67,89,113,.18);
-        padding:4px 10px;
-        border-radius:999px;
-        background:#fff;
-        font-size:13px;
-        font-weight:900;
-        line-height: 1;
-    }
-    .dot{
-        width:8px;height:8px;border-radius:50%;
-        background:#28c76f;
-        box-shadow:0 0 0 4px rgba(40,199,111,.12);
-    }
+  .panel{
+    border: 1px solid rgba(67, 89, 113, .18);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(67,89,113,.06);
+  }
 
-    /* ===== KPI ===== */
-    .kpi-card{
-        padding:10px;
-        height: 82px;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        text-align:center;
-    }
-    .kpi-title{ font-size:12px; font-weight:900; color:#566a7f; }
-    .kpi-value{ font-size:22px; font-weight:900; color:#2b3a4a; line-height: 1.05; }
-    .kpi-unit{ font-size:13px; font-weight:900; margin-left:5px; color:#566a7f; }
-    .kpi-sub{ font-size:11px; color:#7a8a9a; font-weight:700; margin-top:3px; }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid rgba(67,89,113,.18);
+    padding:4px 10px;
+    border-radius:999px;
+    background:#fff;
+    font-size:13px;
+    font-weight:900;
+    line-height: 1;
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#28c76f;
+    box-shadow:0 0 0 4px rgba(40,199,111,.12);
+  }
 
-    /* ===== 레이아웃 핵심: 중단/하단 높이 분리(겹침 방지) ===== */
-    .ai-mid{
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: hidden;
-    }
-    .ai-bot{
-        flex: 0 0 230px; /* ✅ 하단(최근오류) 고정 높이 */
-        min-height: 230px;
-        overflow: hidden;
-    }
+  .kpi-card{
+    padding:10px;
+    height: 82px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    text-align:center;
+  }
+  .kpi-title{ font-size:12px; font-weight:900; color:#566a7f; }
+  .kpi-value{ font-size:22px; font-weight:900; color:#2b3a4a; line-height: 1.05; }
+  .kpi-unit{ font-size:13px; font-weight:900; margin-left:5px; color:#566a7f; }
+  .kpi-sub{ font-size:11px; color:#7a8a9a; font-weight:700; margin-top:3px; }
 
-    /* ===== 중단 왼쪽(차트 2개) : 각 카드 높이 고정 ===== */
-    .chart-stack{
-        height: 100%;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .chart-panel{
-        flex: 1 1 0;
-        min-height: 0;
-        padding: 12px;
-        overflow: hidden;
-    }
-    .chart-title{
-        font-weight: 900;
-        color:#2b3a4a;
-        font-size: 13px;
-        margin-bottom: 6px;
-        line-height: 1.1;
-    }
-    .chart-canvas-wrap{
-        height: 220px;
-        min-height: 220px;
-    }
-    /* ✅ 캔버스 높이를 "부모 기준"으로 고정 (겹침 방지 핵심) */
-    #latencyChart, #throughputChart{
-        width: 100% !important;
-        height: 100% !important;
-    }
+  .ai-mid{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
 
-    /* ===== 오른쪽: 자원 + 시스템 정보 ===== */
-    .right-col{
-        height: 100%;
-        min-height: 0;
-        display:flex;
-        flex-direction:column;
-        gap:10px;
-        overflow: hidden;
-    }
+  .chart-row{
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  .chart-panel{
+    padding: 12px;
+    overflow: hidden;
+    min-height: 320px;
+  }
+  .chart-title{
+    font-weight: 900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .chart-canvas-wrap{
+    height: 260px;
+    min-height: 260px;
+  }
+  #latencyChart, #throughputChart{
+    width: 100% !important;
+    height: 100% !important;
+    display:block;
+  }
 
-    .resource-panel{
-        flex: 0 0 auto;
-        padding: 12px;
-    }
-    .donut-wrap{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:10px;
-    }
-    .donut-card{
-        padding:10px;
-        border-radius:14px;
-        border:1px solid rgba(67,89,113,.18);
-        background:#fff;
-        overflow:hidden;
-    }
-    .donut-head{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        font-weight:900;
-        color:#2b3a4a;
-        font-size: 13px;
-        margin-bottom:6px;
-    }
-    .donut-canvas-wrap{
-        height: 120px; /* ✅ 도넛 고정 */
-    }
-    #cpuDonut, #memDonut{
-        width:100% !important;
-        height:100% !important;
-        display:block;
-    }
+  .bottom-row{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow:hidden;
+  }
 
-    .system-panel{
-        flex: 1 1 auto;
-        min-height: 0;
-        padding: 12px;
-        overflow: hidden;
-    }
-    .system-panel .table-responsive{
-        height: 100%;
-        overflow: auto;
-    }
-    .system-panel table{ font-size:12px; }
+  .left-bundle{
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
 
-    /* ===== 최근 오류(하단): 내부만 스크롤 ===== */
-    .bot-panel{
-        height: 100%;
-        padding: 12px;
-        display:flex;
-        flex-direction:column;
-        overflow:hidden;
-    }
-    .section-head{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:8px;
-        flex: 0 0 auto;
-    }
-    .btn-recheck{
-        border-radius:8px;
-        font-weight:900;
-        font-size:13px;
-        padding:4px 10px;
-    }
-    .bot-panel .table-responsive{
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: auto; /* ✅ 여기서만 스크롤 */
-    }
-    .bot-panel thead th{
-        position: sticky;
-        top: 0;
-        background: #f5f6f8;
-        z-index: 2;
-    }
+  .bundle-head{
+    font-weight: 900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .donut-wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .donut-card{
+    padding:10px;
+    border-radius:14px;
+    border:1px solid rgba(67,89,113,.18);
+    background:#fff;
+    overflow:hidden;
+  }
+  .donut-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-weight:900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom:6px;
+  }
+  .donut-canvas-wrap{
+    height: 120px;
+  }
+  #cpuDonut, #memDonut{
+    width:100% !important;
+    height:100% !important;
+    display:block;
+  }
+
+  .system-box{
+    border-radius:14px;
+    border:1px solid rgba(67,89,113,.18);
+    background:#fff;
+    overflow:hidden;
+    flex: 1 1 auto;
+    min-height:0;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+  }
+  .system-box .table-responsive{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:auto;
+  }
+  .system-box table{ font-size:12px; }
+
+  .errors-panel{
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+    flex: 0 0 auto;
+  }
+  .btn-recheck{
+    border-radius:8px;
+    font-weight:900;
+    font-size:13px;
+    padding:4px 10px;
+  }
+  .errors-panel .table-responsive{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto !important;
+  }
+  .errors-panel thead th{
+    position: sticky;
+    top: 0;
+    background: #f5f6f8;
+    z-index: 2;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="ai-page">
-    <div class="ai-wrap">
+  <div class="d-flex justify-content-end">
+    <div class="status-pill">
+      <span class="dot" id="engineDot"></span>
+      <span id="engineText">FASTAPI 정상 동작 중</span>
+    </div>
+  </div>
 
-        <!-- 상단 상태 -->
-        <div class="d-flex justify-content-end">
-        <div class="status-pill">
-            <span class="dot" id="engineDot"></span>
-            <span id="engineText">FASTAPI 정상 동작 중</span>
-        </div>
-        </div>
+  <div class="row g-2">
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">응답속도</div>
+        <div class="kpi-value"><span id="kpiLatency">-</span><span class="kpi-unit">ms</span></div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">처리량 (RPM)</div>
+        <div class="kpi-value"><span id="kpiRPM">-</span></div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">요청수 (오늘)</div>
+        <div class="kpi-value"><span id="kpiTotal">-</span></div>
+      </div>
+    </div>
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">정확도</div>
+        <div class="kpi-value"><span id="kpiAcc">-</span><span class="kpi-unit">%</span></div>
+      </div>
+    </div>
+  </div>
 
-        <!-- KPI -->
-        <div class="row g-2">
-        <div class="col-3">
-            <div class="panel kpi-card">
-            <div class="kpi-title">응답속도</div>
-            <div class="kpi-value"><span id="kpiLatency">-</span><span class="kpi-unit">ms</span></div>
-            <div class="kpi-sub">p95/평균 확장 예정</div>
-            </div>
+  <div class="ai-mid">
+    <div class="row g-2 chart-row">
+      <div class="col-6">
+        <div class="panel chart-panel">
+          <div class="chart-title">응답속도</div>
+          <div class="chart-canvas-wrap"><canvas id="latencyChart"></canvas></div>
         </div>
-        <div class="col-3">
-            <div class="panel kpi-card">
-            <div class="kpi-title">처리량 (RPM)</div>
-            <div class="kpi-value"><span id="kpiRPM">-</span></div>
-            <div class="kpi-sub">성공/실패 분리 예정</div>
-            </div>
+      </div>
+      <div class="col-6">
+        <div class="panel chart-panel">
+          <div class="chart-title">처리량</div>
+          <div class="chart-canvas-wrap"><canvas id="throughputChart"></canvas></div>
         </div>
-        <div class="col-3">
-            <div class="panel kpi-card">
-            <div class="kpi-title">요청수 (오늘)</div>
-            <div class="kpi-value"><span id="kpiTotal">-</span></div>
-            <div class="kpi-sub">기간 선택 예정</div>
-            </div>
-        </div>
-        <div class="col-3">
-            <div class="panel kpi-card">
-            <div class="kpi-title">정확도</div>
-            <div class="kpi-value"><span id="kpiAcc">-</span><span class="kpi-unit">%</span></div>
-            <div class="kpi-sub">관리자 정책 추가(ADD)</div>
-            </div>
-        </div>
-        </div>
+      </div>
+    </div>
 
-        <!-- 중단(차트 + 자원/시스템) -->
-        <div class="row g-2 ai-mid">
-        <!-- 왼쪽: 차트 2개 -->
-        <div class="col-8" style="height:100%; min-height:0;">
-            <div class="chart-stack">
-            <div class="panel chart-panel">
-                <div class="chart-title">응답속도</div>
-                <div class="chart-canvas-wrap">
-                <canvas id="latencyChart"></canvas>
-                </div>
+    <div class="row g-2 bottom-row">
+      <div class="col-4" style="height:100%; min-height:0;">
+        <div class="panel left-bundle">
+          <div>
+            <div class="bundle-head">자원 사용량</div>
+            <div class="donut-wrap">
+              <div class="donut-card">
+                <div class="donut-head"><span>CPU</span><span id="cpuPct">-</span></div>
+                <div class="donut-canvas-wrap"><canvas id="cpuDonut"></canvas></div>
+              </div>
+              <div class="donut-card">
+                <div class="donut-head"><span>MEM</span><span id="memPct">-</span></div>
+                <div class="donut-canvas-wrap"><canvas id="memDonut"></canvas></div>
+              </div>
             </div>
+          </div>
 
-            <div class="panel chart-panel">
-                <div class="chart-title">처리량</div>
-                <div class="chart-canvas-wrap">
-                <canvas id="throughputChart"></canvas>
-                </div>
+          <div class="system-box">
+            <div class="bundle-head" style="margin-bottom:8px;">시스템 정보</div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr><th style="width:120px;">현재 버전</th><td id="sysVersion">-</td></tr>
+                  <tr><th>개발자</th><td id="sysDev">-</td></tr>
+                  <tr><th>업데이트</th><td id="sysUpdate">-</td></tr>
+                  <tr><th>정확도 정의</th><td>관리자 정책 추가(ADD)</td></tr>
+                </tbody>
+              </table>
             </div>
-            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- 오른쪽: 도넛 + 시스템정보 -->
-        <div class="col-4" style="height:100%; min-height:0;">
-            <div class="right-col">
-            <div class="panel resource-panel">
-                <div class="chart-title" style="margin-bottom:10px;">자원 사용량</div>
-                <div class="donut-wrap">
-                <div class="donut-card">
-                    <div class="donut-head"><span>CPU</span><span id="cpuPct">-</span></div>
-                    <div class="donut-canvas-wrap"><canvas id="cpuDonut"></canvas></div>
-                </div>
-                <div class="donut-card">
-                    <div class="donut-head"><span>MEM</span><span id="memPct">-</span></div>
-                    <div class="donut-canvas-wrap"><canvas id="memDonut"></canvas></div>
-                </div>
-                </div>
-            </div>
-
-            <div class="panel system-panel">
-                <div class="chart-title" style="margin-bottom:10px;">시스템 정보</div>
-                <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                    <tbody>
-                    <tr><th style="width:120px;">현재 버전</th><td id="sysVersion">-</td></tr>
-                    <tr><th>개발자</th><td id="sysDev">-</td></tr>
-                    <tr><th>업데이트</th><td>5초</td></tr>
-                    <tr><th>정확도 정의</th><td>관리자 정책 추가(ADD)</td></tr>
-                    </tbody>
-                </table>
-                </div>
-            </div>
-
-            </div>
-        </div>
-        </div>
-
-        <!-- 하단: 최근 오류 -->
-        <div class="ai-bot">
-        <div class="panel bot-panel">
-            <div class="section-head">
+      <div class="col-8" style="height:100%; min-height:0;">
+        <div class="panel errors-panel">
+          <div class="section-head">
             <div class="chart-title" style="margin:0;">최근 오류</div>
             <button class="btn btn-outline-primary btn-recheck" id="btnRecheck">재검토</button>
-            </div>
+          </div>
 
-            <div class="table-responsive">
+          <div class="table-responsive">
             <table class="table table-sm mb-0">
-                <thead>
+              <thead>
                 <tr>
-                    <th style="width:180px;">시간</th>
-                    <th>오류 내용</th>
-                    <th style="width:110px;" class="text-end">확률</th>
+                  <th style="width:180px;">시간</th>
+                  <th>오류 내용</th>
+                  <th style="width:110px;" class="text-end">확률</th>
                 </tr>
-                </thead>
-                <tbody id="recentErrorsTbody">
+              </thead>
+              <tbody id="recentErrorsTbody">
                 <tr><td colspan="3" class="text-center text-muted">-</td></tr>
-                </tbody>
+              </tbody>
             </table>
-            </div>
+          </div>
         </div>
-        </div>
+      </div>
 
     </div>
-    </div>
-    {% endblock %}
+  </div>
+</div>
+{% endblock %}
 
-    {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-    (function(){
-    const charts = { latency:null, throughput:null, cpu:null, mem:null };
-    window.__AI_STATUS__ = charts;
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const charts = { latency:null, throughput:null, cpu:null, mem:null };
+  window.__AI_STATUS__ = charts;
 
-    function el(id){
-        const n = document.getElementById(id);
-        if(!n) throw new Error(`#${id} not found`);
-        return n;
+  // ====== 실시간 설정 ======
+  const POLL_MS = 2000;   // ✅ 작업관리자 느낌: 1초마다 갱신 (부담되면 2000~5000으로)
+  const RT_MAX  = 60;     // ✅ 최근 60초
+
+  const rt = { inited:false, labels:[], latency:[], throughput:[] };
+
+  function el(id){
+    const n = document.getElementById(id);
+    if(!n) throw new Error(`#${id} not found`);
+    return n;
+  }
+  function isChart(x){
+    return x && typeof x.update === "function" && x.data && x.config;
+  }
+  function toNum(v, d=0){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  function fmtHMS(d){
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    return `${hh}:${mm}:${ss}`;
+  }
+
+  function initRT(){
+    const now = new Date();
+    rt.labels = [];
+    rt.latency = [];
+    rt.throughput = [];
+    for(let i = RT_MAX - 1; i >= 0; i--){
+      const t = new Date(now.getTime() - i * 1000);
+      rt.labels.push(fmtHMS(t));
+      rt.latency.push(0);
+      rt.throughput.push(0);
     }
-    function isChart(x){
-        return x && typeof x.update === "function" && x.data && x.config;
-    }
+    rt.inited = true;
+  }
 
-    const centerTextPlugin = {
-        id: 'centerText',
-        afterDraw(chart) {
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return;
-        const value = chart?.config?.options?.plugins?.centerText?.value;
-        if (value == null) return;
-        const x = (chartArea.left + chartArea.right) / 2;
-        const y = (chartArea.top + chartArea.bottom) / 2;
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '900 18px sans-serif';
-        ctx.fillStyle = '#2b3a4a';
-        ctx.fillText(`${value}%`, x, y);
-        ctx.restore();
+  function pushRT(label, latency, throughput){
+    rt.labels.push(label);
+    rt.latency.push(latency);
+    rt.throughput.push(throughput);
+    if(rt.labels.length > RT_MAX){
+      rt.labels.shift(); rt.latency.shift(); rt.throughput.shift();
+    }
+  }
+
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const value = chart?.config?.options?.plugins?.centerText?.value;
+      if (value == null) return;
+      const x = (chartArea.left + chartArea.right) / 2;
+      const y = (chartArea.top + chartArea.bottom) / 2;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 18px sans-serif';
+      ctx.fillStyle = '#2b3a4a';
+      ctx.fillText(`${value}%`, x, y);
+      ctx.restore();
+    }
+  };
+  if(!Chart.registry.plugins.get('centerText')){
+    Chart.register(centerTextPlugin);
+  }
+
+  function makeLine(canvas){
+    return new Chart(canvas, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        data: [],
+        tension: .35,
+        pointRadius: 0,
+        borderWidth: 3,
+        borderColor: "#696cff",
+        backgroundColor: "rgba(105,108,255,0.12)",
+        fill: true,
+        spanGaps: true
+      }]},
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false } ,
+          y: {
+            display: false,           
+            grid: { display: false }, 
+            ticks: { display: false } 
+            } 
         }
-    };
-    if(!Chart.registry.plugins.get('centerText')){
-        Chart.register(centerTextPlugin);
-    }
+      }
+    });
+  }
 
-    function makeLine(canvas){
-        return new Chart(canvas, {
-        type: 'line',
-        data: { labels: [], datasets: [{
-            data: [],
-            tension: .35,
-            pointRadius: 0,
-            borderWidth: 3,
-            borderColor: "#696cff",
-            backgroundColor: "rgba(105,108,255,0.12)",
-            fill: true
-        }]},
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: { legend: { display: false } },
-            scales: {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-            }
+  function makeDonut(canvas){
+    return new Chart(canvas, {
+      type: 'doughnut',
+      data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+          centerText: { value: 0 }
         }
-        });
+      }
+    });
+  }
+
+  function setEngine(ok){
+    const dot = el("engineDot");
+    const txt = el("engineText");
+    if(ok){
+      dot.style.background = "#28c76f";
+      dot.style.boxShadow = "0 0 0 4px rgba(40,199,111,.12)";
+      txt.textContent = "FASTAPI 정상 동작 중";
+    }else{
+      dot.style.background = "#ea5455";
+      dot.style.boxShadow = "0 0 0 4px rgba(234,84,85,.12)";
+      txt.textContent = "FASTAPI 장애/점검";
     }
+  }
 
-    function makeDonut(canvas){
-        return new Chart(canvas, {
-        type: 'doughnut',
-        data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '72%',
-            animation: false,
-            plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false },
-            centerText: { value: 0 }
-            }
-        }
-        });
-    }
+  function getCookie(name){
+    const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+    return v ? decodeURIComponent(v.split("=")[1]) : null;
+  }
 
-    function setEngine(ok){
-        const dot = el("engineDot");
-        const txt = el("engineText");
-        if(ok){
-        dot.style.background = "#28c76f";
-        dot.style.boxShadow = "0 0 0 4px rgba(40,199,111,.12)";
-        txt.textContent = "FASTAPI 정상 동작 중";
-        }else{
-        dot.style.background = "#ea5455";
-        dot.style.boxShadow = "0 0 0 4px rgba(234,84,85,.12)";
-        txt.textContent = "FASTAPI 장애/점검";
-        }
-    }
+  function applyZeroAxisFix(chart, series){
+    // ✅ 전부 0이면 0~1로 띄워서 0선이 '보이게' (마이너스는 안씀)
+    const allZero = series.every(v => v === 0);
+    chart.options.scales.y.min = 0;
+    chart.options.scales.y.max = allZero ? 1 : undefined;
+  }
 
-    function getCookie(name){
-        const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
-        return v ? decodeURIComponent(v.split("=")[1]) : null;
-    }
+  async function loadStatus(){
+    const res = await fetch("{% url 'ai:status_api' %}", { credentials: "same-origin", cache:"no-store" });
+    if(!res.ok) throw new Error("status_api error: " + res.status);
+    const data = await res.json();
 
-    async function loadStatus(){
-        const res = await fetch("{% url 'ai:status_api' %}", { credentials: "same-origin", cache:"no-store" });
-        if(!res.ok) throw new Error("status_api error: " + res.status);
-        const data = await res.json();
+    // KPI
+    el("kpiLatency").textContent = data.kpi?.latency ?? "-";
+    el("kpiRPM").textContent     = data.kpi?.rpm ?? "-";
+    el("kpiTotal").textContent   = data.kpi?.total_today ?? "-";
+    el("kpiAcc").textContent     = data.kpi?.accuracy ?? "-";
+    setEngine(!!data.kpi?.engine_ok);
 
-        el("kpiLatency").textContent = data.kpi?.latency ?? "-";
-        el("kpiRPM").textContent     = data.kpi?.rpm ?? "-";
-        el("kpiTotal").textContent   = data.kpi?.total_today ?? "-";
-        el("kpiAcc").textContent     = data.kpi?.accuracy ?? "-";
-        setEngine(!!data.kpi?.engine_ok);
+    el("sysVersion").textContent = data.system_info?.version ?? "-";
+    el("sysDev").textContent     = data.system_info?.developer ?? "-";
+    el("sysUpdate").textContent  = `${Math.round(POLL_MS/1000)}초`;
 
-        el("sysVersion").textContent = data.system_info?.version ?? "-";
-        el("sysDev").textContent     = data.system_info?.developer ?? "-";
+    // 차트 생성(최초 1회)
+    if(!isChart(charts.latency))    charts.latency    = makeLine(el("latencyChart"));
+    if(!isChart(charts.throughput)) charts.throughput = makeLine(el("throughputChart"));
+    if(!isChart(charts.cpu))        charts.cpu        = makeDonut(el("cpuDonut"));
+    if(!isChart(charts.mem))        charts.mem        = makeDonut(el("memDonut"));
 
-        if(!isChart(charts.latency))    charts.latency    = makeLine(el("latencyChart"));
-        if(!isChart(charts.throughput)) charts.throughput = makeLine(el("throughputChart"));
-        if(!isChart(charts.cpu))        charts.cpu        = makeDonut(el("cpuDonut"));
-        if(!isChart(charts.mem))        charts.mem        = makeDonut(el("memDonut"));
+    // ====== ✅ 실시간: 서버 집계(labels/series) 안 씀. 1초마다 한 점씩 밀어넣음 ======
+    if(!rt.inited) initRT();
 
-        const labels = data.chart?.labels ?? [];
+    const now = new Date();
+    const labelNow = fmtHMS(now);
 
-        charts.latency.data.labels = labels;
-        charts.latency.data.datasets[0].data = data.chart?.latency_series ?? [];
-        charts.latency.update("none");
+    // 응답속도: KPI로 들어오는 값(현재 FastAPI p95)을 실시간 그래프 점으로 사용
+    const latencyNow = toNum(data.kpi?.latency, 0);
 
-        charts.throughput.data.labels = labels;
-        charts.throughput.data.datasets[0].data = data.chart?.throughput_series ?? [];
-        charts.throughput.update("none");
+    // 처리량: 현재 rpm을 초당으로 근사 (원하면 백엔드에서 last_1s_count 같은 거 내려줘야 "진짜"가 됨)
+    const rpmNow = toNum(data.kpi?.rpm, 0);
+    const throughputNow = rpmNow / 60.0;
 
-        // ✅ CPU/MEM: 값 안정화(클램프)
-        const cpuRaw = Number(data.kpi?.cpu ?? 0);
-        const memRaw = Number(data.kpi?.memory ?? 0);
+    pushRT(labelNow, latencyNow, throughputNow);
 
-        const cpu = Number.isFinite(cpuRaw) ? Math.max(0, Math.min(100, cpuRaw)) : 0;
-        const mem = Number.isFinite(memRaw) ? Math.max(0, Math.min(100, memRaw)) : 0;
+    // 차트에 링버퍼 적용
+    charts.latency.data.labels = rt.labels;
+    charts.latency.data.datasets[0].data = rt.latency;
+    applyZeroAxisFix(charts.latency, rt.latency);
+    charts.latency.update("none");
 
-        el("cpuPct").textContent = data.kpi?.engine_ok ? `${Math.round(cpu)}%` : "-";
-        el("memPct").textContent = data.kpi?.engine_ok ? `${Math.round(mem)}%` : "-";
+    charts.throughput.data.labels = rt.labels;
+    charts.throughput.data.datasets[0].data = rt.throughput;
+    applyZeroAxisFix(charts.throughput, rt.throughput);
+    charts.throughput.update("none");
 
-        charts.cpu.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
-        charts.cpu.options.plugins.centerText.value = Math.round(cpu);
-        charts.cpu.update("none");
+    // Donut
+    const cpuRaw = toNum(data.kpi?.cpu, 0);
+    const memRaw = toNum(data.kpi?.memory, 0);
+    const cpu = Math.max(0, Math.min(100, cpuRaw));
+    const mem = Math.max(0, Math.min(100, memRaw));
 
-        charts.mem.data.datasets[0].data = [mem, Math.max(0, 100-mem)];
-        charts.mem.options.plugins.centerText.value = Math.round(mem);
-        charts.mem.update("none");
+    el("cpuPct").textContent = data.kpi?.engine_ok ? `${Math.round(cpu)}%` : "-";
+    el("memPct").textContent = data.kpi?.engine_ok ? `${Math.round(mem)}%` : "-";
 
-        const tbody = el("recentErrorsTbody");
-        const rows = data.recent_errors || [];
-        tbody.innerHTML = rows.length === 0
-        ? `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`
-        : rows.map(r => `
-            <tr>
+    charts.cpu.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
+    charts.cpu.options.plugins.centerText.value = Math.round(cpu);
+    charts.cpu.update("none");
+
+    charts.mem.data.datasets[0].data = [mem, Math.max(0, 100-mem)];
+    charts.mem.options.plugins.centerText.value = Math.round(mem);
+    charts.mem.update("none");
+
+    // 최근 오류
+    const tbody = el("recentErrorsTbody");
+    const rows = data.recent_errors || [];
+    tbody.innerHTML = rows.length === 0
+      ? `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`
+      : rows.map(r => `
+          <tr>
             <td>${(r.create_at || "").toString()}</td>
             <td class="text-truncate" style="max-width:1200px;">${(r.request_url || "-").toString()}</td>
             <td class="text-end">${r.confidence_score ?? "-"}${r.confidence_score != null ? "%" : ""}</td>
-            </tr>
-        `).join("");
+          </tr>
+      `).join("");
+  }
+
+  // 최초 실행 + 주기 실행
+  loadStatus().catch(e => console.error("loadStatus failed:", e));
+  setInterval(() => loadStatus().catch(e => console.error("loadStatus failed:", e)), POLL_MS);
+
+  // 재검토 버튼
+  document.getElementById("btnRecheck")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btnRecheck");
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = "전송 중...";
+
+    try{
+      const res = await fetch("{% url 'ai:recheck_errors' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({}),
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+      alert(!res.ok || !data.ok ? "재검토 신호 전송 실패" : "재검토 신호 전송 완료");
+    }catch(e){
+      console.error(e);
+      alert("재검토 요청 중 오류");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = old;
     }
-
-    loadStatus().catch(e => console.error("loadStatus failed:", e));
-    setInterval(() => loadStatus().catch(e => console.error("loadStatus failed:", e)), 5000);
-
-    document.getElementById("btnRecheck")?.addEventListener("click", async () => {
-        const btn = document.getElementById("btnRecheck");
-        btn.disabled = true;
-        const old = btn.textContent;
-        btn.textContent = "전송 중...";
-
-        try{
-        const res = await fetch("{% url 'ai:recheck_errors' %}", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("csrftoken"),
-            },
-            body: JSON.stringify({}),
-            credentials: "same-origin"
-        });
-        const data = await res.json();
-        alert(!res.ok || !data.ok ? "재검토 신호 전송 실패" : "재검토 신호 전송 완료");
-        }catch(e){
-        console.error(e);
-        alert("재검토 요청 중 오류");
-        }finally{
-        btn.disabled = false;
-        btn.textContent = old;
-        }
-    });
-    })();
+  });
+})();
 </script>
 {% endblock %}

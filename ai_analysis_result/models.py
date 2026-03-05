@@ -23,6 +23,8 @@ class AiAnalysisResult(models.Model):
     
     create_at = models.DateTimeField(auto_now_add=True)
 
+    ai_latency_ms = models.IntegerField()
+
     class Meta:
         managed = False
         db_table = 'ai_analysis_result'
