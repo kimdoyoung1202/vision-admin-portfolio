@@ -166,6 +166,38 @@
 
     /* Top10 영역 세로 살짝 줄임 */
     .sec.top .chart-box { height: 210px !important; }
+
+    .kpi-main{
+        display:flex;
+        align-items:flex-end;
+        margin-top:4px;
+    }
+
+    .kpi-value{
+        font-size:30px;
+        font-weight:900;
+        line-height:1;
+        color:#2f3a45;
+    }
+
+    .kpi-delta-row{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin-top:6px;
+    }
+
+    .kpi-delta-label{
+        font-size:12px;
+        font-weight:800;
+        color:#a1acb8;
+    }
+
+    .kpi-delta{
+        font-size:13px;
+        font-weight:900;
+        color:#566a7f;
+    }
     </style>
 
     <div class="dash-page">
@@ -183,8 +215,7 @@
                     <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
                     <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
                 </div>
-                <span class="badge text-bg-primary">도메인</span>
-                <span class="badge text-bg-danger">정규표현식</span>
+
                 </div>
             </div>
             <div class="chart-box">
@@ -236,41 +267,58 @@
 
     <!-- 3) KPI 3개 -->
     <section class="sec kpi">
-        <div class="row compact">
+    <div class="row compact">
+
+        <!-- policy -->
         <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
-            <div class="text-muted fw-bold">policy</div>
-            <div class="d-flex align-items-end justify-content-between">
-                <div class="display-6 fw-bold" id="kpiPolicy">-</div>
-                <div class="fw-bold" id="kpiPolicyDelta">-</div>
-            </div>
-            <div class="text-muted small">전일 대비</div>
+                <div class="text-muted fw-bold">policy</div>
+
+                <div class="kpi-main">
+                    <div class="kpi-value" id="kpiPolicy">-</div>
+                </div>
+
+                <div class="kpi-delta-row">
+                    <span class="kpi-delta-label">전일 대비</span>
+                    <span class="kpi-delta" id="kpiPolicyDelta">-</span>
+                </div>
             </div>
         </div>
 
+        <!-- ai_analysis_result -->
         <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
-            <div class="text-muted fw-bold">ai_analysis_result</div>
-            <div class="d-flex align-items-end justify-content-between">
-                <div class="display-6 fw-bold" id="kpiAi">-</div>
-                <div class="fw-bold" id="kpiAiDelta">-</div>
-            </div>
-            <div class="text-muted small">전일 대비</div>
+                <div class="text-muted fw-bold">ai_analysis_result</div>
+
+                <div class="kpi-main">
+                    <div class="kpi-value" id="kpiAi">-</div>
+                </div>
+
+                <div class="kpi-delta-row">
+                    <span class="kpi-delta-label">전일 대비</span>
+                    <span class="kpi-delta" id="kpiAiDelta">-</span>
+                </div>
             </div>
         </div>
 
+        <!-- integrated_detection_logs -->
         <div class="col-lg-4 h-100">
             <div class="card-sneat kpi-card">
-            <div class="text-muted fw-bold">integrated_detection_logs</div>
-            <div class="d-flex align-items-end justify-content-between">
-                <div class="display-6 fw-bold" id="kpiBlocked">-</div>
-                <div class="fw-bold" id="kpiBlockedDelta">-</div>
-            </div>
-            <div class="text-muted small">전일 대비</div>
+                <div class="text-muted fw-bold">integrated_detection_logs</div>
+
+                <div class="kpi-main">
+                    <div class="kpi-value" id="kpiBlocked">-</div>
+                </div>
+
+                <div class="kpi-delta-row">
+                    <span class="kpi-delta-label">전일 대비</span>
+                    <span class="kpi-delta" id="kpiBlockedDelta">-</span>
+                </div>
             </div>
         </div>
-        </div>
-    </section>
+
+    </div>
+</section>
 
     <!-- 4) 하단 -->
     <section class="sec bot">
@@ -294,16 +342,18 @@
             <div class="pkt-left">
                 <div class="pkt-title">
                 <div class="t">일일 패킷 현황</div>
-                <div class="g" id="dailyGranText">일별</div>
                 </div>
 
                 <div>
                 <div class="text-muted small">TOTAL</div>
                 <div class="pkt-total">
-                    <div class="n" id="sysTotalText">-</div>
-                    <div class="d" id="dailyDeltaText">-</div>
+                    <div class="n" id="sysTotalText"></div>
                 </div>
-                <div class="text-muted small">전일 대비</div>
+
+                <div class="pkt-delta">
+                    <span class="text-muted small">전일 대비</span>
+                    <span class="d" id="dailyDeltaText"></span>
+                </div>
                 </div>
 
                 <div class="pkt-mini">

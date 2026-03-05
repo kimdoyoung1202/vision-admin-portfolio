@@ -6,7 +6,6 @@ app_name = "dashboard"
 
 urlpatterns = [
     path("", dashboard_view, name="home"),
-
     path("api/kpis/", kpis_api, name="kpis_api"),
     path("api/timeseries/", timeseries_api, name="api_timeseries"),
     path("api/top-domains/", top_domains_api, name="api_top_domains"),

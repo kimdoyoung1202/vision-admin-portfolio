@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
+
+{% comment %} 상단 헤더 영역(base.html에서 사용) {% endcomment %}
 {% block page_title %}정책 추가{% endblock %}
 {% block page_subtitle %}정책을 추가합니다{% endblock %}
 
@@ -9,7 +11,7 @@
 
 {% block extra_css %}
 <style>
-    /* ====== 전체 폭 / 정렬 (policy_list 톤 유지) ====== */
+    /* 페이지 중앙 정렬 및 최대 폭 제한 */
     .pa-wrap{
         max-width: 900px;
         margin-left:auto;
@@ -25,16 +27,18 @@
         margin: 0 auto;
     }
 
-    .pa-label{font-weight:700}
-    .pa-required::after{content:" *"; color:#ff3e1d; font-weight:900}
-    .pa-sub{font-size:12px; color:#6c7a89}
+    /* 라벨/보조문구 스타일 */
+    .pa-label{ font-weight:700; }
+    .pa-required::after{ content:" *"; color:#ff3e1d; font-weight:900; }
+    .pa-sub{ font-size:12px; color:#6c7a89; }
 
+    /* 입력/셀렉트/버튼 라운드 + 글씨 강조 */
     .pa-card .form-control,
-    .pa-card .form-select{border-radius:12px}
-    .pa-card .btn{border-radius:12px; font-weight:800}
-    .pa-type-tabs .nav-link{font-weight:800}
+    .pa-card .form-select{ border-radius:12px; }
+    .pa-card .btn{ border-radius:12px; font-weight:800; }
+    .pa-type-tabs .nav-link{ font-weight:800; }
 
-    /* ✅ 정책 적용 여부: 라벨 아래로 내려오게 + 크기 동일 */
+    /* 정책 적용 여부(라디오 세그먼트 UI) */
     .pa-seg{
         display:inline-flex;
         border:1px solid #d9dee3;
@@ -42,9 +46,9 @@
         overflow:hidden;
         background:#fff;
     }
-    .pa-seg input{display:none}
+    .pa-seg input{ display:none; }
     .pa-seg label{
-        width:84px;              /* ✅ 동일 폭 */
+        width:84px;
         text-align:center;
         padding:10px 0;
         cursor:pointer;
@@ -57,7 +61,7 @@
         color:#fff;
     }
 
-    /* 버튼 */
+    /* 하단 버튼 영역 */
     .pa-actions{
         display:flex;
         justify-content:center;
@@ -65,7 +69,7 @@
         margin-top:18px;
     }
 
-    /* ✅ 카드 내부 헤더(타이틀/목록으로) */
+    /* 카드 내부 헤더(현재 템플릿에선 사용하지 않지만, 확장 대비로 남겨둔 스타일) */
     .pa-card-head{
         display:flex;
         align-items:flex-start;
@@ -83,25 +87,30 @@
         font-size:12px;
         color:#6c7a89;
     }
-    </style>
-    {% endblock %}
+</style>
+{% endblock %}
 
-    {% block content %}
-    <div class="container-xxl flex-grow-1 container-p-y pa-wrap">
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y pa-wrap">
 
     <div class="card pa-card">
         <div class="card-body">
         <div class="pa-inner">
 
-            {# ✅ 빨간 박스/에러 메시지 필요없다 했으니 출력 제거 #}
-            {# 필요하면 나중에 다시 붙이면 됨 #}
-
+            {% comment %}
+            -----------------------------------------------------------------
+            정책 추가 폼
+            - POST 시 policy_add 뷰로 전달됨(action="": 현재 URL)
+            - ai_id / return_to 는 "AI 분석 결과에서 넘어온 흐름"을 지원하기 위한 hidden 값
+            - form.* 은 뷰에서 에러 발생 시 사용자가 입력한 값을 다시 채우기 위해 내려주는 값
+            -----------------------------------------------------------------
+            {% endcomment %}
             <form method="post" action="">
             {% csrf_token %}
             <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
             <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
 
-            <!-- 0) 정책 타입 -->
+            {% comment %} 0) 정책 타입: 라디오 + nav-pills UI (도메인/정규표현식) {% endcomment %}
             <div class="mb-3">
                 <label class="form-label pa-label pa-required">정책 타입</label>
 
@@ -121,10 +130,16 @@
                 </li>
                 </ul>
 
-                <div class="pa-sub">* 정책 타입에 따라 URL/표현식 입력값을 구분해 사용합니다.</div>
+                <div class="pa-sub">정책 타입에 따라 URL/표현식 입력값을 구분해 사용합니다.</div>
             </div>
 
-            <!-- 1) 정책 URL/표현식 -->
+            {% comment %}
+            -----------------------------------------------------------------
+            1) 정책 URL/표현식
+            - initial_url/initial_domain은 AI 레코드에서 넘어온 프리필 후보값
+            - JS에서 정책 타입 탭을 바꾸면 input 값을 initial_url 또는 initial_domain으로 "교체"한다
+            -----------------------------------------------------------------
+            {% endcomment %}
             <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
             <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
 
@@ -135,7 +150,7 @@
                     placeholder="예) https://example.com/path">
             </div>
 
-            <!-- 2) 정책 이름 -->
+            {% comment %} 2) 정책 이름 {% endcomment %}
             <div class="mb-3">
                 <label class="form-label pa-label pa-required">정책 이름</label>
                 <input type="text" name="policy_name" class="form-control"
@@ -143,7 +158,7 @@
                     placeholder="예) 네이버지도 차단">
             </div>
 
-            <!-- 3) 정책 설명 -->
+            {% comment %} 3) 정책 설명(선택) {% endcomment %}
             <div class="mb-3">
                 <label class="form-label pa-label">정책 설명</label>
                 <input type="text" name="description" class="form-control"
@@ -151,7 +166,7 @@
                     placeholder="예) 특정 서비스 접속 차단 정책">
             </div>
 
-            <!-- 4) 처리 유형 -->
+            {% comment %} 4) 처리 유형(block/log) {% endcomment %}
             <div class="mb-3">
                 <label class="form-label pa-label pa-required">처리 유형</label>
                 <select class="form-select" name="handling_type">
@@ -160,7 +175,7 @@
                 </select>
             </div>
 
-            <!-- 5) 정책 적용 여부 (✅ 선택란을 라벨 아래로 내림) -->
+            {% comment %} 5) 정책 적용 여부(true/false): 라디오 세그먼트 UI {% endcomment %}
             <div class="mb-2">
                 <label class="form-label pa-label pa-required">정책 적용 여부</label>
                 <div class="mt-1">
@@ -176,17 +191,18 @@
                 </div>
             </div>
 
-            <!-- 버튼 -->
+            {% comment %} 하단 버튼: return_to가 있으면 해당 URL로 취소, 없으면 목록으로 {% endcomment %}
             <div class="pa-actions">
                 <button class="btn btn-primary px-4" type="submit">추가</button>
+
                 {% if return_to %}
-                    <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
-                    {% else %}
-                    <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
+                <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
+                {% else %}
+                <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
                 {% endif %}
             </div>
-
             </form>
+
         </div>
         </div>
     </div>
@@ -194,7 +210,12 @@
     </div>
 
     <script>
-    // nav-pills 라벨 클릭 시 active 토글 (라디오 기반)
+    /*
+    정책 타입 탭(도메인/정규표현식) 클릭 시 동작
+    - 라디오 input 자체는 label[for=...] 클릭으로 체크된다.
+    - UI(active 클래스)는 JS로 토글한다.
+    - 정책 URL/표현식 입력값(content)은 탭에 따라 initial_domain 또는 initial_url로 교체한다.
+    */
     (function () {
     const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
     const input = document.getElementById("policy_content");
@@ -204,18 +225,18 @@
 
     labels.forEach(lb => {
         lb.addEventListener("click", () => {
-            // active 토글
-            labels.forEach(x => x.classList.remove("active"));
-            lb.classList.add("active");
+        labels.forEach(x => x.classList.remove("active"));
+        lb.classList.add("active");
 
-            // ✅ 값 스왑
-            if (lb.getAttribute("for") === "type_regex") {
-                if (initialUrl) input.value = initialUrl;
-            } else if (lb.getAttribute("for") === "type_domain") {
-                if (initialDomain) input.value = initialDomain;
-            }
+        const target = lb.getAttribute("for");
+
+        if (target === "type_regex") {
+            if (initialUrl) input.value = initialUrl;
+        } else if (target === "type_domain") {
+            if (initialDomain) input.value = initialDomain;
+        }
         });
     });
-})();
+    })();
 </script>
 {% endblock %}

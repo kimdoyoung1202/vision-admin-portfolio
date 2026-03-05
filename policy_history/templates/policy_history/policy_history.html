@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}정책 삭제 기록 관리{% endblock %}
 
 {% block page_title %}정책 삭제 기록 관리{% endblock %}
@@ -14,17 +15,14 @@
         --topbarH: 64px;
         --gap: 10px;
 
-        /* 테이블 고정 높이 */
         --theadH: 44px;
         --rowH: 42px;
         --pagerH: 44px;
         --rows: 12;
 
-        /* 상세 폭 */
         --detailW: 420px;
     }
 
-    /* ✅ 바깥 스크롤 차단 */
     html, body{ height: 100%; }
     body{ overflow:hidden !important; }
 
@@ -34,6 +32,7 @@
         display:flex;
         flex-direction:column;
     }
+
     .ph-wrap{
         flex:1;
         min-height:0;
@@ -44,7 +43,6 @@
         gap: var(--gap);
     }
 
-    /* filter */
     .filter-card .card-body{ padding: 10px 12px 8px; }
     .filter-card .nav{ margin-bottom: 8px !important; }
     .filter-card .form-label{ font-weight:900; font-size:.82rem; margin-bottom:4px; }
@@ -57,7 +55,6 @@
     }
     .filter-card .btn{ height:34px; padding:.42rem 1rem; border-radius:10px; font-weight:900; }
 
-    /* workspace */
     .workspace{
         flex:1;
         min-height:0;
@@ -65,17 +62,19 @@
         display:flex;
         gap: var(--gap);
     }
+
     #tableCol{
         flex: 1 1 auto;
         min-width:0;
         height:100%;
         overflow:hidden;
     }
+
     #detailCol{
         flex: 0 0 var(--detailW);
         min-width: var(--detailW);
         height:100%;
-        overflow:hidden; /* ✅ 상세 컬럼 자체는 스크롤 금지 */
+        overflow:hidden;
     }
 
     .workspace-card{
@@ -88,14 +87,13 @@
 
     .workspace-card .card-body{
         flex:1;
-        min-height:0;            /* ✅ 이거 없으면 내부 overflow가 body로 튐 */
+        min-height:0;
         overflow:hidden;
         padding: 10px 12px;
         display:flex;
         flex-direction:column;
     }
 
-    /* async dim */
     .dim-loading{ position: relative; }
     .dim-loading:after{
         content:"";
@@ -106,13 +104,13 @@
         z-index: 5;
     }
 
-    /* table fixed */
     .table-viewport{
         flex:0 0 auto;
         height: calc(var(--theadH) + (var(--rows) * var(--rowH)));
         overflow:hidden;
         border-radius: 10px;
     }
+
     table#phTable thead tr{ height: var(--theadH); }
     table#phTable tbody tr{ height: var(--rowH); }
     table#phTable th, table#phTable td{
@@ -121,9 +119,12 @@
         padding-bottom: 8px;
         font-size: .90rem;
     }
+
     .table-responsive{ overflow-x:auto; overflow-y:hidden; }
+
     .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
     .clickable-row{ cursor:pointer; }
     .table-active{ background: rgba(105,108,255,.08) !important; }
 
@@ -137,16 +138,6 @@
     }
     .pagination{ margin-bottom:0 !important; }
 
-    /* pills */
-    .count-pill{
-        font-size:12px;
-        font-weight:900;
-        padding:6px 10px;
-        border-radius:999px;
-        background:rgba(105,108,255,.12);
-        color:#3b3bf2;
-        white-space:nowrap;
-    }
     .pill{
         display:inline-block;
         padding:3px 10px;
@@ -162,9 +153,6 @@
     .pill-log{ background: rgba(3,195,236,.10); color:#03c3ec; border-color: rgba(3,195,236,.25); }
     .td-center{ text-align:center; }
 
-    /* =========================
-        ✅ 상세 패널 (스크롤 0 설계)
-    ========================= */
     .detail-top{
         display:flex;
         align-items:center;
@@ -177,6 +165,7 @@
         font-weight: 900;
         font-size: 1.05rem;
     }
+
     .detail-hint{
         margin: 10px 0 8px;
         color:#6c757d;
@@ -185,10 +174,9 @@
         flex:0 0 auto;
     }
 
-    /* ✅ 상세 내용 전체를 flex column으로 */
     .detail-body{
         flex:1;
-        min-height:0;   /* ✅ 중요 */
+        min-height:0;
         overflow:hidden;
         display:flex;
         flex-direction:column;
@@ -200,6 +188,7 @@
         border-top: 1px solid rgba(67,89,113,.12);
         border-bottom: 1px solid rgba(67,89,113,.12);
     }
+
     .detail-row{
         display:grid;
         grid-template-columns: 120px 1fr;
@@ -208,12 +197,14 @@
         border-top: 1px solid rgba(67,89,113,.10);
     }
     .detail-row:first-child{ border-top: none; }
+
     .detail-k{
         color:#6c757d;
         font-weight:900;
         font-size:.86rem;
         padding-left: 2px;
     }
+
     .detail-v{
         font-weight:900;
         font-size:.92rem;
@@ -230,7 +221,6 @@
         flex:0 0 auto;
     }
 
-    /* ✅ 설명 박스가 남은 높이를 먹고, 넘치면 "박스 안"에서만 스크롤 */
     .detail-desc-box{
         margin-top: 6px;
         border: 1px solid rgba(67,89,113,.18);
@@ -240,13 +230,13 @@
         font-weight: 800;
         line-height: 1.35;
 
-        flex: 1 1 auto;   /* ✅ 남은 높이 먹기 */
-        min-height: 0;    /* ✅ 중요 */
-        overflow: auto;   /* ✅ 여기에서만 스크롤 */
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
     }
 
     .detail-actions{
-        flex:0 0 auto;  /* ✅ 버튼은 하단 고정 */
+        flex:0 0 auto;
         padding-top: 12px;
         display:flex;
         gap: 10px;
@@ -263,9 +253,9 @@
     <div class="ph-page">
     <div class="container-fluid ph-wrap container-p-y">
 
-        <!-- filter -->
         <div class="card filter-card">
         <div class="card-body">
+
             <ul class="nav nav-pills mb-2" id="typeTabs">
             <li class="nav-item">
                 <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
@@ -340,10 +330,7 @@
         </div>
         </div>
 
-        <!-- workspace -->
         <div class="workspace">
-
-        <!-- table -->
         <div id="tableCol">
             <div class="card workspace-card">
             <div class="card-body">
@@ -354,7 +341,6 @@
             </div>
         </div>
 
-        <!-- detail -->
         <div id="detailCol" class="d-none">
             <div class="card workspace-card">
             <div class="card-body">
@@ -410,7 +396,6 @@
             </div>
             </div>
         </div>
-
         </div><!-- /workspace -->
 
     </div>
@@ -435,6 +420,7 @@
     const dPolicyDesc = document.getElementById("dPolicyDesc");
 
     const btnRestore = document.getElementById("btnRestore");
+
     let __restoreAction = null;
 
     function getCookie(name){
@@ -474,11 +460,13 @@
 
         const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
         if(!res.ok) throw new Error("partial fetch failed");
+
         partialWrap.innerHTML = await res.text();
 
         bindPagerClicks();
         bindTabs();
         bindRowClicks();
+
         }catch(e){
         console.error(e);
         alert("조회 중 오류가 발생했습니다. 콘솔을 확인하세요.");
@@ -558,6 +546,7 @@
         });
 
         const data = await res.json().catch(() => null);
+
         if(!res.ok || !data || !data.ok){
             const msg = (data && data.error) ? data.error : "복구 실패";
             alert(msg);
@@ -587,7 +576,6 @@
 
     btnDetailClose.addEventListener("click", closeDetail);
 
-    // init
     bindPagerClicks();
     bindTabs();
     bindRowClicks();

@@ -27,17 +27,15 @@ def _exact_then_contains(qs, field_name: str, value: str):
 def logs_list(request):
     qs = IntegratedDetectionLogs.objects.select_related("policy_id").all()
 
-    # ===== filters from GET =====
+    # filters from GET
     f_url_or_domain   = (request.GET.get("url_domain") or "").strip()
-    f_start_dt        = (request.GET.get("start_dt") or "").strip()     # ✅ log.html과 이름 맞춤 (datetime-local)
-    f_end_dt          = (request.GET.get("end_dt") or "").strip()       # ✅ log.html과 이름 맞춤 (datetime-local)
+    f_start_dt        = (request.GET.get("start_dt") or "").strip()     # datetime-local
+    f_end_dt          = (request.GET.get("end_dt") or "").strip()       # datetime-local
     f_policy_keyword  = (request.GET.get("policy_kw") or "").strip()
     f_client_ip       = (request.GET.get("client_ip") or "").strip()
     f_policy_type     = (request.GET.get("policy_type") or "").strip()  # DOMAIN / REGEX / ''
     f_method          = (request.GET.get("method") or "").strip()       # GET / POST / ''
     f_query           = (request.GET.get("query_string") or "").strip()
-
-    # ===== apply filters =====
 
     # 1) URL/도메인: exact 먼저 → 없으면 contains (OR)
     if f_url_or_domain:
@@ -52,14 +50,12 @@ def logs_list(request):
             )
 
     # 2) 탐지 기간/시간 (create_at)
-    # datetime-local(YYYY-MM-DDTHH:MM) 문자열은 Django가 DateTimeField 필터에 그대로 파싱해줌
-    # (만약 DB가 timezone-aware면 settings.USE_TZ에 맞춰 처리됨)
     if f_start_dt:
         qs = qs.filter(create_at__gte=f_start_dt)
     if f_end_dt:
         qs = qs.filter(create_at__lte=f_end_dt)
 
-    # 3) 정책 이름 또는 정책 ID (JOIN)
+    # 3) 정책 이름 또는 정책 ID
     if f_policy_keyword:
         qs = qs.filter(
             Q(policy_id__policy_id__icontains=f_policy_keyword) |
@@ -70,11 +66,11 @@ def logs_list(request):
     if f_client_ip:
         qs = qs.filter(client_ip__icontains=f_client_ip)
 
-    # 5) 도메인/정규 라디오
+    # 5) 도메인/정규
     if f_policy_type in ("DOMAIN", "REGEX"):
         qs = qs.filter(policy_id__policy_type=f_policy_type)
 
-    # 6) 메서드 라디오
+    # 6) 메서드
     if f_method in ("GET", "POST"):
         qs = qs.filter(http_method__iexact=f_method)
 
@@ -91,8 +87,8 @@ def logs_list(request):
 
     filters = {
         "url_domain": f_url_or_domain,
-        "start_dt": f_start_dt,   # ✅ 템플릿에서 그대로 value로 사용
-        "end_dt": f_end_dt,       # ✅
+        "start_dt": f_start_dt,
+        "end_dt": f_end_dt,
         "policy_kw": f_policy_keyword,
         "client_ip": f_client_ip,
         "policy_type": f_policy_type,
@@ -100,15 +96,8 @@ def logs_list(request):
         "query_string": f_query,
     }
 
-    # ✅ Ajax(비동기) 요청이면 partial만 반환
+    # Ajax 요청이면 partial만 반환
     is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     template = "integrated_detection_logs/log_partial.html" if is_ajax else "integrated_detection_logs/logs_list.html"
 
-    return render(
-        request,
-        template,
-        {
-            "page_obj": page_obj,
-            "filters": filters,
-        },
-    )
+    return render(request, template, {"page_obj": page_obj, "filters": filters})

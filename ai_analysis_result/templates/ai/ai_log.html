@@ -1,158 +1,196 @@
 {% extends "base.html" %}
 {% load static %}
 
+<!-- ============================
+    페이지 헤더(베이스에서 출력)
+============================ -->
 {% block page_title %}AI 기록관{% endblock %}
 {% block page_subtitle %}FastAPI 결과/로그 조회{% endblock %}
 
 {% block extra_css %}
 <style>
+    /* ============================
+        레이아웃 상수(한 화면 고정용)
+        - 테이블을 12줄로 고정해서 스크롤 최소화
+    ============================ */
     :root{
-    --topbarH: 64px;
-    --gap: 10px;
-    --headerRowH: 40px;
-    --pagerH: 48px;
-    --theadH: 42px;
-    --rowH: 38px;
+        --topbarH: 64px;
+        --gap: 10px;
+        --headerRowH: 40px;
+        --pagerH: 48px;
+        --theadH: 42px;
+        --rowH: 38px;
     }
 
+    /* 페이지 전체: topbar 제외 1화면 고정 */
     .ai-rec-page{
-    height: calc(100vh - var(--topbarH));
-    overflow: hidden;
-    display:flex;
-    flex-direction:column;
+        height: calc(100vh - var(--topbarH));
+        overflow: hidden;
+        display:flex;
+        flex-direction:column;
     }
     .ai-rec-wrap{
-    flex:1;
-    overflow:hidden;
-    padding: 8px 18px !important;
-    display:flex;
-    flex-direction:column;
-    gap: var(--gap);
+        flex:1;
+        overflow:hidden;
+        padding: 8px 18px !important;
+        display:flex;
+        flex-direction:column;
+        gap: var(--gap);
     }
-    .ai-rec-wrap.container-p-y{ padding-top: 8px !important; padding-bottom: 8px !important; }
+    .ai-rec-wrap.container-p-y{
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
 
-    /* 필터 */
+    /* ============================
+        필터 카드(상단 검색 폼)
+    ============================ */
     .filter-card .card-body{ padding: 10px 12px 8px; }
-    .filter-grid .form-label{ font-weight:900; font-size:.82rem; margin-bottom:4px; line-height:1.1; }
+    .filter-grid .form-label{
+        font-weight:900;
+        font-size:.82rem;
+        margin-bottom:4px;
+        line-height:1.1;
+    }
     .filter-grid .form-control,
     .filter-grid .form-select{
-    height: 34px;
-    min-height: 34px;
-    padding: .32rem .6rem;
-    border-radius: 10px;
-    font-weight: 700;
+        height: 34px;
+        min-height: 34px;
+        padding: .32rem .6rem;
+        border-radius: 10px;
+        font-weight: 700;
     }
     .btn.btn-sm{ border-radius:10px; font-weight:800; }
-    .filter-grid .btn{ height:34px; padding:.42rem 1rem; font-weight:900; border-radius:10px; }
+    .filter-grid .btn{
+        height:34px;
+        padding:.42rem 1rem;
+        font-weight:900;
+        border-radius:10px;
+    }
 
     .date-range{ width:100%; }
     .date-range input{ width:100%; min-width:0 !important; }
     .input-tight{ width:100%; min-width:0; }
 
-    /* workspace */
+    /* ============================
+        작업 영역(workspace)
+        - 리스트 영역 + (선택 시) 상세 영역
+    ============================ */
     .workspace{ flex:1; min-height:0; overflow:hidden; }
     #tableCol, #detailCol{ height:100%; min-height:0; }
+
     .workspace-card{
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
+        height:100%;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
     }
     .workspace-card .card-body{
-    flex:1;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-    padding: 10px 12px;
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        padding: 10px 12px;
     }
 
-    /* topbar */
+    /* ============================
+        리스트 상단(조회수/정렬버튼) 영역
+    ============================ */
     .table-topbar{
-    flex:0 0 auto;
-    height: var(--headerRowH);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:6px;
+        flex:0 0 auto;
+        height: var(--headerRowH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:6px;
     }
 
-    /* table viewport (12 rows fixed) */
+    /* ============================
+        테이블 뷰포트 높이 고정 (thead + 12 rows)
+        - 테이블 내부 스크롤(혹은 hidden)로 한 화면 유지
+    ============================ */
     .table-viewport{
-    flex:0 0 auto;
-    height: calc(var(--theadH) + (12 * var(--rowH)));
-    overflow:hidden;
-    border-radius: 10px;
+        flex:0 0 auto;
+        height: calc(var(--theadH) + (12 * var(--rowH)));
+        overflow:hidden;
+        border-radius: 10px;
     }
     table#aiTable thead tr{ height: var(--theadH); }
     table#aiTable tbody tr{ height: var(--rowH); }
     table#aiTable th, table#aiTable td{
-    padding-top: 6px;
-    padding-bottom: 6px;
-    font-size: .90rem;
-    vertical-align: middle;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        font-size: .90rem;
+        vertical-align: middle;
     }
     table#aiTable thead th{ font-weight: 900; }
 
     .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* pager */
+    /* ============================
+        페이징(이전/다음) 영역
+    ============================ */
     .pager{
-    flex:0 0 auto;
-    height: var(--pagerH);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-top:6px;
+        flex:0 0 auto;
+        height: var(--pagerH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-top:6px;
     }
     .pagination{ margin-bottom:0 !important; }
 
-    /* detail */
+    /* ============================
+        상세 패널(오른쪽)
+        - 스크롤 가능한 상세 table 영역
+    ============================ */
     .detail-scroll{
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     .detail-table-wrap{
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden !important;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden !important;
     }
 
     #detailCol .table-sm th,
     #detailCol .table-sm td{
-    padding: 6px 8px;
-    font-size: .90rem;
-    line-height: 1.25;
-    vertical-align: top;
+        padding: 6px 8px;
+        font-size: .90rem;
+        line-height: 1.25;
+        vertical-align: top;
     }
     #detailCol .table-sm th{
-    width: 120px !important;
-    min-width: 120px !important;
-    white-space: nowrap !important;
-    word-break: keep-all !important;
-    font-weight: 900;
-    color: #6c757d;
+        width: 120px !important;
+        min-width: 120px !important;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        font-weight: 900;
+        color: #6c757d;
     }
     #detailCol .table-sm td{
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
     #dRequestUrl{
-    word-break: break-all;
-    overflow-wrap: anywhere;
+        word-break: break-all;
+        overflow-wrap: anywhere;
     }
 
-    .domain-cell {
-    position: relative;
-    }
+    /* ============================
+        dup-badge(중복 표시)
+        - 평소 숨김 -> 행 hover 시 나타나게
+    ============================ */
+    .domain-cell { position: relative; }
 
-/* 기본 숨김 */
     .dup-badge {
         margin-left: 6px;
         padding: 2px 8px;
@@ -160,37 +198,44 @@
         font-weight: 700;
         border-radius: 12px;
 
-        background: rgba(105, 108, 255, 0.12); /* Sneat primary 연한톤 */
-        color: #696cff; /* Sneat 기본 primary */
+        background: rgba(105, 108, 255, 0.12);
+        color: #696cff;
 
         opacity: 0;
         transform: translateY(2px);
         transition: all 0.18s ease;
     }
-
-    /* hover 시 등장 */
     tr:hover .dup-badge {
         opacity: 1;
         transform: translateY(0);
     }
 
+    /* 필터 버튼(추가/무시) 선택 상태 강조 */
     .btn-filter-active{
         background-color: #696cff !important; 
         color: #fff !important;
         border-color: #696cff !important;
     }
-    </style>
-    {% endblock %}
+</style>
+{% endblock %}
 
-    {% block content %}
-    <div class="ai-rec-page">
+{% block content %}
+<div class="ai-rec-page">
     <div class="container-fluid ai-rec-wrap container-p-y">
 
-        <!-- 필터 -->
+        <!-- =========================================================
+        [1] 필터 영역 (GET 파라미터로 조회)
+        - form submit은 JS에서 막고(fetch)로 partial만 갱신함
+        - hidden input:
+            - checked_result: 버튼(추가/무시) 클릭으로 세팅
+            - sort: 정렬 옵션(유해확률순/최신순)
+            - per_page: 12 고정
+        ========================================================= -->
         <div class="card filter-card">
         <div class="card-body">
             <form method="get" class="row g-2 align-items-end filter-grid" id="filterForm">
-            <!-- 1행 -->
+
+            <!-- 1행: 검색/판단결과/로그시간/검토여부 -->
             <div class="col-4">
                 <label class="form-label">URL/도메인</label>
                 <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력 :">
@@ -216,16 +261,18 @@
 
             <div class="col-2">
                 <label class="form-label">관리자 검토 여부</label>
+                <!-- 미검토/검토됨 선택. 검토됨일 때만 일부 필터 입력 활성화(아래 JS setEnabled) -->
                 <select class="form-select input-tight" name="is_checked" id="isCheckedSelect">
                 <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
                 <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
                 </select>
             </div>
 
-            <!-- 2행 -->
+            <!-- 2행: 관리자 검토 결과(버튼), 정책타입, 적용시간, 작성자, 조회/초기화 -->
             <div class="col-2">
                 <label class="form-label">관리자 검토 결과</label>
                 <div class="d-flex gap-2">
+                <!-- 버튼 클릭 시 hidden input checked_result 값이 ADD/IGNORE로 세팅됨 -->
                 <button type="button" class="btn btn-outline-success w-50" id="btnAdd">추가</button>
                 <button type="button" class="btn btn-outline-secondary w-50" id="btnIgnore">무시</button>
                 </div>
@@ -260,21 +307,25 @@
                 <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
             </div>
 
+            <!-- 정렬/페이지당건수/partial 여부는 JS가 관리 -->
             <input type="hidden" name="sort" id="sortHidden" value="{{ filters.sort }}">
             <input type="hidden" name="per_page" value="12">
             </form>
         </div>
         </div>
 
-        <!-- 테이블 + 상세 -->
+        <!-- =========================================================
+        [2] 리스트 영역 (왼쪽)
+        - listArea 안이 "partial 템플릿"으로 통째로 교체됨
+        - include: 초기 로드 시 서버 렌더링 1회
+        ========================================================= -->
         <div class="row g-2 workspace">
 
-        <!-- 왼쪽: 테이블 -->
         <div class="col-12" id="tableCol">
             <div class="card workspace-card">
             <div class="card-body">
 
-                <!-- ✅ 비동기 교체 영역 -->
+                <!-- 비동기 교체 영역 -->
                 <div id="listArea">
                 {% include "ai/ai_log_partial.html" %}
                 </div>
@@ -283,7 +334,12 @@
             </div>
         </div>
 
-        <!-- 오른쪽: 상세 -->
+        <!-- =========================================================
+            [3] 상세 패널 (오른쪽)
+            - 기본은 숨김(d-none)
+            - 테이블 row 클릭하면 openDetail()로 열림
+            - 닫기 버튼으로 closeDetail()
+        ========================================================= -->
         <div class="col-4 d-none" id="detailCol">
             <div class="card workspace-card">
             <div class="card-body">
@@ -303,6 +359,7 @@
                 <div class="detail-table-wrap table-responsive">
                     <table class="table table-sm align-middle mb-0">
                     <tbody>
+                        <!-- JS가 id로 찾아서 텍스트를 채워 넣음 -->
                         <tr><th class="text-muted" style="width:120px;">URL</th><td id="dRequestUrl">-</td></tr>
                         <tr><th class="text-muted">도메인</th><td id="dDomain">-</td></tr>
                         <tr><th class="text-muted">AI판단</th><td id="dAiResult">-</td></tr>
@@ -317,6 +374,7 @@
                     </table>
                 </div>
 
+                <!-- 상세 버튼: 선택된 row에 대해 무시 처리 / 정책 추가 이동 -->
                 <div class="d-flex gap-2 mt-2">
                     <button class="btn btn-outline-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
                     <button class="btn btn-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
@@ -332,8 +390,17 @@
     </div>
     </div>
 
+    <!-- =========================================================
+    [4] JS: 이 페이지의 핵심 동작
+    - filterForm submit을 fetch로 바꿔서 "부분 갱신" 구현
+    - listArea에 이벤트 위임으로 페이징/정렬/행 클릭 처리
+    - 상세에서 '무시'는 POST로 처리하고, 처리 후 현재 페이지를 다시 로드
+    ========================================================= -->
     <script>
     (function(){
+    // ---------------------------
+    // DOM 요소 캐싱
+    // ---------------------------
     const filterForm = document.getElementById("filterForm");
     const listArea = document.getElementById("listArea");
 
@@ -341,6 +408,7 @@
     const detailCol = document.getElementById("detailCol");
     const detailCloseBtn = document.getElementById("detailCloseBtn");
 
+    // 상세패널 표시 필드들
     const badge = document.getElementById("detailIdBadge");
     const dRequestUrl = document.getElementById("dRequestUrl");
     const dDomain = document.getElementById("dDomain");
@@ -353,9 +421,11 @@
     const dCreateAt = document.getElementById("dCreateAt");
     const dAdmin = document.getElementById("dAdmin");
 
+    // 상세패널 액션 버튼
     const btnIgnoreDetail = document.getElementById("btnIgnoreDetail");
     const btnAddPolicyDetail = document.getElementById("btnAddPolicyDetail");
 
+    // 필터 관련 요소
     const isCheckedSelect = document.getElementById("isCheckedSelect");
     const btnAdd = document.getElementById("btnAdd");
     const btnIgnore = document.getElementById("btnIgnore");
@@ -366,13 +436,18 @@
     const appliedEnd = document.getElementById("appliedEnd");
     const adminInput = document.getElementById("adminInput");
 
+    // ---------------------------
+    // 상세패널 열기/닫기/초기화
+    // ---------------------------
     function openDetail(){
+        // 상세 보이기 + 테이블 폭 줄이기(col-12 -> col-8)
         detailCol.classList.remove("d-none");
         tableCol.classList.remove("col-12");
         tableCol.classList.add("col-8");
     }
 
     function resetDetail(){
+        // 상세 영역 내용을 기본값으로 돌림
         badge.textContent = "선택 없음";
         dRequestUrl.textContent = "-";
         dDomain.textContent = "-";
@@ -384,30 +459,49 @@
         dAppliedAt.textContent = "-";
         dCreateAt.textContent = "-";
         dAdmin.textContent = "-";
+
+        // 상세 버튼은 선택되기 전엔 비활성
         btnIgnoreDetail.disabled = true;
         btnAddPolicyDetail.disabled = true;
+
+        // 전역 선택값 초기화(선택 row id 저장용)
         window.__selectedAiId = null;
     }
 
     function closeDetail(){
+        // 상세 숨기기 + 테이블을 다시 전체 폭(col-12)으로
         detailCol.classList.add("d-none");
         tableCol.classList.remove("col-8");
         tableCol.classList.add("col-12");
+
+        // 리스트에서 선택 강조(table-active) 제거
         listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
+
         resetDetail();
     }
 
+    // ---------------------------
+    // 필터 폼을 querystring으로 변환
+    // - per_page=12 고정
+    // - partial=1 추가 (서버가 partial 템플릿만 반환하도록)
+    // ---------------------------
     function buildQuery(extra){
         const fd = new FormData(filterForm);
         const params = new URLSearchParams(fd);
-        params.set("per_page", "12");   // 고정
-        params.set("partial", "1");     // partial fetch
+        params.set("per_page", "12");
+        params.set("partial", "1");
         if(extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
         return params.toString();
     }
 
+    // ---------------------------
+    // partial 로딩(핵심)
+    // - page 이동/정렬/필터 변경 시 호출
+    // - 서버에서 ai_log_partial.html만 받아서 listArea를 교체
+    // - 주소창도 history.replaceState로 동기화
+    // ---------------------------
     async function loadPage(page, extra={}){
-        // 페이지 이동/정렬/검색 시 상세 닫기
+        // 목록이 바뀌면 선택된 row가 무의미해지므로 상세를 닫음
         closeDetail();
 
         const qs = buildQuery({ page, ...extra });
@@ -415,42 +509,46 @@
 
         const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
         if(!res.ok) throw new Error("partial load failed");
+
         listArea.innerHTML = await res.text();
 
-        // 주소창 동기화 (partial 제거)
+        // 주소창에는 partial=1은 빼고 표시(사용자/북마크용)
         const fullQs = buildQuery({ page, ...extra }).replace("&partial=1", "");
         history.replaceState({}, "", `${window.location.pathname}?${fullQs}`);
     }
 
-    // ---- 필터 버튼 활성/비활성 로직 (너 기존 그대로)
+    // ---------------------------
+    // 필터 입력 활성/비활성 정책
+    // - "검토됨(true)"일 때만 ADD/IGNORE 버튼 활성
+    // - ADD 선택일 때만 정책 타입/정책시간 필터 활성
+    // ---------------------------
     function setEnabled(){
         const reviewed = (isCheckedSelect.value === "true");
 
+        // 검토됨(true)일 때만 검토결과 버튼 활성
         btnAdd.disabled = !reviewed;
         btnIgnore.disabled = !reviewed;
+
+        // 작성자는 검토됨일 때만 입력 허용
         if (adminInput) adminInput.disabled = !reviewed;
 
+        // ADD로 필터링 중일 때만 정책 관련 필터 활성
         const policyEnabled = (reviewed && checkedResultHidden.value === "ADD");
         policyTypeSelect.disabled = !policyEnabled;
         appliedStart.disabled = !policyEnabled;
         appliedEnd.disabled = !policyEnabled;
     }
 
+    // ADD/IGNORE 버튼 UI(선택 강조) 반영
     function updateCheckedResultUI(type){
-
-        // 버튼 초기화
         btnAdd.classList.remove("btn-filter-active");
         btnIgnore.classList.remove("btn-filter-active");
 
-        if(type === "ADD"){
-            btnAdd.classList.add("btn-filter-active");
-        }
-
-        if(type === "IGNORE"){
-            btnIgnore.classList.add("btn-filter-active");
-        }
+        if(type === "ADD") btnAdd.classList.add("btn-filter-active");
+        if(type === "IGNORE") btnIgnore.classList.add("btn-filter-active");
     }
 
+    // 버튼 클릭 시 hidden input 갱신 + UI 반영 + 활성화 정책 재평가
     btnAdd.addEventListener("click", () => {
         checkedResultHidden.value = "ADD";
         updateCheckedResultUI("ADD");
@@ -462,17 +560,24 @@
         updateCheckedResultUI("IGNORE");
         setEnabled();
     });
+
     isCheckedSelect.addEventListener("change", setEnabled);
     setEnabled();
 
-    // ---- 검색 submit -> 1페이지 비동기
+    // ---------------------------
+    // 폼 submit을 막고(fetch)로 1페이지부터 다시 로드
+    // ---------------------------
     filterForm.addEventListener("submit", (e) => {
         e.preventDefault();
         loadPage(1).catch(console.error);
     });
 
-    // ✅ 이벤트 위임: 페이징/정렬/row클릭
+    // ---------------------------
+    // 이벤트 위임(listArea 한 곳에서 처리)
+    // ---------------------------
     listArea.addEventListener("click", (e) => {
+
+        // (1) 페이징 클릭: data-page를 가진 링크
         const pageLink = e.target.closest("a[data-page]");
         if(pageLink){
         e.preventDefault();
@@ -480,6 +585,7 @@
         return;
         }
 
+        // (2) 정렬 클릭: data-sort를 가진 링크
         const sortLink = e.target.closest("a[data-sort]");
         if(sortLink){
         e.preventDefault();
@@ -487,13 +593,17 @@
         return;
         }
 
+        // (3) row 클릭: tr.js-row
         const row = e.target.closest("tr.js-row");
         if(!row) return;
 
         openDetail();
+
+        // 기존 선택 제거 후 현재 row만 강조
         listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
         row.classList.add("table-active");
 
+        // partial 템플릿에서 data-*로 심어둔 값 읽어서 상세에 채움
         const data = row.dataset;
         window.__selectedAiId = data.id;
         window.__selectedUrl = data.requestUrl;
@@ -510,18 +620,25 @@
         dCreateAt.textContent = data.createAt || "-";
         dAdmin.textContent = data.admin || "-";
 
+        // row가 선택되면 상세 버튼 활성
         btnIgnoreDetail.disabled = false;
         btnAddPolicyDetail.disabled = false;
     });
 
+    // 상세 닫기 버튼
     detailCloseBtn.addEventListener("click", closeDetail);
 
-    // ---- csrf
+    // ---------------------------
+    // CSRF 토큰 가져오기 (Django POST용)
+    // ---------------------------
     function getCookie(name){
         const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
         return v ? decodeURIComponent(v.split("=")[1]) : null;
     }
 
+    // ---------------------------
+    // "무시(IGNORE)" POST 요청
+    // ---------------------------
     async function postIgnore(aiId){
         const res = await fetch(`/ai/records/${aiId}/ignore/`, {
         method: "POST",
@@ -534,7 +651,9 @@
         return await res.json();
     }
 
-    // ---- 상세 버튼: 무시 / 추가
+    // ---------------------------
+    // 상세 버튼: 무시 처리
+    // ---------------------------
     btnIgnoreDetail.addEventListener("click", async () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
@@ -545,7 +664,7 @@
         return;
         }
 
-        // ✅ 현재 상태 유지한 채 partial 재조회
+        // 현재 URL의 page/sort 상태를 유지해서 다시 로드
         const qs = new URLSearchParams(window.location.search);
         const page = qs.get("page") || "1";
         const sort = qs.get("sort") || (document.getElementById("sortHidden")?.value || "latest");
@@ -553,15 +672,20 @@
         loadPage(page, { sort }).catch(console.error);
     });
 
+    // ---------------------------
+    // 상세 버튼: 정책 추가 페이지로 이동
+    // ---------------------------
     btnAddPolicyDetail.addEventListener("click", () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
+
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
 
-    // 초기
+    // 초기 상태: 상세패널 값 리셋
     resetDetail();
+
     })();
 </script>
 {% endblock %}

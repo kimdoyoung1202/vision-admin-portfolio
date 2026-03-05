@@ -1,4 +1,4 @@
-{# policy_history/policy_history_partial.html #}
+{% comment %} policy_history/policy_history_partial.html {% endcomment %}
 
 <div class="card">
     <div class="card-body">
@@ -24,17 +24,25 @@
 
             <tbody>
             {% for h in page_obj %}
+            {% comment %}
+            row 클릭 시, 부모 JS가 아래 data-* 값을 읽어서 우측 상세 패널에 매핑한다.
+            - data-restore-action: 복구 POST endpoint
+            - data-policy-desc 등: 상세 텍스트 출력용
+
+            ⚠️ attribute 값은 따옴표/특수문자/줄바꿈 때문에 깨질 수 있으니
+                텍스트성 값은 escape 적용을 권장한다.
+            {% endcomment %}
             <tr class="js-row clickable-row"
                 data-history-id="{{ h.id }}"
                 data-policy-id="{{ h.policy_id|default_if_none:'' }}"
                 data-policy-type="{{ h.policy_type|default_if_none:'' }}"
-                data-policy-name="{{ h.policy_name|default_if_none:'' }}"
-                data-content="{{ h.content|default_if_none:'' }}"
+                data-policy-name="{{ h.policy_name|default_if_none:''|escape }}"
+                data-content="{{ h.content|default_if_none:''|escape }}"
                 data-is-active="{% if h.is_active %}true{% else %}false{% endif %}"
                 data-handling-type="{{ h.handling_type|default_if_none:'' }}"
-                data-delete-by="{{ h.delete_by|default_if_none:'' }}"
-                data-delete-at="{{ h.delete_at|date:'Y/m/d H:i' }}"
-                data-policy-desc="{{ h.description|default:'' }}"
+                data-delete-by="{{ h.delete_by|default_if_none:''|escape }}"
+                data-delete-at="{% if h.delete_at %}{{ h.delete_at|date:'Y/m/d H:i' }}{% endif %}"
+                data-policy-desc="{{ h.description|default:''|escape }}"
                 data-restore-action="{% url 'policy_history:restore' h.policy_id %}">
                 <td class="fw-semibold">{{ h.policy_id }}</td>
                 <td>{{ h.policy_type }}</td>
@@ -58,8 +66,9 @@
                 </td>
 
                 <td>{{ h.delete_by }}</td>
-                <td>{{ h.delete_at|date:"Y/m/d H:i" }}</td>
+                <td>{% if h.delete_at %}{{ h.delete_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
             </tr>
+
             {% empty %}
             <tr>
                 <td colspan="8" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
@@ -69,7 +78,11 @@
         </table>
         </div>
 
-        <!-- 페이지네이션 (필터 유지) -->
+        {% comment %}
+        페이지네이션
+        - 지금 구현은 href에 필터를 전부 붙여서 "필터 유지"를 하고 있다.
+        - Ajax 방식으로 갈 거면, JS에서 a 클릭을 가로채서 data-page로 partial만 다시 불러오는 방식이 더 깔끔하다.
+        {% endcomment %}
         <div class="d-flex justify-content-between align-items-center mt-3">
         <div class="text-muted">
             총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지

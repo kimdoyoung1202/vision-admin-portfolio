@@ -6,30 +6,24 @@
 
 {% block extra_css %}
 <style>
-    /* =========================================
-        ✅ 이 페이지에서만 "한 화면" 고정 (전역 html/body 금지)
-    ========================================= */
+    /* 한 화면 고정 */
     .logs-page{
-        --topbarH: 64px;         /* 보라색 상단바 높이(필요 시 56/64/72 조절) */
+        --topbarH: 64px;
         --gap: 10px;
         height: calc(100vh - var(--topbarH));
         overflow: hidden;
         padding: 10px 16px !important;
     }
 
-    /* base의 container-p-y가 과하면 눌러버림 */
     .logs-page.container-p-y,
     .logs-page .container-p-y{
         padding-top: 10px !important;
         padding-bottom: 10px !important;
     }
 
-    /* 카드 간격 압축 */
     .logs-page .card{ margin-bottom: var(--gap) !important; }
 
-    /* =========================================
-        ✅ 필터 카드 세로 압축
-    ========================================= */
+    /* 필터 카드 */
     .filter-card .card-body{ padding: 10px 12px 8px; }
     .filter-card .form-label{
         margin-bottom: 6px;
@@ -50,28 +44,14 @@
         gap: 12px;
         flex-wrap: nowrap;
     }
-    .radio-line{
-        display:flex;
-        gap:8px;            /* 기존보다 줄임 */
-    }
+    .radio-line{ display:flex; gap:8px; }
+    .radio-line .form-check{ margin:0; }
+    .radio-line input{ margin-top:0; }
+    input[type="datetime-local"]{ max-width:220px; }
 
-    .radio-line .form-check{
-        margin:0;
-    }
-
-    .radio-line input{
-        margin-top:0;
-    }
-
-    input[type="datetime-local"]{
-        max-width:220px;
-    }
-
-    /* =========================================
-        ✅ 메인 작업영역: (필터 아래) 남은 높이를 딱 채움
-    ========================================= */
+    /* 작업영역 */
     .workspace{
-        height: calc(100% - 148px); /* 🔥 필터 카드 높이에 따라 140~190 사이로만 조절 */
+        height: calc(100% - 148px);
         display: flex;
         gap: var(--gap);
         overflow: hidden;
@@ -82,15 +62,11 @@
         overflow: hidden;
     }
     .workspace .detail-wrap{
-        flex: 0 0 360px;  /* 상세 폭 */
+        flex: 0 0 360px;
         min-width: 320px;
         overflow: hidden;
     }
 
-    /* =========================================
-        ✅ 테이블 카드: 헤더/테이블/페이징을 한 카드 안에서 고정
-        - 세로 스크롤 만들지 않음
-    ========================================= */
     :root{
         --theadH: 44px;
         --rowH: 42px;
@@ -112,7 +88,6 @@
         overflow:hidden;
     }
 
-    /* 테이블은 가로만 필요할 때 스크롤(세로는 금지) */
     .table-responsive{
         overflow-x: auto;
         overflow-y: hidden;
@@ -129,7 +104,6 @@
     .cell-truncate{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* 페이징 바를 카드 하단에 고정 */
     .pager-bar{
         height: var(--pagerH);
         display:flex;
@@ -139,13 +113,8 @@
     }
     .pagination{ margin-bottom:0 !important; }
 
-    /* =========================================
-        ✅ 상세 카드: 여백 확 줄이기 + 내부 스크롤 금지
-    ========================================= */
-    .detail-card{
-        height: 100%;
-        overflow: hidden;
-    }
+    /* 상세 */
+    .detail-card{ height: 100%; overflow: hidden; }
     .detail-card .card-body{
         padding: 10px 12px;
         height: 100%;
@@ -162,24 +131,22 @@
         margin-bottom:.45rem;
         font-size: .92rem;
         line-height: 1.25;
-        word-break: break-word; /* ✅ 길면 줄바꿈 */
+        word-break: break-word;
     }
     .detail-card hr{ margin: .65rem 0; }
 
     .clickable-row{ cursor:pointer; }
     .table-active{ background: rgba(105,108,255,.08) !important; }
-    </style>
-    {% endblock %}
+</style>
+{% endblock %}
 
-    {% block content %}
-    <div class="container-fluid logs-page">
+{% block content %}
+<div class="container-fluid logs-page">
 
-    <!-- ✅ 필터 카드 -->
+    <!-- 필터 카드 -->
     <div class="card filter-card">
         <div class="card-body">
         <form method="get" class="row g-2 align-items-end" id="logsFilterForm">
-
-            <!-- 1행 -->
             <div class="col-xl-4 col-lg-6">
             <label class="form-label">URL/도메인</label>
             <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력 :">
@@ -195,7 +162,6 @@
             <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력 :">
             </div>
 
-            <!-- 2행 -->
             <div class="col-xl-3 col-lg-6">
             <label class="form-label">사용자 IP</label>
             <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력 :">
@@ -206,12 +172,12 @@
             <div class="radio-line">
                 <label class="form-check d-flex align-items-center gap-2">
                 <input class="form-check-input" type="radio" name="policy_type" value="DOMAIN"
-                    {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
+                        {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
                 <span class="form-check-label">도메인</span>
                 </label>
                 <label class="form-check d-flex align-items-center gap-2">
                 <input class="form-check-input" type="radio" name="policy_type" value="REGEX"
-                    {% if filters.policy_type == "REGEX" %}checked{% endif %}>
+                        {% if filters.policy_type == "REGEX" %}checked{% endif %}>
                 <span class="form-check-label">정규</span>
                 </label>
             </div>
@@ -222,12 +188,12 @@
             <div class="radio-line">
                 <label class="form-check d-flex align-items-center gap-2">
                 <input class="form-check-input" type="radio" name="method" value="POST"
-                    {% if filters.method == "POST" %}checked{% endif %}>
+                        {% if filters.method == "POST" %}checked{% endif %}>
                 <span class="form-check-label">POST</span>
                 </label>
                 <label class="form-check d-flex align-items-center gap-2">
                 <input class="form-check-input" type="radio" name="method" value="GET"
-                    {% if filters.method == "GET" %}checked{% endif %}>
+                        {% if filters.method == "GET" %}checked{% endif %}>
                 <span class="form-check-label">GET</span>
                 </label>
             </div>
@@ -246,20 +212,18 @@
             <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
             <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
             </div>
-
         </form>
         </div>
     </div>
 
-    <!-- ✅ 본문(테이블 + 상세) -->
+    <!-- 본문(테이블 + 상세) -->
     <div class="workspace" id="mainWorkspace">
 
-        <!-- 테이블 -->
         <div class="table-wrap" id="tableCol">
         <div class="card list-card">
             <div class="card-body">
 
-            {# ✅ 비동기 갱신 대상 영역 #}
+            <!-- 비동기 갱신 대상 영역 -->
             <div id="logsPartial">
                 {% include "integrated_detection_logs/log_partial.html" %}
             </div>
@@ -297,7 +261,7 @@
             <div class="detail-k">정책 타입</div>
             <div class="detail-v" id="dPolicyType">-</div>
 
-            <div class="detail-k">정책 설명</div>
+            <div class="detail-k">정책 내용</div>
             <div class="detail-v" id="dPolicyDesc">-</div>
 
             <hr>
@@ -322,7 +286,6 @@
     const form = document.getElementById("logsFilterForm");
     const partialEl = document.getElementById("logsPartial");
 
-    const tableCol = document.getElementById("tableCol");
     const detailCol = document.getElementById("detailCol");
     const detailCloseBtn = document.getElementById("detailCloseBtn");
 
@@ -338,14 +301,11 @@
     const dMethod = document.getElementById("dMethod");
     const dCreateAt = document.getElementById("dCreateAt");
 
-    function bindRowClicks(){
-        const rows = document.querySelectorAll(".js-row");
+    function clearActive(){
+        document.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
+    }
 
-        function clearActive(){
-        rows.forEach(r => r.classList.remove("table-active"));
-        }
-
-        function openDetail(row){
+    function openDetail(row){
         clearActive();
         row.classList.add("table-active");
         detailCol.classList.remove("d-none");
@@ -357,18 +317,25 @@
         dPolicyId.textContent = row.dataset.policyId || "-";
         dPolicyName.textContent = row.dataset.policyName || "-";
         dPolicyType.textContent = row.dataset.policyType || "-";
-        dPolicyDesc.textContent = row.dataset.policyDesc || "-";
+
+        /* ✅ 핵심: 정책 "설명"이 아니라 policy.content 표시 */
+        dPolicyDesc.textContent = row.dataset.policyContent || "-";
+
         dDstPort.textContent = row.dataset.dstPort || "-";
         dMethod.textContent = row.dataset.method || "-";
         dCreateAt.textContent = row.dataset.createAt || "-";
-        }
+    }
 
+    function bindRowClicks(){
+        const rows = document.querySelectorAll(".js-row");
         rows.forEach(r => r.addEventListener("click", () => openDetail(r)));
+    }
 
+    function bindClose(){
         detailCloseBtn.addEventListener("click", () => {
         detailCol.classList.add("d-none");
         clearActive();
-        }, { once: true });
+        });
     }
 
     function bindPagerClicks(){
@@ -384,29 +351,22 @@
 
     async function loadPartial(url){
         try{
-        // 상세 열려있으면 닫기(데이터 바뀌니 혼동 방지)
         detailCol.classList.add("d-none");
-        document.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
+        clearActive();
 
-        const res = await fetch(url, {
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        });
+        const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
         if(!res.ok) throw new Error("partial fetch failed");
 
-        const html = await res.text();
-        partialEl.innerHTML = html;
+        partialEl.innerHTML = await res.text();
 
-        // partial 교체 후 재바인딩
         bindRowClicks();
         bindPagerClicks();
         }catch(err){
         console.error(err);
-        // 실패 시에는 그냥 기존 화면 유지
         alert("조회 중 오류가 발생했습니다. 콘솔 로그를 확인하세요.");
         }
     }
 
-    // 폼 submit 가로채기
     form.addEventListener("submit", (e) => {
         e.preventDefault();
         const params = new URLSearchParams(new FormData(form));
@@ -415,9 +375,9 @@
         loadPartial(url);
     });
 
-    // 초기 바인딩
     bindRowClicks();
     bindPagerClicks();
+    bindClose();
     })();
 </script>
 {% endblock %}

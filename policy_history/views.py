@@ -12,24 +12,27 @@ from .models import PolicyHistory
 
 
 def policy_history_list(request):
-    qs = PolicyHistory.objects.all().order_by("-delete_at")  # ✅ DB 필드: delete_at
+    """
+    삭제된 정책(PolicyHistory) 목록 조회 + 필터 + 페이지네이션
 
-    # ✅ 필터값 (템플릿 input name과 "정확히" 맞추기)
+    - 기본 템플릿: policy_history.html
+    - Ajax 요청(X-Requested-With: XMLHttpRequest) 시:
+        목록 영역만 교체 가능한 partial(policy_history_partial.html) 반환
+    """
+    qs = PolicyHistory.objects.all().order_by("-delete_at")
+
+    # --- GET 필터 값 수집 (템플릿 input/select name과 일치해야 함) ---
     policy_type   = request.GET.get("policy_type", "")
     policy_id     = request.GET.get("policy_id", "").strip()
     policy_name   = request.GET.get("policy_name", "").strip()
     content       = request.GET.get("content", "").strip()
     is_active     = request.GET.get("is_active", "")
     handling_type = request.GET.get("handling_type", "")
-
-    # ✅ 템플릿은 delete_by 로 보내고 있었음(너가 올린 템플릿 기준)
-    # - 기존 코드 deleted_by로 받아서 필터가 안 먹는 버그가 있었음
     delete_by     = request.GET.get("delete_by", "").strip()
-
     start_date    = request.GET.get("start_date", "")
     end_date      = request.GET.get("end_date", "")
 
-    # ✅ 필터 적용
+    # --- 필터 적용 ---
     if policy_type:
         qs = qs.filter(policy_type=policy_type)
 
@@ -46,20 +49,22 @@ def policy_history_list(request):
         qs = qs.filter(handling_type=handling_type)
 
     if delete_by:
-        qs = qs.filter(delete_by__icontains=delete_by)  # ✅ DB 필드: delete_by
+        qs = qs.filter(delete_by__icontains=delete_by)
 
+    # is_active는 문자열(true/false)로 넘어오므로 분기 처리
     if is_active == "true":
         qs = qs.filter(is_active=True)
     elif is_active == "false":
         qs = qs.filter(is_active=False)
 
-    # ✅ 삭제시간 기간 검색 (DB 필드: delete_at)
+    # 삭제시간 기간 검색 (delete_at의 date 부분만 비교)
+    # - start_date/end_date는 "YYYY-MM-DD" 문자열이 들어오고 Django가 date로 캐스팅 가능
     if start_date:
         qs = qs.filter(delete_at__date__gte=start_date)
     if end_date:
         qs = qs.filter(delete_at__date__lte=end_date)
 
-    # ✅ 페이지네이션
+    # --- 페이지네이션 ---
     paginator = Paginator(qs, 12)
     page_number = request.GET.get("page", "1")
     page_obj = paginator.get_page(page_number)
@@ -73,13 +78,12 @@ def policy_history_list(request):
             "content": content,
             "is_active": is_active,
             "handling_type": handling_type,
-            "delete_by": delete_by,     # ✅ 템플릿 name=delete_by 와 동일
+            "delete_by": delete_by,
             "start_date": start_date,
             "end_date": end_date,
         }
     }
 
-    # ✅ 비동기(Ajax)면 partial만 반환
     is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     template = "policy_history/policy_history_partial.html" if is_ajax else "policy_history/policy_history.html"
     return render(request, template, context)
@@ -87,11 +91,21 @@ def policy_history_list(request):
 
 @require_POST
 def policy_history_restore(request, policy_id):
+    """
+    삭제 기록(PolicyHistory)을 Policy로 복구한다.
+
+    흐름:
+    1) Policy에 update_or_create로 복구 (없으면 생성 / 있으면 업데이트)
+    2) PolicyHistory 레코드 삭제(복구되었으므로 히스토리에서 제거)
+    3) 트랜잭션 종료 후 엔진 reload 시도 (실패해도 복구 자체는 성공)
+    4) Ajax면 JSON, 일반 요청이면 messages + redirect
+    """
     h = get_object_or_404(PolicyHistory, policy_id=policy_id)
     is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
     try:
         with transaction.atomic():
+            # 복구: 운영 정책 테이블로 되살림
             Policy.objects.update_or_create(
                 policy_id=h.policy_id,
                 defaults={
@@ -107,9 +121,10 @@ def policy_history_restore(request, policy_id):
                 }
             )
 
+            # 복구 완료된 히스토리는 제거
             h.delete()
 
-        # 트랜잭션 끝난 후 엔진 reload
+        # DB 트랜잭션이 끝난 후 엔진 반영(reload)
         reload_ok = True
         reload_error = ""
         try:
