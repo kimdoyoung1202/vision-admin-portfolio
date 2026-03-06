@@ -16,32 +16,37 @@ def policy_list(request):
     """
     정책 목록 + 필터링 + 페이지네이션
     - partial=1 이면 테이블 영역만 렌더링 (AJAX 갱신용)
+    - dashboard에서 policy_type=DOMAIN / REGEX 로 진입 가능
     """
     qs = Policy.objects.filter(is_deleted=False).order_by("-create_at")
 
-    # ====== GET 파라미터 수집(문자열 정리) ======
-    policy_type = (request.GET.get("policy_type") or "").strip()
-    policy_id   = (request.GET.get("policy_id") or "").strip()
+    # ===== GET 파라미터 =====
+    policy_type = (request.GET.get("policy_type") or "").strip().upper()
+    policy_id = (request.GET.get("policy_id") or "").strip()
     policy_name = (request.GET.get("policy_name") or "").strip()
-    content     = (request.GET.get("content") or "").strip()
-    is_active   = (request.GET.get("is_active") or "").strip()
-    handling    = (request.GET.get("handling_type") or "").strip()
-    create_by   = (request.GET.get("create_by") or "").strip()
-    start_date  = (request.GET.get("start_date") or "").strip()
-    end_date    = (request.GET.get("end_date") or "").strip()
+    content = (request.GET.get("content") or "").strip()
+    is_active = (request.GET.get("is_active") or "").strip().lower()
+    handling = (request.GET.get("handling_type") or "").strip().lower()
+    create_by = (request.GET.get("create_by") or "").strip()
+    start_date = (request.GET.get("start_date") or "").strip()
+    end_date = (request.GET.get("end_date") or "").strip()
 
-    # ====== 필터 적용 ======
+    # ===== 필터 적용 =====
     if policy_type in ("DOMAIN", "REGEX"):
         qs = qs.filter(policy_type=policy_type)
 
     if policy_id:
         qs = qs.filter(policy_id__icontains=policy_id)
+
     if policy_name:
         qs = qs.filter(policy_name__icontains=policy_name)
+
     if content:
         qs = qs.filter(content__icontains=content)
-    if handling:
+
+    if handling in ("block", "log"):
         qs = qs.filter(handling_type=handling)
+
     if create_by:
         qs = qs.filter(create_by__icontains=create_by)
 
@@ -50,20 +55,19 @@ def policy_list(request):
     elif is_active == "false":
         qs = qs.filter(is_active=False)
 
-    # 날짜(YYYY-MM-DD) → date 변환 후 create_at__date 필터
     sd = parse_date(start_date) if start_date else None
     ed = parse_date(end_date) if end_date else None
+
     if sd:
         qs = qs.filter(create_at__date__gte=sd)
     if ed:
         qs = qs.filter(create_at__date__lte=ed)
 
-    # ====== 페이지네이션 ======
+    # ===== 페이지네이션 =====
     paginator = Paginator(qs, 12)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
 
-    # 템플릿에서 필터 값 유지용
     filters = {
         "policy_type": policy_type,
         "policy_id": policy_id,
@@ -76,18 +80,15 @@ def policy_list(request):
         "end_date": end_date,
     }
 
-    # 부분 렌더링(AJAX)
-    if request.GET.get("partial") == "1":
-        return render(request, "policy/policy_list_partial.html", {
-            "page_obj": page_obj,
-            "filters": filters,
-        })
-
-    # 전체 페이지 렌더링
-    return render(request, "policy/policy_list.html", {
+    context = {
         "page_obj": page_obj,
         "filters": filters,
-    })
+    }
+
+    if request.GET.get("partial") == "1":
+        return render(request, "policy/policy_list_partial.html", context)
+
+    return render(request, "policy/policy_list.html", context)
 
 
 @require_POST
@@ -99,7 +100,6 @@ def policy_delete(request, policy_id):
     """
     policy = get_object_or_404(Policy, policy_id=policy_id, is_deleted=False)
 
-    # 1) DB 처리: 히스토리 저장 + 소프트 삭제
     with transaction.atomic():
         PolicyHistory.objects.create(
             policy_id=policy.policy_id,
@@ -119,7 +119,6 @@ def policy_delete(request, policy_id):
         policy.is_active = False
         policy.save(update_fields=["is_deleted", "is_active"])
 
-    # 2) 엔진 reload: 실패해도 삭제는 끝난 상태
     try:
         send_reload_signal("reload")
         messages.success(request, "삭제 완료 (엔진 반영 완료)")
@@ -143,27 +142,28 @@ def policy_add(request):
         ai_row = AiAnalysisResult.objects.filter(id=int(ai_id)).first()
 
     if request.method == "POST":
-        # ====== POST 파라미터 ======
-        policy_type   = (request.POST.get("policy_type") or "").strip()
-        content       = (request.POST.get("content") or "").strip()
-        policy_name   = (request.POST.get("policy_name") or "").strip()
-        description   = (request.POST.get("description") or "").strip()
-        handling_type = (request.POST.get("handling_type") or "").strip()
+        policy_type = (request.POST.get("policy_type") or "").strip().upper()
+        content = (request.POST.get("content") or "").strip()
+        policy_name = (request.POST.get("policy_name") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        handling_type = (request.POST.get("handling_type") or "").strip().lower()
         is_active_raw = (request.POST.get("is_active") or "false").strip().lower()
         is_active = (is_active_raw == "true")
 
-        # ====== 검증 ======
         errors = []
-        if not policy_type:
+
+        if policy_type not in ("DOMAIN", "REGEX"):
             errors.append("정책 타입을 선택하세요.")
+
         if not content:
             errors.append("정책 URL/표현식을 입력하세요.")
+
         if not policy_name:
             errors.append("정책 이름을 입력하세요.")
+
         if handling_type not in ("block", "log"):
             errors.append("처리 유형이 올바르지 않습니다.")
 
-        # content 중복 체크(현재 로직: 타입 무관)
         if content and Policy.objects.filter(content=content, is_deleted=False).exists():
             errors.append("이미 동일한 정책(content)이 존재합니다.")
 
@@ -184,7 +184,6 @@ def policy_add(request):
                 }
             })
 
-        # ====== DB 저장(atomic) ======
         with transaction.atomic():
             new_policy_id = generate_policy_id(policy_type)
 
@@ -198,7 +197,6 @@ def policy_add(request):
                 "is_active": is_active,
             }
 
-            # 운영 DB 컬럼 존재 여부 방어(managed=False 상황 고려)
             if hasattr(Policy, "create_by"):
                 data["create_by"] = request.user.username if request.user.is_authenticated else "system"
             if hasattr(Policy, "create_at"):
@@ -206,7 +204,6 @@ def policy_add(request):
 
             Policy.objects.create(**data)
 
-            # AI 레코드에서 넘어온 경우: 처리 결과 기록
             if ai_id and ai_row:
                 ai_row.is_checked = True
                 ai_row.checked_result = "ADD"
@@ -215,14 +212,12 @@ def policy_add(request):
                 ai_row.admin = request.user.username if request.user.is_authenticated else "system"
                 ai_row.save(update_fields=["is_checked", "checked_result", "policy_type", "applied_at", "admin"])
 
-        # ====== 엔진 reload(atomic 밖) ======
         try:
             send_reload_signal("reload")
             messages.success(request, "정책이 추가되었습니다. (엔진 반영 완료)")
         except Exception as e:
             messages.warning(request, f"정책이 추가되었습니다. (엔진 반영 실패: {e})")
 
-        # ====== 리다이렉트 처리(return_to 우선) ======
         rt = (return_to or "").strip()
         if rt.lower() in ("none", "null", "undefined"):
             rt = ""
@@ -235,7 +230,6 @@ def policy_add(request):
 
         return redirect("policy:list")
 
-    # GET: 폼 화면
     return render(request, "policy/policy_add.html", {
         "ai_id": ai_id,
         "return_to": return_to,
@@ -249,8 +243,6 @@ def generate_policy_id(policy_type):
     policy_type: DOMAIN / REGEX
     - DOMAIN => DO-001
     - REGEX  => REG-001
-
-    ⚠️ 주의: 동시 요청이 들어오면 중복 ID가 생성될 수 있음(레이스 컨디션).
     """
     if policy_type == "DOMAIN":
         prefix = "DO"
@@ -284,10 +276,11 @@ def policy_update(request, policy_id):
     handling_type = (request.POST.get("handling_type") or "").strip().lower()
     next_url = (request.POST.get("next") or "").strip()
 
-    # ====== 검증 ======
     errors = []
+
     if is_active_raw not in ("true", "false"):
         errors.append("정책 적용 여부 값이 올바르지 않습니다.")
+
     if handling_type not in ("block", "log"):
         errors.append("처리 유형 값이 올바르지 않습니다.")
 
@@ -298,7 +291,6 @@ def policy_update(request, policy_id):
 
     is_active = (is_active_raw == "true")
 
-    # ====== DB 업데이트 ======
     with transaction.atomic():
         updated = Policy.objects.filter(policy_id=policy_id, is_deleted=False).update(
             is_active=is_active,
@@ -309,7 +301,6 @@ def policy_update(request, policy_id):
         messages.error(request, "정책을 찾을 수 없습니다.")
         return redirect(next_url or "policy:list")
 
-    # ====== 엔진 reload ======
     try:
         send_reload_signal("reload")
         messages.success(request, "정책이 업데이트되었습니다. (엔진 반영 완료)")
