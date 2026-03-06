@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<style>
+    .main{ overflow:hidden !important; padding:10px !important; min-height:0; }
+    .main > .card-sneat{
+        height:100%;
+        padding:0 !important;
+        border:none !important;
+        box-shadow:none !important;
+        background:transparent !important;
+        overflow:hidden !important;
+    }
+
+    :root { --topbar-h: 64px; }
+
+    .dash-page{
+        height: calc(100vh - var(--topbar-h) - 20px);
+        display:flex;
+        flex-direction:column;
+        gap:.6rem;
+        overflow:hidden;
+        min-height:0;
+    }
+
+    .sec{ min-height:0; }
+    .sec.ts  { flex: 2.6; }
+    .sec.top { flex: 2.2; }
+    .sec.kpi { flex: 0.95; }
+    .sec.bot { flex: 1.6; }
+
+    .row.compact{ --bs-gutter-x:.6rem; --bs-gutter-y:.6rem; margin:0; }
+    .row.compact > *{ padding-left:.3rem; padding-right:.3rem; }
+    .sec > .row, .sec > .row > div{ height:100%; min-height:0; }
+
+    .card-sneat{ padding:10px; height:100%; }
+    .fw-bold{ font-weight:800 !important; }
+    .btn-group-sm>.btn, .btn-sm{ padding:.2rem .5rem; font-size:12px; }
+    .badge{ font-size:11px; }
+    .text-muted.small{ font-size:12px; }
+
+    .chart-box{
+        position:relative;
+        width:100%;
+        height: calc(100% - 28px);
+        min-height:0;
+        overflow:hidden;
+    }
+    canvas{ width:100% !important; height:100% !important; max-height:none !important; }
+
+    .kpi-card{
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        height:100%;
+        min-height:0;
+    }
+
+    .pkt-kpi{
+        display:flex;
+        align-items:stretch;
+        justify-content:space-between;
+        gap: 12px;
+        height:100%;
+        min-height:0;
+    }
+    .pkt-left{
+        flex:1;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        gap:6px;
+    }
+    .pkt-title{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+    }
+    .pkt-title .t{ font-weight:900; }
+    .pkt-title .g{ font-size:12px; font-weight:800; color:#a1acb8; }
+
+    .pkt-total{
+        display:flex;
+        align-items:flex-end;
+        justify-content:space-between;
+        gap:10px;
+    }
+    .pkt-total .n{
+        font-size:30px;
+        font-weight:900;
+        line-height:1;
+        color:#2f3a45;
+    }
+    .pkt-total .d{
+        font-weight:900;
+        white-space:nowrap;
+    }
+
+    .pkt-mini{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+    .pkt-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight:900;
+        font-size:12px;
+        border:1px solid rgba(105,108,255,.25);
+        background: rgba(105,108,255,.08);
+    }
+    .pkt-pill.danger{
+        border-color: rgba(255,99,132,.28);
+        background: rgba(255,99,132,.10);
+    }
+
+    .pkt-right{
+        width: 120px;
+        flex-shrink:0;
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .pkt-donut{
+        width: 110px;
+        height: 110px;
+        position:relative;
+    }
+    .pkt-donut canvas{
+        width:100% !important;
+        height:100% !important;
+    }
+    .pkt-center{
+        position:absolute; inset:0;
+        display:flex; align-items:center; justify-content:center;
+        pointer-events:none;
+        text-align:center;
+        color:#566a7f;
+    }
+    .pkt-center .t1{ font-size:11px; font-weight:900; opacity:.85; line-height:1; }
+    .pkt-center .t2{ font-size:18px; font-weight:900; line-height:1.1; }
+
+    @media (max-height: 820px){
+        .main{ padding:8px !important; }
+        .dash-page{ height: calc(100vh - var(--topbar-h) - 16px); }
+        .pkt-total .n{ font-size:26px; }
+        .pkt-right{ width: 110px; }
+        .pkt-donut{ width: 98px; height: 98px; }
+    }
+
+    .sec.top .chart-box { height: 210px !important; }
+
+    .kpi-main{
+        display:flex;
+        align-items:flex-end;
+        margin-top:4px;
+    }
+
+    .kpi-value{
+        font-size:30px;
+        font-weight:900;
+        line-height:1;
+        color:#2f3a45;
+    }
+
+    .kpi-delta-row{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin-top:6px;
+    }
+
+    .kpi-delta-label{
+        font-size:12px;
+        font-weight:800;
+        color:#a1acb8;
+    }
+
+    .kpi-delta{
+        font-size:13px;
+        font-weight:900;
+        color:#566a7f;
+    }
+</style>
+
+<div class="dash-page">
+
+    <section class="sec ts">
+        <div class="row compact">
+            <div class="col-12">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
+                                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTimeseries"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec top">
+        <div class="row compact">
+            <div class="col-md-6 h-100">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">도메인 탐지로그 (Top10)</div>
+                        <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
+                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopDomains"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 h-100">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
+                        <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
+                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopRegex"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec kpi">
+        <div class="row compact">
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">policy</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiPolicy">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiPolicyDelta">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">ai_analysis_result</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiAi">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiAiDelta">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">integrated_detection_logs</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiBlocked">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiBlockedDelta">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec bot">
+        <div class="row compact">
+            <div class="col-lg-8 h-100">
+                <div class="card-sneat h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
+                        <div class="text-muted small" id="ipWindowText">최근 10분</div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopIps"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat pkt-kpi">
+                    <div class="pkt-left">
+                        <div class="pkt-title">
+                            <div class="t">일일 패킷 현황</div>
+                        </div>
+
+                        <div>
+                            <div class="text-muted small">TOTAL</div>
+                            <div class="pkt-total">
+                                <div class="n" id="sysTotalText">-</div>
+                            </div>
+
+                            <div class="pkt-delta">
+                                <span class="text-muted small">전일 대비</span>
+                                <span class="d" id="dailyDeltaText">-</span>
+                            </div>
+                        </div>
+
+                        <div class="pkt-mini">
+                            <span class="pkt-pill"><span class="badge text-bg-primary">통과</span><span id="kpiTotalAi">-</span></span>
+                            <span class="pkt-pill danger"><span class="badge text-bg-danger">차단</span><span id="kpiTotalBlocked">-</span></span>
+                        </div>
+                    </div>
+
+                    <div class="pkt-right">
+                        <div class="pkt-donut">
+                            <canvas id="chartBlockedRatio"></canvas>
+                            <div class="pkt-center">
+                                <div>
+                                    <div class="t1">TOTAL</div>
+                                    <div class="t2" id="donutTotalText">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    const REFRESH_MS = 5000;
+    const state = { ts:"day", dom:"day", rx:"day" };
+    const TOP_RIGHT_PAD = 18;
+
+    const kpiPolicy = document.getElementById("kpiPolicy");
+    const kpiAi = document.getElementById("kpiAi");
+    const kpiBlocked = document.getElementById("kpiBlocked");
+    const kpiPolicyDelta = document.getElementById("kpiPolicyDelta");
+    const kpiAiDelta = document.getElementById("kpiAiDelta");
+    const kpiBlockedDelta = document.getElementById("kpiBlockedDelta");
+
+    const ipWindowText = document.getElementById("ipWindowText");
+
+    const kpiTotalBlocked = document.getElementById("kpiTotalBlocked");
+    const kpiTotalAi = document.getElementById("kpiTotalAi");
+    const sysTotalText = document.getElementById("sysTotalText");
+    const donutTotalText = document.getElementById("donutTotalText");
+    const dailyDeltaText = document.getElementById("dailyDeltaText");
+
+    async function getJSON(url){
+        const res = await fetch(url, { credentials:"same-origin", cache:"no-store" });
+        if(!res.ok){
+            const text = await res.text();
+            throw new Error(`API Error ${res.status} ${url} :: ${text.slice(0, 120)}`);
+        }
+        return await res.json();
+    }
+
+    function fmtDelta(n){
+        const num = Number(n ?? 0);
+        const sign = num > 0 ? "▲" : (num < 0 ? "▼" : "•");
+        return `${sign} ${Math.abs(num)}`;
+    }
+
+    const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "DOMAIN",
+                    data: [],
+                    borderWidth: 1,
+                    maxBarThickness: 12,
+                    categoryPercentage: 0.65,
+                    barPercentage: 0.8
+                },
+                {
+                    label: "REGEX",
+                    data: [],
+                    borderWidth: 1,
+                    maxBarThickness: 12,
+                    categoryPercentage: 0.65,
+                    barPercentage: 0.8
+                },
+                {
+                    label: "TOTAL",
+                    type: "line",
+                    data: [],
+                    tension: 0.35,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    pointHitRadius: 12
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+                legend: { position: "top" },
+                tooltip: { enabled: true, mode: "nearest", intersect: false }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+            }
+        }
+    });
+
+    const chartTopDomains = new Chart(document.getElementById("chartTopDomains"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            layout: { padding: { right: TOP_RIGHT_PAD } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grace: "15%",
+                    grid: { display: false },
+                    ticks: { precision: 0, stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false },
+                    afterFit: (scale) => { scale.width = 170; },
+                    ticks: {
+                        autoSkip: false,
+                        padding: 6,
+                        callback: function(value){
+                            const label = this.getLabelForValue(value);
+                            if (!label) return "";
+                            return label.length > 22 ? label.slice(0, 22) + "…" : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const chartTopRegex = new Chart(document.getElementById("chartTopRegex"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            layout: { padding: { right: TOP_RIGHT_PAD } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grace: "15%",
+                    ticks: { precision: 0, stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false },
+                    afterFit: (scale) => { scale.width = 170; },
+                    ticks: {
+                        autoSkip: false,
+                        padding: 6,
+                        callback: function(value){
+                            const label = this.getLabelForValue(value);
+                            if (!label) return "";
+                            return label.length > 26 ? label.slice(0, 26) + "…" : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+            }
+        }
+    });
+
+    const chartBlockedRatio = new Chart(document.getElementById("chartBlockedRatio"), {
+        type: "doughnut",
+        data: {
+            labels: ["통과", "차단"],
+            datasets: [{ data: [0,0], borderWidth: 1 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "70%",
+            radius: "95%",
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    async function refreshKpi(){
+        const kpi = await getJSON(`/api/kpis/?gran=total`);
+
+        const policyCount  = Number(kpi.policy_count ?? 0);
+        const aiCount      = Number(kpi.ai_count ?? 0);
+        const blockedCount = Number(kpi.blocked_count ?? 0);
+
+        kpiPolicy.textContent = policyCount;
+        kpiAi.textContent = aiCount;
+        kpiBlocked.textContent = blockedCount;
+
+        kpiPolicyDelta.textContent = fmtDelta(kpi.policy_delta);
+        kpiAiDelta.textContent = fmtDelta(kpi.ai_delta);
+        kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
+
+        const total = aiCount + blockedCount;
+        kpiTotalAi.textContent = aiCount;
+        kpiTotalBlocked.textContent = blockedCount;
+        sysTotalText.textContent = total;
+        donutTotalText.textContent = total;
+
+        const totalDelta = Number(kpi.ai_delta ?? 0) + Number(kpi.blocked_delta ?? 0);
+        dailyDeltaText.textContent = fmtDelta(totalDelta);
+
+        chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
+        chartBlockedRatio.update();
+    }
+
+    async function refreshTimeseries(){
+        const gran = state.ts;
+        const ts = await getJSON(`/api/timeseries/?gran=${gran}`);
+        chartTimeseries.data.labels = ts.labels ?? [];
+        chartTimeseries.data.datasets[0].data = ts.domain ?? [];
+        chartTimeseries.data.datasets[1].data = ts.regex ?? [];
+        chartTimeseries.data.datasets[2].data = ts.total ?? [];
+        chartTimeseries.update();
+    }
+
+    async function refreshTopDomains(){
+        const gran = state.dom;
+        const dom = await getJSON(`/api/top-domains/?gran=${gran}&limit=10`);
+        chartTopDomains.data.labels = (dom.labels ?? []).map(v => String(v ?? ""));
+        chartTopDomains.data.datasets[0].data = dom.values ?? [];
+        chartTopDomains.update();
+    }
+
+    async function refreshTopRegex(){
+        const gran = state.rx;
+        const rx = await getJSON(`/api/top-regex/?gran=${gran}&limit=10`);
+        chartTopRegex.data.labels = (rx.labels ?? []).map(v => String(v ?? ""));
+        chartTopRegex.data.datasets[0].data = rx.values ?? [];
+        chartTopRegex.update();
+    }
+
+    async function refreshIps(){
+        const ip = await getJSON(`/api/top-ips/?window_minutes=10&limit=10`);
+        ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
+        chartTopIps.data.labels = ip.labels ?? [];
+        chartTopIps.data.datasets[0].data = ip.values ?? [];
+        chartTopIps.update();
+    }
+
+    async function safe(name, fn){
+        try {
+            await fn();
+        } catch(e) {
+            console.error(`[${name}]`, e);
+        }
+    }
+
+    async function refreshAll(){
+        await Promise.all([
+            safe("kpi", refreshKpi),
+            safe("timeseries", refreshTimeseries),
+            safe("topDomains", refreshTopDomains),
+            safe("topRegex", refreshTopRegex),
+            safe("topIps", refreshIps),
+        ]);
+    }
+
+    function bindGranButtons(){
+        document.querySelectorAll(".btn-group[data-ctl]").forEach(group => {
+            const ctl = group.dataset.ctl;
+            group.querySelectorAll("button[data-gran]").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    state[ctl] = btn.dataset.gran;
+
+                    if (ctl === "ts") await safe("timeseries", refreshTimeseries);
+                    if (ctl === "dom") await safe("topDomains", refreshTopDomains);
+                    if (ctl === "rx") await safe("topRegex", refreshTopRegex);
+                });
+            });
+        });
+    }
+
+    bindGranButtons();
+    refreshAll();
+    setInterval(refreshAll, REFRESH_MS);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+<!-- integrated_detection_logs/log_partial.html -->
+
+<div class="table-responsive text-nowrap">
+    <table class="table table-hover align-middle mb-0" id="logsTable">
+        <thead>
+        <tr>
+            <th style="width:80px;">no</th>
+            <th style="width:360px;">URL</th>
+            <th style="width:160px;">도메인</th>
+            <th style="width:160px;">쿼리</th>
+            <th style="width:140px;">사용자 IP</th>
+            <th style="width:100px;">정책 ID</th>
+            <th style="width:160px;">정책 이름</th>
+            <th style="width:90px;">타입</th>
+            <th style="width:170px;">로그시간</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for r in page_obj %}
+
+        <!-- dataset for detail panel -->
+        <tr class="clickable-row js-row"
+            data-id="{{ r.id }}"
+            data-request-url="{{ r.request_url|default_if_none:'' }}"
+            data-domain="{{ r.domain|default_if_none:'' }}"
+            data-query="{{ r.query_string|default_if_none:'' }}"
+            data-client-ip="{{ r.client_ip|default_if_none:'' }}"
+            data-policy-id="{% if r.policy_id %}{{ r.policy_id.policy_id|default_if_none:'' }}{% else %}{% endif %}"
+            data-policy-name="{% if r.policy_id %}{{ r.policy_id.policy_name|default_if_none:'' }}{% else %}{% endif %}"
+            data-policy-type="{% if r.policy_id %}{{ r.policy_id.policy_type|default_if_none:'' }}{% else %}{% endif %}"
+            data-policy-desc="{% if r.policy_id %}{{ r.policy_id.description|default_if_none:'' }}{% else %}{% endif %}"
+            data-policy-content="{% if r.policy_id %}{{ r.policy_id.content|default_if_none:'' }}{% else %}{% endif %}"
+            data-dst-port="{{ r.dst_port|default_if_none:'' }}"
+            data-method="{{ r.http_method|default_if_none:'' }}"
+            data-create-at="{% if r.create_at %}{{ r.create_at|date:'Y/m/d H:i' }}{% endif %}">
+
+            <td class="fw-semibold">{{ page_obj.start_index|add:forloop.counter0 }}</td>
+            <td class="cell-truncate">{{ r.request_url }}</td>
+            <td class="cell-truncate-sm">{{ r.domain }}</td>
+            <td class="cell-truncate-sm">{{ r.query_string }}</td>
+            <td>{{ r.client_ip }}</td>
+
+            <td class="fw-semibold">
+            {% if r.policy_id %}{{ r.policy_id.policy_id }}{% else %}-{% endif %}
+            </td>
+            <td class="cell-truncate-sm">
+            {% if r.policy_id %}{{ r.policy_id.policy_name }}{% else %}-{% endif %}
+            </td>
+            <td>
+            {% if r.policy_id %}{{ r.policy_id.policy_type }}{% else %}-{% endif %}
+            </td>
+            <td>{{ r.create_at|date:"Y/m/d H:i" }}</td>
+        </tr>
+
+        {% empty %}
+        <tr>
+            <td colspan="9" class="text-center text-muted py-4">조회된 데이터가 없습니다.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <div class="pager-bar">
+    <div class="text-muted">
+        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+    </div>
+
+    <nav>
+        <ul class="pagination mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link js-page" href="?page={{ page_obj.previous_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">이전</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">이전</span></li>
+        {% endif %}
+
+        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link js-page" href="?page={{ page_obj.next_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">다음</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">다음</span></li>
+        {% endif %}
+        </ul>
+    </nav>
+</div>

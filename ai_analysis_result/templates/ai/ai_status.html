@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_header %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .main{
+    overflow: hidden !important;
+    min-height: 0 !important;
+    height: calc(100vh - var(--header-h)) !important;
+    padding: 18px !important;
+  }
+  .card-sneat{
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 16px !important;
+  }
+
+  .ai-page{
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel{
+    border: 1px solid rgba(67, 89, 113, .18);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(67,89,113,.06);
+  }
+
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid rgba(67,89,113,.18);
+    padding:4px 10px;
+    border-radius:999px;
+    background:#fff;
+    font-size:13px;
+    font-weight:900;
+    line-height: 1;
+  }
+  .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#28c76f;
+    box-shadow:0 0 0 4px rgba(40,199,111,.12);
+  }
+
+  .kpi-card{
+    padding:10px;
+    height: 82px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    text-align:center;
+  }
+  .kpi-title{
+    font-size:12px;
+    font-weight:900;
+    color:#566a7f;
+  }
+  .kpi-value{
+    font-size:22px;
+    font-weight:900;
+    color:#2b3a4a;
+    line-height: 1.05;
+  }
+  .kpi-unit{
+    font-size:13px;
+    font-weight:900;
+    margin-left:5px;
+    color:#566a7f;
+  }
+
+  .ai-mid{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .chart-row{
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  .chart-panel{
+    padding: 12px;
+    overflow: hidden;
+    min-height: 320px;
+  }
+  .chart-title{
+    font-weight: 900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .chart-canvas-wrap{
+    height: 260px;
+    min-height: 260px;
+  }
+  #latencyChart, #throughputChart{
+    width: 100% !important;
+    height: 100% !important;
+    display:block;
+  }
+
+  .bottom-row{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow:hidden;
+  }
+
+  .left-bundle{
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .bundle-head{
+    font-weight: 900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  .donut-wrap{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .donut-card{
+    padding:10px;
+    border-radius:14px;
+    border:1px solid rgba(67,89,113,.18);
+    background:#fff;
+    overflow:hidden;
+  }
+  .donut-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-weight:900;
+    color:#2b3a4a;
+    font-size: 13px;
+    margin-bottom:6px;
+  }
+  .donut-canvas-wrap{
+    height: 120px;
+  }
+  #cpuDonut, #memDonut{
+    width:100% !important;
+    height:100% !important;
+    display:block;
+  }
+
+  .system-box{
+    border-radius:14px;
+    border:1px solid rgba(67,89,113,.18);
+    background:#fff;
+    overflow:hidden;
+    flex: 1 1 auto;
+    min-height:0;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+  }
+  .system-box .table-responsive{
+    flex:1 1 auto;
+    min-height:0;
+    overflow:auto;
+  }
+  .system-box table{
+    font-size:12px;
+  }
+
+  .errors-panel{
+    height: 100%;
+    min-height: 0;
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+    flex: 0 0 auto;
+  }
+  .btn-recheck{
+    border-radius:8px;
+    font-weight:900;
+    font-size:13px;
+    padding:4px 10px;
+  }
+  .errors-panel .table-responsive{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto !important;
+  }
+  .errors-panel thead th{
+    position: sticky;
+    top: 0;
+    background: #f5f6f8;
+    z-index: 2;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ai-page">
+
+  <div class="d-flex justify-content-end">
+    <div class="status-pill">
+      <span class="dot" id="engineDot"></span>
+      <span id="engineText">FASTAPI 정상 동작 중</span>
+    </div>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">응답속도 평균</div>
+        <div class="kpi-value">
+          <span id="kpiLatency">-</span><span class="kpi-unit">ms</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">처리량 (오늘)</div>
+        <div class="kpi-value">
+          <span id="kpiThroughput">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">요청수 (오늘)</div>
+        <div class="kpi-value">
+          <span id="kpiTotal">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-3">
+      <div class="panel kpi-card">
+        <div class="kpi-title">정확도</div>
+        <div class="kpi-value">
+          <span id="kpiAcc">-</span><span class="kpi-unit">%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-mid">
+    <div class="row g-2 chart-row">
+      <div class="col-6">
+        <div class="panel chart-panel">
+          <div class="chart-title">응답속도</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="latencyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="panel chart-panel">
+          <div class="chart-title">처리량</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="throughputChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-2 bottom-row">
+      <div class="col-4" style="height:100%; min-height:0;">
+        <div class="panel left-bundle">
+          <div>
+            <div class="bundle-head">자원 사용량</div>
+            <div class="donut-wrap">
+              <div class="donut-card">
+                <div class="donut-head">
+                  <span>CPU</span><span id="cpuPct">-</span>
+                </div>
+                <div class="donut-canvas-wrap">
+                  <canvas id="cpuDonut"></canvas>
+                </div>
+              </div>
+
+              <div class="donut-card">
+                <div class="donut-head">
+                  <span>MEM</span><span id="memPct">-</span>
+                </div>
+                <div class="donut-canvas-wrap">
+                  <canvas id="memDonut"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="system-box">
+            <div class="bundle-head" style="margin-bottom:8px;">시스템 정보</div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr><th style="width:120px;">현재 버전</th><td id="sysVersion">-</td></tr>
+                  <tr><th>개발자</th><td id="sysDev">-</td></tr>
+                  <tr><th>업데이트</th><td id="sysUpdate">-</td></tr>
+                  <tr><th>정확도 정의</th><td>관리자 처리 완료(ADD/IGNORE)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-8" style="height:100%; min-height:0;">
+        <div class="panel errors-panel">
+
+          <div class="section-head">
+            <div class="chart-title" style="margin:0;">최근 오류</div>
+            <button class="btn btn-outline-primary btn-recheck" id="btnRecheck">재검토</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th style="width:180px;">시간</th>
+                  <th>오류 내용</th>
+                  <th style="width:110px;" class="text-end">확률</th>
+                </tr>
+              </thead>
+              <tbody id="recentErrorsTbody">
+                <tr><td colspan="3" class="text-center text-muted">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  const charts = {
+    latency: null,
+    throughput: null,
+    cpu: null,
+    mem: null
+  };
+
+  function el(id){
+    const node = document.getElementById(id);
+    if(!node) throw new Error(`#${id} not found`);
+    return node;
+  }
+
+  function isChart(x){
+    return x && typeof x.update === "function" && x.data && x.config;
+  }
+
+  function toNum(v, d=0){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+
+  function getCookie(name){
+    const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+    return v ? decodeURIComponent(v.split("=")[1]) : null;
+  }
+
+  const centerTextPlugin = {
+    id: "centerText",
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+
+      const value = chart?.config?.options?.plugins?.centerText?.value;
+      if (value == null) return;
+
+      const x = (chartArea.left + chartArea.right) / 2;
+      const y = (chartArea.top + chartArea.bottom) / 2;
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "900 18px sans-serif";
+      ctx.fillStyle = "#2b3a4a";
+      ctx.fillText(`${value}%`, x, y);
+      ctx.restore();
+    }
+  };
+
+  if(!Chart.registry.plugins.get("centerText")){
+    Chart.register(centerTextPlugin);
+  }
+
+  function makeLine(canvas){
+    return new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 3,
+          borderColor: "#696cff",
+          backgroundColor: "rgba(105,108,255,0.12)",
+          fill: true,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            display: false,
+            grid: { display: false }
+          },
+          y: {
+            display: false,
+            grid: { display: false },
+            ticks: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function makeDonut(canvas){
+    return new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: ["Used", "Free"],
+        datasets: [{
+          data: [0, 100],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "72%",
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+          centerText: { value: 0 }
+        }
+      }
+    });
+  }
+
+  function setEngine(ok){
+    const dot = el("engineDot");
+    const txt = el("engineText");
+
+    if(ok){
+      dot.style.background = "#28c76f";
+      dot.style.boxShadow = "0 0 0 4px rgba(40,199,111,.12)";
+      txt.textContent = "FASTAPI 정상 동작 중";
+    }else{
+      dot.style.background = "#ea5455";
+      dot.style.boxShadow = "0 0 0 4px rgba(234,84,85,.12)";
+      txt.textContent = "FASTAPI 장애/점검";
+    }
+  }
+
+  function applyZeroAxisFix(chart, series){
+    const allZero = series.every(v => Number(v) === 0);
+    chart.options.scales.y.min = 0;
+    chart.options.scales.y.max = allZero ? 1 : undefined;
+  }
+
+  function setLineChart(chart, labels, series){
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = series;
+    applyZeroAxisFix(chart, series);
+    chart.update("none");
+  }
+
+  function setDonutChart(chart, percent){
+    const value = Math.max(0, Math.min(100, toNum(percent, 0)));
+    chart.data.datasets[0].data = [value, Math.max(0, 100 - value)];
+    chart.options.plugins.centerText.value = Math.round(value);
+    chart.update("none");
+    return value;
+  }
+
+  async function loadStatus(){
+    const res = await fetch("{% url 'ai:status_api' %}", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    if(!res.ok){
+      throw new Error("status_api error: " + res.status);
+    }
+
+    const data = await res.json();
+
+    const kpi = data.kpi || {};
+    const chart = data.chart || {};
+    const systemInfo = data.system_info || {};
+    const recentErrors = data.recent_errors || [];
+
+    el("kpiLatency").textContent = kpi.latency ?? "-";
+    el("kpiThroughput").textContent = kpi.rpm ?? "-";
+    el("kpiTotal").textContent = kpi.total_today ?? "-";
+    el("kpiAcc").textContent = kpi.accuracy ?? "-";
+
+    setEngine(!!kpi.engine_ok);
+
+    el("sysVersion").textContent = systemInfo.version ?? "-";
+    el("sysDev").textContent = systemInfo.developer ?? "-";
+    el("sysUpdate").textContent = "2초";
+
+    if(!isChart(charts.latency)) {
+      charts.latency = makeLine(el("latencyChart"));
+    }
+    if(!isChart(charts.throughput)) {
+      charts.throughput = makeLine(el("throughputChart"));
+    }
+    if(!isChart(charts.cpu)) {
+      charts.cpu = makeDonut(el("cpuDonut"));
+    }
+    if(!isChart(charts.mem)) {
+      charts.mem = makeDonut(el("memDonut"));
+    }
+
+    const rtLabels = Array.isArray(chart.rt_labels) ? chart.rt_labels : [];
+    const rtLatencySeries = Array.isArray(chart.rt_latency_series)
+      ? chart.rt_latency_series.map(v => toNum(v, 0))
+      : [];
+    const rtThroughputSeries = Array.isArray(chart.rt_throughput_series)
+      ? chart.rt_throughput_series.map(v => toNum(v, 0))
+      : [];
+
+    setLineChart(charts.latency, rtLabels, rtLatencySeries);
+    setLineChart(charts.throughput, rtLabels, rtThroughputSeries);
+
+    const cpu = kpi.engine_ok ? setDonutChart(charts.cpu, kpi.cpu) : setDonutChart(charts.cpu, 0);
+    const mem = kpi.engine_ok ? setDonutChart(charts.mem, kpi.memory) : setDonutChart(charts.mem, 0);
+
+    el("cpuPct").textContent = kpi.engine_ok ? `${Math.round(cpu)}%` : "-";
+    el("memPct").textContent = kpi.engine_ok ? `${Math.round(mem)}%` : "-";
+
+    const tbody = el("recentErrorsTbody");
+    tbody.innerHTML = recentErrors.length === 0
+      ? `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`
+      : recentErrors.map(r => {
+          const timeText = (r.last_seen || r.create_at || "").toString();
+          const urlText = (r.request_url || "-").toString();
+          const score = r.confidence_score ?? "-";
+          const scoreText = r.confidence_score != null ? `${score}%` : "-";
+
+          return `
+            <tr>
+              <td>${timeText}</td>
+              <td class="text-truncate" style="max-width:1200px;">${urlText}</td>
+              <td class="text-end">${scoreText}</td>
+            </tr>
+          `;
+      }).join("");
+  }
+
+  loadStatus().catch(e => console.error("loadStatus failed:", e));
+  setInterval(() => {
+    loadStatus().catch(e => console.error("loadStatus failed:", e));
+  }, 2000);
+
+  document.getElementById("btnRecheck")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btnRecheck");
+    btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = "전송 중...";
+
+    try{
+      const res = await fetch("{% url 'ai:recheck_errors' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({}),
+        credentials: "same-origin"
+      });
+
+      const data = await res.json();
+      alert(!res.ok || !data.ok ? "재검토 신호 전송 실패" : "재검토 신호 전송 완료");
+    }catch(e){
+      console.error(e);
+      alert("재검토 요청 중 오류");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  });
+})();
+</script>
+{% endblock %}

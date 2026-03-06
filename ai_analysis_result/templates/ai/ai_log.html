@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}AI 기록관{% endblock %}
+{% block page_subtitle %}FastAPI 결과/로그 조회{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root{
+        --topbarH: 64px;
+        --gap: 10px;
+        --headerRowH: 40px;
+        --pagerH: 48px;
+        --theadH: 42px;
+        --rowH: 38px;
+    }
+
+    .ai-rec-page{
+        height: calc(100vh - var(--topbarH));
+        overflow: hidden;
+        display:flex;
+        flex-direction:column;
+    }
+    .ai-rec-wrap{
+        flex:1;
+        overflow:hidden;
+        padding: 8px 18px !important;
+        display:flex;
+        flex-direction:column;
+        gap: var(--gap);
+    }
+    .ai-rec-wrap.container-p-y{
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+
+    .filter-card .card-body{ padding: 10px 12px 8px; }
+    .filter-grid .form-label{
+        font-weight:900;
+        font-size:.82rem;
+        margin-bottom:4px;
+        line-height:1.1;
+    }
+    .filter-grid .form-control,
+    .filter-grid .form-select{
+        height: 34px;
+        min-height: 34px;
+        padding: .32rem .6rem;
+        border-radius: 10px;
+        font-weight: 700;
+    }
+    .btn.btn-sm{ border-radius:10px; font-weight:800; }
+    .filter-grid .btn{
+        height:34px;
+        padding:.42rem 1rem;
+        font-weight:900;
+        border-radius:10px;
+    }
+
+    .date-range{ width:100%; }
+    .date-range input{ width:100%; min-width:0 !important; }
+    .input-tight{ width:100%; min-width:0; }
+
+    .workspace{ flex:1; min-height:0; overflow:hidden; }
+    #tableCol, #detailCol{ height:100%; min-height:0; }
+
+    .workspace-card{
+        height:100%;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+    }
+    .workspace-card .card-body{
+        flex:1;
+        min-height:0;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        padding: 10px 12px;
+    }
+
+    .table-topbar{
+        flex:0 0 auto;
+        height: var(--headerRowH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:6px;
+    }
+
+    .table-viewport{
+        flex:0 0 auto;
+        height: calc(var(--theadH) + (12 * var(--rowH)));
+        overflow:hidden;
+        border-radius: 10px;
+    }
+    table#aiTable thead tr{ height: var(--theadH); }
+    table#aiTable tbody tr{ height: var(--rowH); }
+    table#aiTable th, table#aiTable td{
+        padding-top: 6px;
+        padding-bottom: 6px;
+        font-size: .90rem;
+        vertical-align: middle;
+    }
+    table#aiTable thead th{ font-weight: 900; }
+
+    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .pager{
+        flex:0 0 auto;
+        height: var(--pagerH);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-top:6px;
+    }
+    .pagination{ margin-bottom:0 !important; }
+
+    .detail-scroll{
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-table-wrap{
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden !important;
+    }
+
+    #detailCol .table-sm th,
+    #detailCol .table-sm td{
+        padding: 6px 8px;
+        font-size: .90rem;
+        line-height: 1.25;
+        vertical-align: top;
+    }
+    #detailCol .table-sm th{
+        width: 120px !important;
+        min-width: 120px !important;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        font-weight: 900;
+        color: #6c757d;
+    }
+    #detailCol .table-sm td{
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    #dRequestUrl{
+        word-break: break-all;
+        overflow-wrap: anywhere;
+    }
+
+    .domain-cell { position: relative; }
+
+    .dup-badge {
+        margin-left: 6px;
+        padding: 2px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 12px;
+        background: rgba(105, 108, 255, 0.12);
+        color: #696cff;
+        opacity: 0;
+        transform: translateY(2px);
+        transition: all 0.18s ease;
+    }
+    tr:hover .dup-badge {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .btn-filter-active{
+        background-color: #696cff !important;
+        color: #fff !important;
+        border-color: #696cff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ai-rec-page">
+    <div class="container-fluid ai-rec-wrap container-p-y">
+
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="get" class="row g-2 align-items-end filter-grid" id="filterForm">
+                    <div class="col-4">
+                        <label class="form-label">URL/도메인</label>
+                        <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력 :">
+                    </div>
+
+                    <div class="col-2">
+                        <label class="form-label">판단 결과</label>
+                        <select class="form-select" name="ai_judgment">
+                            <option value="" {% if filters.ai_judgment == "" %}selected{% endif %}>선택</option>
+                            <option value="Harmful" {% if filters.ai_judgment == "Harmful" %}selected{% endif %}>Harmful</option>
+                            <option value="Not harm" {% if filters.ai_judgment == "Not harm" %}selected{% endif %}>Not harm</option>
+                        </select>
+                    </div>
+
+                    <div class="col-4">
+                        <label class="form-label">로그 시간</label>
+                        <div class="d-flex gap-2 date-range">
+                            <input class="form-control" type="date" name="log_start" value="{{ filters.log_start }}">
+                            <div class="d-flex align-items-center text-muted">~</div>
+                            <input class="form-control" type="date" name="log_end" value="{{ filters.log_end }}">
+                        </div>
+                    </div>
+
+                    <div class="col-2">
+                        <label class="form-label">관리자 검토 여부</label>
+                        <select class="form-select input-tight" name="is_checked" id="isCheckedSelect">
+                            <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
+                            <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
+                        </select>
+                    </div>
+
+                    <div class="col-2">
+                        <label class="form-label">관리자 검토 결과</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-success w-50" id="btnAdd">추가</button>
+                            <button type="button" class="btn btn-outline-secondary w-50" id="btnIgnore">무시</button>
+                        </div>
+                        <input type="hidden" name="checked_result" id="checkedResultHidden" value="{{ filters.checked_result }}">
+                    </div>
+
+                    <div class="col-2">
+                        <label class="form-label">정책 타입</label>
+                        <select class="form-select input-tight" name="policy_type" id="policyTypeSelect">
+                            <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
+                            <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
+                            <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
+                        </select>
+                    </div>
+
+                    <div class="col-3">
+                        <label class="form-label">정책 추가 시간</label>
+                        <div class="d-flex gap-2 date-range">
+                            <input class="form-control" type="date" name="applied_start" value="{{ filters.applied_start }}" id="appliedStart">
+                            <div class="d-flex align-items-center text-muted">~</div>
+                            <input class="form-control" type="date" name="applied_end" value="{{ filters.applied_end }}" id="appliedEnd">
+                        </div>
+                    </div>
+
+                    <div class="col-2">
+                        <label class="form-label">작성자</label>
+                        <input class="form-control input-tight" name="admin" value="{{ filters.admin }}" placeholder="입력 :" id="adminInput">
+                    </div>
+
+                    <div class="col-3 d-flex gap-2 align-items-end">
+                        <button class="btn btn-primary w-50" type="submit">조회</button>
+                        <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
+                    </div>
+
+                    <input type="hidden" name="sort" id="sortHidden" value="{{ filters.sort }}">
+                    <input type="hidden" name="per_page" value="12">
+                </form>
+            </div>
+        </div>
+
+        <div class="row g-2 workspace">
+            <div class="col-12" id="tableCol">
+                <div class="card workspace-card">
+                    <div class="card-body">
+                        <div id="listArea">
+                            {% include "ai/ai_log_partial.html" %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-4 d-none" id="detailCol">
+                <div class="card workspace-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold">상세 정보</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                            </div>
+                        </div>
+
+                        <hr class="my-2">
+                        <div class="small text-muted fw-bold mb-2">선택한 AI 로그 1건의 상세정보가 표시됩니다</div>
+
+                        <div class="detail-scroll">
+                            <div class="detail-table-wrap table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <tbody>
+                                        <tr><th class="text-muted" style="width:120px;">URL</th><td id="dRequestUrl">-</td></tr>
+                                        <tr><th class="text-muted">도메인</th><td id="dDomain">-</td></tr>
+                                        <tr><th class="text-muted">AI판단</th><td id="dAiResult">-</td></tr>
+                                        <tr><th class="text-muted">확률</th><td id="dConfidence">-</td></tr>
+                                        <tr><th class="text-muted">중복 건수</th><td id="dHitCount">-</td></tr>
+                                        <tr><th class="text-muted">검토 여부</th><td id="dIsChecked">-</td></tr>
+                                        <tr><th class="text-muted">검토 결과</th><td id="dCheckedResult">-</td></tr>
+                                        <tr><th class="text-muted">정책 타입</th><td id="dPolicyType">-</td></tr>
+                                        <tr><th class="text-muted">정책 추가시간</th><td id="dAppliedAt">-</td></tr>
+                                        <tr><th class="text-muted">로그시간</th><td id="dLastSeen">-</td></tr>
+                                        <tr><th class="text-muted">작성자</th><td id="dAdmin">-</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
+                                <button class="btn btn-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function(){
+    const filterForm = document.getElementById("filterForm");
+    const listArea = document.getElementById("listArea");
+
+    const tableCol = document.getElementById("tableCol");
+    const detailCol = document.getElementById("detailCol");
+    const detailCloseBtn = document.getElementById("detailCloseBtn");
+
+    const badge = document.getElementById("detailIdBadge");
+    const dRequestUrl = document.getElementById("dRequestUrl");
+    const dDomain = document.getElementById("dDomain");
+    const dAiResult = document.getElementById("dAiResult");
+    const dConfidence = document.getElementById("dConfidence");
+    const dHitCount = document.getElementById("dHitCount");
+    const dIsChecked = document.getElementById("dIsChecked");
+    const dCheckedResult = document.getElementById("dCheckedResult");
+    const dPolicyType = document.getElementById("dPolicyType");
+    const dAppliedAt = document.getElementById("dAppliedAt");
+    const dLastSeen = document.getElementById("dLastSeen");
+    const dAdmin = document.getElementById("dAdmin");
+
+    const btnIgnoreDetail = document.getElementById("btnIgnoreDetail");
+    const btnAddPolicyDetail = document.getElementById("btnAddPolicyDetail");
+
+    const isCheckedSelect = document.getElementById("isCheckedSelect");
+    const btnAdd = document.getElementById("btnAdd");
+    const btnIgnore = document.getElementById("btnIgnore");
+    const checkedResultHidden = document.getElementById("checkedResultHidden");
+
+    const policyTypeSelect = document.getElementById("policyTypeSelect");
+    const appliedStart = document.getElementById("appliedStart");
+    const appliedEnd = document.getElementById("appliedEnd");
+    const adminInput = document.getElementById("adminInput");
+
+    function openDetail(){
+        detailCol.classList.remove("d-none");
+        tableCol.classList.remove("col-12");
+        tableCol.classList.add("col-8");
+    }
+
+    function resetDetail(){
+        badge.textContent = "선택 없음";
+        dRequestUrl.textContent = "-";
+        dDomain.textContent = "-";
+        dAiResult.textContent = "-";
+        dConfidence.textContent = "-";
+        dHitCount.textContent = "-";
+        dIsChecked.textContent = "-";
+        dCheckedResult.textContent = "-";
+        dPolicyType.textContent = "-";
+        dAppliedAt.textContent = "-";
+        dLastSeen.textContent = "-";
+        dAdmin.textContent = "-";
+
+        btnIgnoreDetail.disabled = true;
+        btnAddPolicyDetail.disabled = true;
+
+        window.__selectedAiId = null;
+        window.__selectedUrl = null;
+        window.__selectedChecked = null;
+        window.__selectedCheckedResult = null;
+    }
+
+    function closeDetail(){
+        detailCol.classList.add("d-none");
+        tableCol.classList.remove("col-8");
+        tableCol.classList.add("col-12");
+
+        listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
+        resetDetail();
+    }
+
+    function buildQuery(extra){
+        const fd = new FormData(filterForm);
+        const params = new URLSearchParams(fd);
+        params.set("per_page", "12");
+        params.set("partial", "1");
+        if(extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
+        return params.toString();
+    }
+
+    async function loadPage(page, extra={}){
+        closeDetail();
+
+        const qs = buildQuery({ page, ...extra });
+        const url = `${window.location.pathname}?${qs}`;
+
+        const res = await fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+        if(!res.ok) throw new Error("partial load failed");
+
+        listArea.innerHTML = await res.text();
+
+        const fullQs = buildQuery({ page, ...extra }).replace("&partial=1", "");
+        history.replaceState({}, "", `${window.location.pathname}?${fullQs}`);
+    }
+
+    function setEnabled(){
+        const reviewed = (isCheckedSelect.value === "true");
+
+        btnAdd.disabled = !reviewed;
+        btnIgnore.disabled = !reviewed;
+
+        if (adminInput) adminInput.disabled = !reviewed;
+
+        const policyEnabled = (reviewed && checkedResultHidden.value === "ADD");
+        policyTypeSelect.disabled = !policyEnabled;
+        appliedStart.disabled = !policyEnabled;
+        appliedEnd.disabled = !policyEnabled;
+    }
+
+    function updateCheckedResultUI(type){
+        btnAdd.classList.remove("btn-filter-active");
+        btnIgnore.classList.remove("btn-filter-active");
+
+        if(type === "ADD") btnAdd.classList.add("btn-filter-active");
+        if(type === "IGNORE") btnIgnore.classList.add("btn-filter-active");
+    }
+
+    btnAdd.addEventListener("click", () => {
+        checkedResultHidden.value = "ADD";
+        updateCheckedResultUI("ADD");
+        setEnabled();
+    });
+
+    btnIgnore.addEventListener("click", () => {
+        checkedResultHidden.value = "IGNORE";
+        updateCheckedResultUI("IGNORE");
+        setEnabled();
+    });
+
+    isCheckedSelect.addEventListener("change", setEnabled);
+
+    if (checkedResultHidden.value === "ADD" || checkedResultHidden.value === "IGNORE") {
+        updateCheckedResultUI(checkedResultHidden.value);
+    }
+    setEnabled();
+
+    filterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loadPage(1).catch(console.error);
+    });
+
+    listArea.addEventListener("click", (e) => {
+        const pageLink = e.target.closest("a[data-page]");
+        if(pageLink){
+            e.preventDefault();
+            loadPage(pageLink.dataset.page).catch(console.error);
+            return;
+        }
+
+        const sortLink = e.target.closest("a[data-sort]");
+        if(sortLink){
+            e.preventDefault();
+            document.getElementById("sortHidden").value = sortLink.dataset.sort;
+            loadPage(1, { sort: sortLink.dataset.sort }).catch(console.error);
+            return;
+        }
+
+        const row = e.target.closest("tr.js-row");
+        if(!row) return;
+
+        openDetail();
+
+        listArea.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
+        row.classList.add("table-active");
+
+        const data = row.dataset;
+        window.__selectedAiId = data.id;
+        window.__selectedUrl = data.requestUrl;
+        window.__selectedChecked = data.isChecked;
+        window.__selectedCheckedResult = data.checkedResult;
+
+        badge.textContent = `ID: ${data.id}`;
+        dRequestUrl.textContent = data.requestUrl || "-";
+        dDomain.textContent = data.domain || "-";
+        dAiResult.textContent = data.aiResult || "-";
+        dConfidence.textContent = data.confidence ? `${data.confidence}%` : "-";
+        dHitCount.textContent = data.hitCount ? `${data.hitCount}개` : "--";
+        dIsChecked.textContent = (data.isChecked === "true") ? "검토됨" : "미검토";
+        dCheckedResult.textContent = data.checkedResult || "-";
+        dPolicyType.textContent = data.policyType || "-";
+        dAppliedAt.textContent = data.appliedAt || "-";
+        dLastSeen.textContent = data.lastSeen || "-";
+        dAdmin.textContent = data.admin || "-";
+
+        btnIgnoreDetail.disabled = (data.isChecked === "true");
+        btnAddPolicyDetail.disabled = false;
+    });
+
+    detailCloseBtn.addEventListener("click", closeDetail);
+
+    function getCookie(name){
+        const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+        return v ? decodeURIComponent(v.split("=")[1]) : null;
+    }
+
+    async function postIgnore(aiId){
+        const res = await fetch(`/ai/records/${aiId}/ignore/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({}),
+        });
+        return await res.json();
+    }
+
+    btnIgnoreDetail.addEventListener("click", async () => {
+        const aiId = window.__selectedAiId;
+        if (!aiId) return;
+
+        const ok = confirm("선택한 항목을 무시 처리하시겠습니까?");
+        if (!ok) return;
+
+        try {
+            const data = await postIgnore(aiId);
+            if (!data.ok) {
+                alert("무시 처리 실패");
+                return;
+            }
+
+            const qs = new URLSearchParams(window.location.search);
+            const page = qs.get("page") || "1";
+            const sort = qs.get("sort") || (document.getElementById("sortHidden")?.value || "latest");
+
+            await loadPage(page, { sort });
+        } catch (err) {
+            console.error(err);
+            alert("무시 처리 중 오류가 발생했습니다.");
+        }
+    });
+
+    btnAddPolicyDetail.addEventListener("click", () => {
+        const aiId = window.__selectedAiId;
+        if (!aiId) return;
+
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
+    });
+
+    resetDetail();
+})();
+</script>
+{% endblock %}
