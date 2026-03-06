@@ -3,7 +3,7 @@ import socket
 from django.conf import settings
 
 def send_reload_signal(message: str = "reload") -> None:
-    host = getattr(settings, "ENGINE_RELOAD_HOST", "192.168.100.25")
+    host = getattr(settings, "ENGINE_RELOAD_HOST", "192.168.1.43")
     port = getattr(settings, "ENGINE_RELOAD_PORT", 5555)
     timeout = getattr(settings, "ENGINE_RELOAD_TIMEOUT", 2.0)
 

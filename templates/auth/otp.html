@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>OTP 인증</title>
+</head>
+<body>
+    <h2>OTP 인증</h2>
+    <p>
+    <strong>{{ email }}</strong> 로 전송된  
+    6자리 인증 코드를 입력하세요.
+    </p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color:red;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <label>OTP 코드</label>
+            <input type="text" name="otp" maxlength="6" required>
+        </div>
+        <button type="submit">로그인 완료</button>
+    </form>
+</body>
+</html>

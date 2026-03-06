@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
-from .views_auth import login_view, logout_view
+from .views_auth import login_view, logout_view, otp_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -27,6 +27,7 @@ urlpatterns = [
     path("", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
 
     path("login/", login_view, name="login"),
+     path("otp/", otp_view, name="otp"),
     path("logout/", logout_view, name="logout"),
 
     # ✅ 각 앱 임시 페이지

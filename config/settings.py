@@ -143,7 +143,9 @@ LOGOUT_REDIRECT_URL = "/login/"
 
 LOGIN_EXEMPT_URLS = [
     r"^login/$",
-    r"^admin/",   # Django admin 로그인은 열어둠 (선택)
+    r"^logout/$",
+    r"^otp/$",
+    r"^admin/.*$", # Django admin 로그인은 열어둠 (선택)
 ]
 
 #로그인 타임아웃
@@ -157,8 +159,7 @@ LOGIN_EXEMPT_URLS = [
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
-ENGINE_RELOAD_HOST = "192.168.100.25"   
+ENGINE_RELOAD_HOST = "192.168.1.43"   
 ENGINE_RELOAD_PORT = 5555
 ENGINE_RELOAD_TIMEOUT = 2.0
-
 
