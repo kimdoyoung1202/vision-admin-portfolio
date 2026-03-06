@@ -70,7 +70,7 @@ Ajax fetch로 listArea만 교체할 때 사용
 >
 
 <td class="fw-semibold">
-{{ row.id }}
+{{ page_obj.start_index|add:forloop.counter0 }}
 </td>
 
 

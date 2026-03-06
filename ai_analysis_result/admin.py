@@ -1,40 +1,42 @@
 from django.contrib import admin
 from .models import AiAnalysisResult
 
-# Register your models here.
 
 @admin.register(AiAnalysisResult)
-class AiAnalysisResultAdmin(admin.ModelAdmin) :
-    
-    # 관리자 페이지에 보여지는 컬럼 
+class AiAnalysisResultAdmin(admin.ModelAdmin):
+
+    # 관리자 페이지 목록에서 보여줄 컬럼
+    # create_at은 현재 모델에 없으므로 last_seen으로 변경
     list_display = (
-        "request_url",          # 요청받은 url
-        "domain",               # 요청받은 url의 도메인 주소
-        "confidence_score",     # 판단 결과 확률
-        "is_checked",           # 정책 검토 여부    (관리자가 확인 했는지)
-        "checked_result",       # 검토 결과         (관리자 검토 후 무시/ 정책 추가 등)
-        "policy_type",          # 정책 타입         (정책으로 적용된 경우에만 기록)
-        "admin",                # 정책 작성자의 id   (정책으로 적용된 경우에만 기록)
-        "applied_at",           # 정책 적용 시간     (정책으로 적용된 경우에만 기롣)
-        "create_at",            # ai결과가 로그로 적힌 시간
+        "request_url",       # 요청 URL
+        "domain",            # 도메인
+        "confidence_score",  # AI 판단 확률
+        "hit_count",         # 중복 누적 건수
+        "is_checked",        # 관리자 검토 여부
+        "checked_result",    # 관리자 검토 결과
+        "policy_type",       # 정책 타입
+        "admin",             # 정책 작성자
+        "applied_at",        # 정책 적용 시간
+        "last_seen",         # 마지막 발생 시간
     )
-    
-    # 검색창 기준 입력창이 필요한 컬럼
+
+    # 검색창 기준 입력 필드
     search_fields = (
         "request_url",
         "admin",
         "domain",
     )
-    
-    # 검색창 기준 선택창이 필요한 컬럼
+
+    # 우측 필터 선택창
     list_filter = (
-        "is_checked",       # 관리자 검토 여부 (선택창) 관리자 검토 선택시 checked_result(관리자 검토 결과) 활성화
-        "checked_result",   # (토글)관리자 정책 추가 선택시 정책 타입(policy_type), 정책 추가 시간(applied_at), 정책 작성자(admin) 활성화
-        "policy_type",      # 정책 타입 (도메인/정규표현식) 선택창
+        "is_checked",
+        "checked_result",
+        "policy_type",
     )
-    
-    # 검토 여부, ai결과 로그기준으로 정렬
-    ordering = ("is_checked", "-create_at",)
-    
-    # 한 페이지에 30페이지 출력
+
+    # 정렬 기준
+    # create_at 대신 last_seen 사용
+    ordering = ("is_checked", "-last_seen",)
+
+    # 관리자 목록 한 페이지 표시 수
     list_per_page = 30

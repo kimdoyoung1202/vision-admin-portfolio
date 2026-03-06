@@ -1,16 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 
-<!-- 이 페이지는 base의 기본 page_header(타이틀 영역)를 사용하지 않음 -->
 {% block page_header %}{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* =========================================================
-    [전체 레이아웃]
-    - base.html의 .main 영역을 "한 화면 고정"으로 강제
-    - 스크롤은 내부 패널(표/리스트)에서만 발생하도록 설계
-    ========================================================= */
   .main{
     overflow: hidden !important;
     min-height: 0 !important;
@@ -24,7 +18,6 @@
     padding: 16px !important;
   }
 
-  /* 페이지 컨테이너: KPI / 차트 / 하단(자원+오류)로 구성 */
   .ai-page{
     height: 100%;
     min-height: 0;
@@ -34,7 +27,6 @@
     gap: 10px;
   }
 
-  /* 공통 패널 스타일(Sneat 톤) */
   .panel{
     border: 1px solid rgba(67, 89, 113, .18);
     border-radius: 14px;
@@ -42,11 +34,6 @@
     box-shadow: 0 2px 10px rgba(67,89,113,.06);
   }
 
-  /* =========================================================
-    [엔진 상태 pill]
-    - FastAPI 상태(정상/장애)를 우측 상단에 표시
-    - JS setEngine()에서 dot 색/문구 변경
-    ========================================================= */
   .status-pill{
     display:inline-flex;
     align-items:center;
@@ -60,15 +47,13 @@
     line-height: 1;
   }
   .dot{
-    width:8px;height:8px;border-radius:50%;
+    width:8px;
+    height:8px;
+    border-radius:50%;
     background:#28c76f;
     box-shadow:0 0 0 4px rgba(40,199,111,.12);
   }
 
-  /* =========================================================
-    [KPI 카드]
-    - latency / rpm / total_today / accuracy 표시
-    ========================================================= */
   .kpi-card{
     padding:10px;
     height: 82px;
@@ -77,12 +62,24 @@
     justify-content:center;
     text-align:center;
   }
-  .kpi-title{ font-size:12px; font-weight:900; color:#566a7f; }
-  .kpi-value{ font-size:22px; font-weight:900; color:#2b3a4a; line-height: 1.05; }
-  .kpi-unit{ font-size:13px; font-weight:900; margin-left:5px; color:#566a7f; }
-  .kpi-sub{ font-size:11px; color:#7a8a9a; font-weight:700; margin-top:3px; }
+  .kpi-title{
+    font-size:12px;
+    font-weight:900;
+    color:#566a7f;
+  }
+  .kpi-value{
+    font-size:22px;
+    font-weight:900;
+    color:#2b3a4a;
+    line-height: 1.05;
+  }
+  .kpi-unit{
+    font-size:13px;
+    font-weight:900;
+    margin-left:5px;
+    color:#566a7f;
+  }
 
-  /* 중단 영역: 차트 행 + 하단 행을 쌓는 영역 */
   .ai-mid{
     flex: 1 1 auto;
     min-height: 0;
@@ -92,10 +89,6 @@
     gap:10px;
   }
 
-  /* =========================================================
-    [상단 차트 2개]
-    - 응답속도(line) / 처리량(line)
-    ========================================================= */
   .chart-row{
     flex: 0 0 auto;
     min-height: 0;
@@ -122,17 +115,12 @@
     display:block;
   }
 
-  /* =========================================================
-    [하단: 좌측 자원/시스템 + 우측 최근 오류]
-    - 하단은 남은 높이를 모두 사용
-    ========================================================= */
   .bottom-row{
     flex: 1 1 auto;
     min-height: 0;
     overflow:hidden;
   }
 
-  /* 좌측 묶음(도넛 + 시스템정보) */
   .left-bundle{
     height: 100%;
     min-height: 0;
@@ -150,7 +138,6 @@
     margin-bottom: 2px;
   }
 
-  /* CPU/MEM 도넛 2개를 2열로 배치 */
   .donut-wrap{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -181,7 +168,6 @@
     display:block;
   }
 
-  /* 시스템 정보 박스: 내부 table만 스크롤 가능하게 */
   .system-box{
     border-radius:14px;
     border:1px solid rgba(67,89,113,.18);
@@ -198,13 +184,10 @@
     min-height:0;
     overflow:auto;
   }
-  .system-box table{ font-size:12px; }
+  .system-box table{
+    font-size:12px;
+  }
 
-  /* =========================================================
-    [최근 오류 테이블]
-    - 헤더 sticky
-    - 재검토 버튼(POST) 제공
-    ========================================================= */
   .errors-panel{
     height: 100%;
     min-height: 0;
@@ -243,10 +226,6 @@
 {% block content %}
 <div class="ai-page">
 
-  <!-- =========================================================
-    [0] FastAPI 상태 표시(우측 상단)
-    - JS setEngine()에서 ok 여부에 따라 dot 색/문구 변경
-    ========================================================= -->
   <div class="d-flex justify-content-end">
     <div class="status-pill">
       <span class="dot" id="engineDot"></span>
@@ -254,15 +233,13 @@
     </div>
   </div>
 
-  <!-- =========================================================
-    [1] KPI 4개
-    - API(ai:status_api)의 kpi 값을 표시
-    ========================================================= -->
   <div class="row g-2">
     <div class="col-3">
       <div class="panel kpi-card">
         <div class="kpi-title">응답속도</div>
-        <div class="kpi-value"><span id="kpiLatency">-</span><span class="kpi-unit">ms</span></div>
+        <div class="kpi-value">
+          <span id="kpiLatency">-</span><span class="kpi-unit">ms</span>
+        </div>
       </div>
     </div>
     <div class="col-3">
@@ -280,59 +257,58 @@
     <div class="col-3">
       <div class="panel kpi-card">
         <div class="kpi-title">정확도</div>
-        <div class="kpi-value"><span id="kpiAcc">-</span><span class="kpi-unit">%</span></div>
+        <div class="kpi-value">
+          <span id="kpiAcc">-</span><span class="kpi-unit">%</span>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="ai-mid">
-
-    <!-- =========================================================
-      [2] 상단 차트 2개 (실시간 60초)
-      - latencyChart: 응답속도 line
-      - throughputChart: 처리량 line
-      ========================================================= -->
     <div class="row g-2 chart-row">
       <div class="col-6">
         <div class="panel chart-panel">
           <div class="chart-title">응답속도</div>
-          <div class="chart-canvas-wrap"><canvas id="latencyChart"></canvas></div>
+          <div class="chart-canvas-wrap">
+            <canvas id="latencyChart"></canvas>
+          </div>
         </div>
       </div>
       <div class="col-6">
         <div class="panel chart-panel">
           <div class="chart-title">처리량</div>
-          <div class="chart-canvas-wrap"><canvas id="throughputChart"></canvas></div>
+          <div class="chart-canvas-wrap">
+            <canvas id="throughputChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- =========================================================
-      [3] 하단: 좌측(도넛+시스템정보) + 우측(최근오류)
-      ========================================================= -->
     <div class="row g-2 bottom-row">
-
-      <!-- 좌측: 자원 사용량 + 시스템 정보 -->
       <div class="col-4" style="height:100%; min-height:0;">
         <div class="panel left-bundle">
-
           <div>
             <div class="bundle-head">자원 사용량</div>
-
-            <!-- CPU/MEM 도넛 (API에서 cpu, memory 받아서 업데이트) -->
             <div class="donut-wrap">
               <div class="donut-card">
-                <div class="donut-head"><span>CPU</span><span id="cpuPct">-</span></div>
-                <div class="donut-canvas-wrap"><canvas id="cpuDonut"></canvas></div>
+                <div class="donut-head">
+                  <span>CPU</span><span id="cpuPct">-</span>
+                </div>
+                <div class="donut-canvas-wrap">
+                  <canvas id="cpuDonut"></canvas>
+                </div>
               </div>
               <div class="donut-card">
-                <div class="donut-head"><span>MEM</span><span id="memPct">-</span></div>
-                <div class="donut-canvas-wrap"><canvas id="memDonut"></canvas></div>
+                <div class="donut-head">
+                  <span>MEM</span><span id="memPct">-</span>
+                </div>
+                <div class="donut-canvas-wrap">
+                  <canvas id="memDonut"></canvas>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- 시스템 정보: version/developer/update 주기 등 표시 -->
           <div class="system-box">
             <div class="bundle-head" style="margin-bottom:8px;">시스템 정보</div>
             <div class="table-responsive">
@@ -341,7 +317,7 @@
                   <tr><th style="width:120px;">현재 버전</th><td id="sysVersion">-</td></tr>
                   <tr><th>개발자</th><td id="sysDev">-</td></tr>
                   <tr><th>업데이트</th><td id="sysUpdate">-</td></tr>
-                  <tr><th>정확도 정의</th><td>관리자 정책 추가(ADD)</td></tr>
+                  <tr><th>정확도 정의</th><td>관리자 처리 완료(ADD/IGNORE)</td></tr>
                 </tbody>
               </table>
             </div>
@@ -350,14 +326,11 @@
         </div>
       </div>
 
-      <!-- 우측: 최근 오류 테이블 + 재검토 버튼 -->
       <div class="col-8" style="height:100%; min-height:0;">
         <div class="panel errors-panel">
 
           <div class="section-head">
             <div class="chart-title" style="margin:0;">최근 오류</div>
-
-            <!-- 재검토 버튼: POST로 ai:recheck_errors 호출 -->
             <button class="btn btn-outline-primary btn-recheck" id="btnRecheck">재검토</button>
           </div>
 
@@ -370,18 +343,14 @@
                   <th style="width:110px;" class="text-end">확률</th>
                 </tr>
               </thead>
-
-              <!-- JS가 최근 오류 목록을 tbody에 삽입 -->
               <tbody id="recentErrorsTbody">
                 <tr><td colspan="3" class="text-center text-muted">-</td></tr>
               </tbody>
-
             </table>
           </div>
 
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -391,29 +360,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function(){
-  /*
-    =========================================================
-    [JS 역할 요약]
-    1) ai:status_api를 일정 주기로 fetch해서
-       KPI/차트/도넛/오류 테이블을 업데이트
-    2) '재검토' 버튼 누르면 ai:recheck_errors로 POST
-    =========================================================
-  */
-
-  const charts = { latency:null, throughput:null, cpu:null, mem:null };
-  window.__AI_STATUS__ = charts; // 디버깅용
-
-  // 실시간 설정
-  const POLL_MS = 2000;   // 2초
-  const RT_MAX  = 60;     // 최근 60초
-
-  // 실시간 링버퍼
-  const rt = { inited:false, labels:[], latency:[], throughput:[] };
+  const charts = {
+    latency: null,
+    throughput: null,
+    cpu: null,
+    mem: null
+  };
 
   function el(id){
-    const n = document.getElementById(id);
-    if(!n) throw new Error(`#${id} not found`);
-    return n;
+    const node = document.getElementById(id);
+    if(!node) throw new Error(`#${id} not found`);
+    return node;
   }
 
   function isChart(x){
@@ -425,42 +382,17 @@
     return Number.isFinite(n) ? n : d;
   }
 
-  function fmtHMS(d){
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mm = String(d.getMinutes()).padStart(2,'0');
-    const ss = String(d.getSeconds()).padStart(2,'0');
-    return `${hh}:${mm}:${ss}`;
+  function getCookie(name){
+    const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+    return v ? decodeURIComponent(v.split("=")[1]) : null;
   }
 
-  function initRT(){
-    const now = new Date();
-    rt.labels = [];
-    rt.latency = [];
-    rt.throughput = [];
-    for(let i = RT_MAX - 1; i >= 0; i--){
-      const t = new Date(now.getTime() - i * 1000);
-      rt.labels.push(fmtHMS(t));
-      rt.latency.push(0);
-      rt.throughput.push(0);
-    }
-    rt.inited = true;
-  }
-
-  function pushRT(label, latency, throughput){
-    rt.labels.push(label);
-    rt.latency.push(latency);
-    rt.throughput.push(throughput);
-    if(rt.labels.length > RT_MAX){
-      rt.labels.shift(); rt.latency.shift(); rt.throughput.shift();
-    }
-  }
-
-  // 도넛 중앙 텍스트 플러그인
   const centerTextPlugin = {
-    id: 'centerText',
+    id: "centerText",
     afterDraw(chart) {
       const { ctx, chartArea } = chart;
       if (!chartArea) return;
+
       const value = chart?.config?.options?.plugins?.centerText?.value;
       if (value == null) return;
 
@@ -468,26 +400,27 @@
       const y = (chartArea.top + chartArea.bottom) / 2;
 
       ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = '900 18px sans-serif';
-      ctx.fillStyle = '#2b3a4a';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "900 18px sans-serif";
+      ctx.fillStyle = "#2b3a4a";
       ctx.fillText(`${value}%`, x, y);
       ctx.restore();
     }
   };
-  if(!Chart.registry.plugins.get('centerText')){
+
+  if(!Chart.registry.plugins.get("centerText")){
     Chart.register(centerTextPlugin);
   }
 
   function makeLine(canvas){
     return new Chart(canvas, {
-      type: 'line',
+      type: "line",
       data: {
         labels: [],
         datasets: [{
           data: [],
-          tension: .35,
+          tension: 0.35,
           pointRadius: 0,
           borderWidth: 3,
           borderColor: "#696cff",
@@ -500,10 +433,19 @@
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false }
+        },
         scales: {
-          x: { display: false },
-          y: { display: false, grid: { display: false }, ticks: { display: false } }
+          x: {
+            display: false,
+            grid: { display: false }
+          },
+          y: {
+            display: false,
+            grid: { display: false },
+            ticks: { display: false }
+          }
         }
       }
     });
@@ -511,12 +453,18 @@
 
   function makeDonut(canvas){
     return new Chart(canvas, {
-      type: 'doughnut',
-      data: { labels: ['Used','Free'], datasets: [{ data:[0,100], borderWidth: 0 }] },
+      type: "doughnut",
+      data: {
+        labels: ["Used", "Free"],
+        datasets: [{
+          data: [0, 100],
+          borderWidth: 0
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '72%',
+        cutout: "72%",
         animation: false,
         plugins: {
           legend: { display: false },
@@ -530,6 +478,7 @@
   function setEngine(ok){
     const dot = el("engineDot");
     const txt = el("engineText");
+
     if(ok){
       dot.style.background = "#28c76f";
       dot.style.boxShadow = "0 0 0 4px rgba(40,199,111,.12)";
@@ -541,109 +490,113 @@
     }
   }
 
-  function getCookie(name){
-    const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
-    return v ? decodeURIComponent(v.split("=")[1]) : null;
-  }
-
   function applyZeroAxisFix(chart, series){
-    const allZero = series.every(v => v === 0);
+    const allZero = series.every(v => Number(v) === 0);
     chart.options.scales.y.min = 0;
     chart.options.scales.y.max = allZero ? 1 : undefined;
+  }
+
+  function setLineChart(chart, labels, series){
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = series;
+    applyZeroAxisFix(chart, series);
+    chart.update("none");
+  }
+
+  function setDonutChart(chart, percent){
+    const value = Math.max(0, Math.min(100, toNum(percent, 0)));
+    chart.data.datasets[0].data = [value, Math.max(0, 100 - value)];
+    chart.options.plugins.centerText.value = Math.round(value);
+    chart.update("none");
+    return value;
   }
 
   async function loadStatus(){
     const res = await fetch("{% url 'ai:status_api' %}", {
       credentials: "same-origin",
-      cache:"no-store"
+      cache: "no-store"
     });
-    if(!res.ok) throw new Error("status_api error: " + res.status);
+
+    if(!res.ok){
+      throw new Error("status_api error: " + res.status);
+    }
+
     const data = await res.json();
 
-    // KPI
-    el("kpiLatency").textContent = data.kpi?.latency ?? "-";
-    el("kpiRPM").textContent     = data.kpi?.rpm ?? "-";
-    el("kpiTotal").textContent   = data.kpi?.total_today ?? "-";
-    el("kpiAcc").textContent     = data.kpi?.accuracy ?? "-";
+    const kpi = data.kpi || {};
+    const chart = data.chart || {};
+    const systemInfo = data.system_info || {};
+    const recentErrors = data.recent_errors || [];
 
-    setEngine(!!data.kpi?.engine_ok);
+    el("kpiLatency").textContent = kpi.latency ?? "-";
+    el("kpiRPM").textContent = kpi.rpm ?? "-";
+    el("kpiTotal").textContent = kpi.total_today ?? "-";
+    el("kpiAcc").textContent = kpi.accuracy ?? "-";
 
-    // 시스템 정보
-    el("sysVersion").textContent = data.system_info?.version ?? "-";
-    el("sysDev").textContent     = data.system_info?.developer ?? "-";
-    el("sysUpdate").textContent  = `${Math.round(POLL_MS/1000)}초`;
+    setEngine(!!kpi.engine_ok);
 
-    // 차트 최초 1회 생성
-    if(!isChart(charts.latency))    charts.latency    = makeLine(el("latencyChart"));
-    if(!isChart(charts.throughput)) charts.throughput = makeLine(el("throughputChart"));
-    if(!isChart(charts.cpu))        charts.cpu        = makeDonut(el("cpuDonut"));
-    if(!isChart(charts.mem))        charts.mem        = makeDonut(el("memDonut"));
+    el("sysVersion").textContent = systemInfo.version ?? "-";
+    el("sysDev").textContent = systemInfo.developer ?? "-";
+    el("sysUpdate").textContent = "2초";
 
-    // 실시간 60초 버퍼
-    if(!rt.inited) initRT();
+    if(!isChart(charts.latency)) {
+      charts.latency = makeLine(el("latencyChart"));
+    }
+    if(!isChart(charts.throughput)) {
+      charts.throughput = makeLine(el("throughputChart"));
+    }
+    if(!isChart(charts.cpu)) {
+      charts.cpu = makeDonut(el("cpuDonut"));
+    }
+    if(!isChart(charts.mem)) {
+      charts.mem = makeDonut(el("memDonut"));
+    }
 
-    const now = new Date();
-    const labelNow = fmtHMS(now);
+    const rtLabels = Array.isArray(chart.rt_labels) ? chart.rt_labels : [];
+    const rtLatencySeries = Array.isArray(chart.rt_latency_series)
+      ? chart.rt_latency_series.map(v => toNum(v, 0))
+      : [];
+    const rtThroughputSeries = Array.isArray(chart.rt_throughput_series)
+      ? chart.rt_throughput_series.map(v => toNum(v, 0))
+      : [];
 
-    const latencyNow = toNum(data.kpi?.latency, 0);
-    const rpmNow = toNum(data.kpi?.rpm, 0);
-    const throughputNow = rpmNow / 60.0;
+    setLineChart(charts.latency, rtLabels, rtLatencySeries);
+    setLineChart(charts.throughput, rtLabels, rtThroughputSeries);
 
-    pushRT(labelNow, latencyNow, throughputNow);
+    const cpu = kpi.engine_ok ? setDonutChart(charts.cpu, kpi.cpu) : setDonutChart(charts.cpu, 0);
+    const mem = kpi.engine_ok ? setDonutChart(charts.mem, kpi.memory) : setDonutChart(charts.mem, 0);
 
-    // latency
-    charts.latency.data.labels = rt.labels;
-    charts.latency.data.datasets[0].data = rt.latency;
-    applyZeroAxisFix(charts.latency, rt.latency);
-    charts.latency.update("none");
+    el("cpuPct").textContent = kpi.engine_ok ? `${Math.round(cpu)}%` : "-";
+    el("memPct").textContent = kpi.engine_ok ? `${Math.round(mem)}%` : "-";
 
-    // throughput
-    charts.throughput.data.labels = rt.labels;
-    charts.throughput.data.datasets[0].data = rt.throughput;
-    applyZeroAxisFix(charts.throughput, rt.throughput);
-    charts.throughput.update("none");
-
-    // donut
-    const cpuRaw = toNum(data.kpi?.cpu, 0);
-    const memRaw = toNum(data.kpi?.memory, 0);
-
-    const cpu = Math.max(0, Math.min(100, cpuRaw));
-    const mem = Math.max(0, Math.min(100, memRaw));
-
-    el("cpuPct").textContent = data.kpi?.engine_ok ? `${Math.round(cpu)}%` : "-";
-    el("memPct").textContent = data.kpi?.engine_ok ? `${Math.round(mem)}%` : "-";
-
-    charts.cpu.data.datasets[0].data = [cpu, Math.max(0, 100-cpu)];
-    charts.cpu.options.plugins.centerText.value = Math.round(cpu);
-    charts.cpu.update("none");
-
-    charts.mem.data.datasets[0].data = [mem, Math.max(0, 100-mem)];
-    charts.mem.options.plugins.centerText.value = Math.round(mem);
-    charts.mem.update("none");
-
-    // 최근 오류
     const tbody = el("recentErrorsTbody");
-    const rows = data.recent_errors || [];
-
-    tbody.innerHTML = rows.length === 0
+    tbody.innerHTML = recentErrors.length === 0
       ? `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`
-      : rows.map(r => `
-          <tr>
-            <td>${(r.create_at || "").toString()}</td>
-            <td class="text-truncate" style="max-width:1200px;">${(r.request_url || "-").toString()}</td>
-            <td class="text-end">${r.confidence_score ?? "-"}${r.confidence_score != null ? "%" : ""}</td>
-          </tr>
-      `).join("");
+      : recentErrors.map(r => {
+          const timeText = (r.last_seen || r.create_at || "").toString();
+          const urlText = (r.request_url || "-").toString();
+          const score = r.confidence_score ?? "-";
+          const scoreText = r.confidence_score != null ? `${score}%` : "-";
+
+          return `
+            <tr>
+              <td>${timeText}</td>
+              <td class="text-truncate" style="max-width:1200px;">${urlText}</td>
+              <td class="text-end">${scoreText}</td>
+            </tr>
+          `;
+      }).join("");
   }
 
   loadStatus().catch(e => console.error("loadStatus failed:", e));
-  setInterval(() => loadStatus().catch(e => console.error("loadStatus failed:", e)), POLL_MS);
+  setInterval(() => {
+    loadStatus().catch(e => console.error("loadStatus failed:", e));
+  }, 2000);
 
-  // 재검토 버튼
   document.getElementById("btnRecheck")?.addEventListener("click", async () => {
     const btn = document.getElementById("btnRecheck");
     btn.disabled = true;
-    const old = btn.textContent;
+    const oldText = btn.textContent;
     btn.textContent = "전송 중...";
 
     try{
@@ -651,11 +604,12 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
+          "X-CSRFToken": getCookie("csrftoken")
         },
         body: JSON.stringify({}),
         credentials: "same-origin"
       });
+
       const data = await res.json();
       alert(!res.ok || !data.ok ? "재검토 신호 전송 실패" : "재검토 신호 전송 완료");
     }catch(e){
@@ -663,7 +617,7 @@
       alert("재검토 요청 중 오류");
     }finally{
       btn.disabled = false;
-      btn.textContent = old;
+      btn.textContent = oldText;
     }
   });
 })();
