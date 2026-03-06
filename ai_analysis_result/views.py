@@ -30,15 +30,29 @@ FASTAPI_STATUS_URL = "http://192.168.100.25:8000/status"
 # ============================================================
 def _get_engine_usage(timeout=1.5):
     """
-    return: (engine_ok, cpu, mem, rpm, p95, series_24h, series_60s, err)
+    FastAPI /status에서 엔진 상태를 조회한다.
+
+    return:
+        (
+            engine_ok,
+            cpu,
+            mem,
+            rpm,
+            lat_avg,
+            lat_p95,
+            series_24h,
+            series_60s,
+            err
+        )
 
     engine_ok : FastAPI 응답이 정상(ok=true)인지
     cpu       : FastAPI 프로세스 CPU 사용률(%)
     mem       : FastAPI 프로세스 메모리 사용률(%)
     rpm       : 최근 1분 RPM(FastAPI 계산값)
-    p95       : 지연시간 p95(ms)(FastAPI 계산값)
-    series_24h: (선택) 24시간 시계열(FastAPI가 내려줄 경우)
-    series_60s: (선택) 60초 시계열(FastAPI가 내려줄 경우)
+    lat_avg   : 최근 응답속도 평균(ms)
+    lat_p95   : 최근 응답속도 p95(ms)
+    series_24h: (선택) 24시간 시계열
+    series_60s: (선택) 60초 시계열
     err       : 실패 시 에러 문자열
     """
     try:
@@ -53,26 +67,28 @@ def _get_engine_usage(timeout=1.5):
             data = json.loads(raw)
 
         if not data.get("ok"):
-            return False, None, None, None, None, None, None, "fastapi ok=false"
+            return False, None, None, None, None, None, None, None, "fastapi ok=false"
 
         cpu = data.get("proc", {}).get("cpu_percent")
         mem = data.get("proc", {}).get("mem_percent")
         rpm = data.get("traffic", {}).get("rpm_1m")
-        p95 = data.get("latency_ms", {}).get("p95")
 
-        # 아래 두 키는 "있으면 사용"하는 옵션이다.
-        # FastAPI가 시계열까지 내려주면 DB를 더 적게 읽고 더 정확한 처리량/지연을 그릴 수 있다.
-        series_24h = data.get("series_24h")  # 예: {"labels":[...], "throughput":[...], "p95":[...]}
-        series_60s = data.get("series_60s")  # 예: {"labels":[...], "throughput":[...], "p95":[...]}
+        # KPI용 응답속도는 평균값을 우선 사용
+        lat_avg = data.get("latency_ms", {}).get("avg")
+        lat_p95 = data.get("latency_ms", {}).get("p95")
 
-        return True, cpu, mem, rpm, p95, series_24h, series_60s, None
+        # FastAPI가 시계열까지 내려주면 그대로 사용
+        series_24h = data.get("series_24h")
+        series_60s = data.get("series_60s")
+
+        return True, cpu, mem, rpm, lat_avg, lat_p95, series_24h, series_60s, None
 
     except HTTPError as e:
-        return False, None, None, None, None, None, None, f"HTTPError {e.code}"
+        return False, None, None, None, None, None, None, None, f"HTTPError {e.code}"
     except URLError as e:
-        return False, None, None, None, None, None, None, f"URLError {e.reason}"
+        return False, None, None, None, None, None, None, None, f"URLError {e.reason}"
     except Exception as e:
-        return False, None, None, None, None, None, None, f"{type(e).__name__}: {e}"
+        return False, None, None, None, None, None, None, None, f"{type(e).__name__}: {e}"
 
 
 # ============================================================
@@ -235,69 +251,102 @@ class AiStatusView(View):
 # ============================================================
 class AiStatusApiView(View):
     def get(self, request):
-        # 현재 시각 계산
-        # USE_TZ=True면 now()는 UTC aware이므로 localtime()으로 KST 변환
+        """
+        AI 성능 현황 화면용 JSON API
+
+        KPI 기준
+        1) latency
+            - FastAPI가 내려주는 최근 응답속도 평균(latency_ms.avg)
+
+        2) rpm
+            - 실시간 RPM이 아니라 "오늘 누적 처리량"으로 사용
+            - ai_analysis_result에서 정상 건(confidence_score >= 0)의 hit_count 합
+
+        3) total_today
+            - 오늘 ai_analysis_result에 들어온 전체 요청 수
+            - 정상 + 오류 모두 포함
+            - integrated_detection_logs는 포함하지 않음
+
+        4) accuracy
+            - 기존과 동일하게 관리자 검토 결과 기준
+        """
         now_utc = timezone.now()
         now = timezone.localtime(now_utc) if getattr(settings, "USE_TZ", False) else now_utc
 
-        # 오늘 범위(00:00:00 ~ 내일 00:00:00)
+        # 오늘 범위
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow_start = today_start + timedelta(days=1)
 
-        # 1) FastAPI 엔진 지표 조회
-        engine_ok, cpu_usage, memory_usage, rpm_fastapi, p95_fastapi, series_24h, series_60s, engine_err = _get_engine_usage()
+        # FastAPI 엔진 상태 조회
+        engine_ok, cpu_usage, memory_usage, rpm_fastapi, lat_avg_fastapi, lat_p95_fastapi, series_24h, series_60s, engine_err = _get_engine_usage()
 
-        # 2) KPI: 오늘 총 분석 건수(이벤트 총량)
-        # - last_seen이 오늘 범위에 들어온 레코드들의 hit_count 합
+        # ---------------------------------------------------------
+        # 1) 요청수(오늘)
+        #
+        # 의미:
+        # 오늘 ai_analysis_result로 들어온 전체 요청 수
+        # 정상 + 오류 포함
+        #
+        # 구조상 한 URL 1행 + hit_count 누적 저장 방식이므로
+        # row count가 아니라 hit_count 합계를 사용한다.
+        # ---------------------------------------------------------
         total_today = (
             AiAnalysisResult.objects
-            .filter(last_seen__gte=today_start, last_seen__lt=tomorrow_start, confidence_score__gte=0)
+            .filter(last_seen__gte=today_start, last_seen__lt=tomorrow_start)
             .aggregate(v=Coalesce(Sum("hit_count"), Value(0)))
         )["v"]
 
-        # RPM:
-        # - FastAPI가 rpm_1m을 주면 그 값을 우선 사용
-        # - 없으면 DB에서 최근 1분(last_seen 기준) hit_count 합으로 근사
-        if rpm_fastapi is not None:
-            rpm = rpm_fastapi
-        else:
-            last_minute = now - timedelta(minutes=1)
-            rpm = (
-                AiAnalysisResult.objects
-                .filter(last_seen__gte=last_minute, confidence_score__gte=0)
-                .aggregate(v=Coalesce(Sum("hit_count"), Value(0)))
-            )["v"]
+        # ---------------------------------------------------------
+        # 2) 처리량 KPI
+        #
+        # 화면 KPI의 "처리량"은 실시간 RPM이 아니라
+        # 오늘 누적 처리량으로 사용한다.
+        #
+        # 정상 건만 대상으로 집계한다.
+        # ---------------------------------------------------------
+        throughput_today = (
+            AiAnalysisResult.objects
+            .filter(
+                last_seen__gte=today_start,
+                last_seen__lt=tomorrow_start,
+                confidence_score__gte=0
+            )
+            .aggregate(v=Coalesce(Sum("hit_count"), Value(0)))
+        )["v"]
 
-        # 정확도(accuracy):
-        # - reviewed: 관리자가 체크한(is_checked=True) 것들
-        # - correct_count: ADD/IGNORE를 처리완료로 보는 로직(기존 기능 유지)
+        # ---------------------------------------------------------
+        # 3) 정확도
+        #
+        # 기존 로직 유지
+        # 검토된 레코드 중 ADD / IGNORE 를 처리완료로 본다.
+        # ---------------------------------------------------------
         reviewed = AiAnalysisResult.objects.filter(is_checked=True)
         reviewed_count = reviewed.count()
         correct_count = reviewed.filter(checked_result__in=["ADD", "IGNORE"]).count()
         accuracy = round((correct_count / reviewed_count) * 100, 1) if reviewed_count else 0.0
 
-        # Latency KPI:
-        # - DB 필드 삭제했으므로 FastAPI p95만 사용
-        avg_latency_ms = p95_fastapi if (engine_ok and p95_fastapi is not None) else 0
+        # ---------------------------------------------------------
+        # 4) 응답속도 KPI
+        #
+        # FastAPI가 내려주는 최근 응답속도 평균값을 사용한다.
+        # 평균이 없으면 0 처리
+        # ---------------------------------------------------------
+        avg_latency_ms = lat_avg_fastapi if (engine_ok and lat_avg_fastapi is not None) else 0
 
-        # truncate에서 사용할 tzinfo
         tz = timezone.get_current_timezone() if getattr(settings, "USE_TZ", False) else None
 
-        # 3) 차트 데이터 구성
-        # - FastAPI가 시계열을 주면 그대로 사용
-        # - 없으면 DB로 throughput만 만들고 latency는 p95 값을 "상수"로 채운다
-        #   (프론트 Chart.js가 끊기지 않도록 배열 길이를 항상 맞춘다)
-
-        if engine_ok and isinstance(series_24h, dict) and isinstance(series_60s, dict):
-            labels = series_24h.get("labels") or []
-            throughput_series = series_24h.get("throughput") or []
-            latency_series = series_24h.get("p95") or []
-
+        # ---------------------------------------------------------
+        # 5) 차트 데이터 구성
+        #
+        # 우선순위
+        # - FastAPI가 series_60s / series_24h 를 주면 그대로 사용
+        # - 없으면 DB 기반 throughput만 만들고 latency는 평균값으로 채운다
+        # ---------------------------------------------------------
+        if engine_ok and isinstance(series_60s, dict):
             rt_labels = series_60s.get("labels") or []
             rt_throughput_series = series_60s.get("throughput") or []
-            rt_latency_series = series_60s.get("p95") or []
+            rt_latency_series = series_60s.get("latency") or []
         else:
-            # 3-A) 실시간 60초 차트 (초 단위)
             sec_end = now.replace(microsecond=0)
             sec_start = sec_end - timedelta(seconds=59)
 
@@ -307,7 +356,6 @@ class AiStatusApiView(View):
                 confidence_score__gte=0,
             )
 
-            # 초 단위로 last_seen을 자르고, 그 구간의 hit_count 합을 처리량으로 본다.
             rt_rows = (
                 rt_qs
                 .annotate(s=TruncSecond("last_seen", tzinfo=tz))
@@ -325,9 +373,14 @@ class AiStatusApiView(View):
                 rt_labels.append(t.strftime("%H:%M:%S"))
                 row = rt_map.get(t)
                 rt_throughput_series.append(int((row["throughput"] if row else 0) or 0))
-                rt_latency_series.append(float(p95_fastapi or 0))
+                rt_latency_series.append(float(avg_latency_ms or 0))
 
-            # 3-B) 최근 24시간 차트 (시간 단위)
+        # 24시간 차트가 아직 필요 없더라도 프론트 호환용으로 유지
+        if engine_ok and isinstance(series_24h, dict):
+            labels = series_24h.get("labels") or []
+            throughput_series = series_24h.get("throughput") or []
+            latency_series = series_24h.get("latency") or []
+        else:
             end_hour = now.replace(minute=0, second=0, microsecond=0)
             start_hour = end_hour - timedelta(hours=23)
 
@@ -354,57 +407,69 @@ class AiStatusApiView(View):
                 labels.append(h.strftime("%H:%M"))
                 row = hourly_map.get(h)
                 throughput_series.append(int((row["throughput"] if row else 0) or 0))
-                latency_series.append(float(p95_fastapi or 0))
+                latency_series.append(float(avg_latency_ms or 0))
 
-        # 4) 최근 오류 10건 (confidence_score = -1)
-        # 프론트가 기존에 create_at 키를 기대할 수 있어서,
-        # last_seen을 기준으로 정렬/표시하되 "create_at" 키도 같이 넣어 호환을 유지한다.
+        # ---------------------------------------------------------
+        # 6) 최근 오류
+        #
+        # confidence_score = -1 인 항목을 최근순으로 노출
+        # 요청수(total_today)에는 포함되지만 처리량 KPI에는 포함하지 않는다.
+        # ---------------------------------------------------------
         recent_errors_qs = (
             AiAnalysisResult.objects
             .filter(confidence_score=-1)
             .order_by("-last_seen")
             .values("last_seen", "request_url", "confidence_score")[:10]
         )
+
         recent_errors = []
         for r in recent_errors_qs:
             recent_errors.append({
                 "last_seen": r["last_seen"],
-                "create_at": r["last_seen"],  # 호환용 별칭(기존 JS가 create_at을 사용했다면 깨짐 방지)
+                "create_at": r["last_seen"],
                 "request_url": r["request_url"],
                 "confidence_score": r["confidence_score"],
             })
 
-        # 5) 시스템 정보 (필요하면 나중에 실제 값으로 교체)
+        # 시스템 정보
         system_info = {
             "version": "v0.1",
             "developer": "Vision",
         }
 
-        # 6) 최종 응답(JSON)
         return JsonResponse({
             "kpi": {
+                # 요청수(오늘): 정상 + 오류 포함한 오늘 전체 AI 유입량
                 "total_today": int(total_today or 0),
-                "rpm": int(rpm or 0),
+
+                # 처리량 KPI: 오늘 누적 처리량
+                "rpm": int(throughput_today or 0),
+
+                # 정확도
                 "accuracy": accuracy,
+
+                # 응답속도 KPI: FastAPI 평균 응답속도
                 "latency": avg_latency_ms,
+
+                # 자원 사용량
                 "cpu": cpu_usage,
                 "memory": memory_usage,
+
+                # 엔진 상태
                 "engine_ok": engine_ok,
                 "engine_err": engine_err,
             },
             "chart": {
-                # 24시간(시간단위)
+                # 24시간(호환용)
                 "labels": labels,
                 "latency_series": latency_series,
                 "throughput_series": throughput_series,
 
-                # 60초(초단위)
+                # 60초(실사용)
                 "rt_labels": rt_labels,
                 "rt_latency_series": rt_latency_series,
                 "rt_throughput_series": rt_throughput_series,
 
-                # 기존 프론트가 cpu/mem 스파크라인을 쓰면 배열이 필요해서 유지
-                # 실제 cpu/mem 시계열을 따로 쌓지 않는다면 임시로 throughput을 넣어두는 구조(기능 유지 목적)
                 "cpu_spark": throughput_series,
                 "mem_spark": throughput_series,
             },

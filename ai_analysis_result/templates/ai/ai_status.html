@@ -236,24 +236,31 @@
   <div class="row g-2">
     <div class="col-3">
       <div class="panel kpi-card">
-        <div class="kpi-title">응답속도</div>
+        <div class="kpi-title">응답속도 평균</div>
         <div class="kpi-value">
           <span id="kpiLatency">-</span><span class="kpi-unit">ms</span>
         </div>
       </div>
     </div>
+
     <div class="col-3">
       <div class="panel kpi-card">
-        <div class="kpi-title">처리량 (RPM)</div>
-        <div class="kpi-value"><span id="kpiRPM">-</span></div>
+        <div class="kpi-title">처리량 (오늘)</div>
+        <div class="kpi-value">
+          <span id="kpiThroughput">-</span>
+        </div>
       </div>
     </div>
+
     <div class="col-3">
       <div class="panel kpi-card">
         <div class="kpi-title">요청수 (오늘)</div>
-        <div class="kpi-value"><span id="kpiTotal">-</span></div>
+        <div class="kpi-value">
+          <span id="kpiTotal">-</span>
+        </div>
       </div>
     </div>
+
     <div class="col-3">
       <div class="panel kpi-card">
         <div class="kpi-title">정확도</div>
@@ -274,6 +281,7 @@
           </div>
         </div>
       </div>
+
       <div class="col-6">
         <div class="panel chart-panel">
           <div class="chart-title">처리량</div>
@@ -298,6 +306,7 @@
                   <canvas id="cpuDonut"></canvas>
                 </div>
               </div>
+
               <div class="donut-card">
                 <div class="donut-head">
                   <span>MEM</span><span id="memPct">-</span>
@@ -322,7 +331,6 @@
               </table>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -529,7 +537,7 @@
     const recentErrors = data.recent_errors || [];
 
     el("kpiLatency").textContent = kpi.latency ?? "-";
-    el("kpiRPM").textContent = kpi.rpm ?? "-";
+    el("kpiThroughput").textContent = kpi.rpm ?? "-";
     el("kpiTotal").textContent = kpi.total_today ?? "-";
     el("kpiAcc").textContent = kpi.accuracy ?? "-";
 
