@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-    /* base wrapper 무력화 */
     .main{ overflow:hidden !important; padding:10px !important; min-height:0; }
     .main > .card-sneat{
         height:100%;
@@ -27,7 +26,6 @@
         min-height:0;
     }
 
-    /* ✅ 비율: 상단 좀 키우고 / 하단(IP+일일패킷) 조금 줄임 */
     .sec{ min-height:0; }
     .sec.ts  { flex: 2.6; }
     .sec.top { flex: 2.2; }
@@ -53,7 +51,6 @@
     }
     canvas{ width:100% !important; height:100% !important; max-height:none !important; }
 
-    /* KPI */
     .kpi-card{
         display:flex;
         flex-direction:column;
@@ -61,9 +58,7 @@
         height:100%;
         min-height:0;
     }
-    .kpi-card .display-6{ line-height:1; margin:0; font-size:30px; }
 
-    /* ✅ 일일 패킷 KPI형 + 오른쪽 도넛 */
     .pkt-kpi{
         display:flex;
         align-items:stretch;
@@ -158,13 +153,11 @@
     @media (max-height: 820px){
         .main{ padding:8px !important; }
         .dash-page{ height: calc(100vh - var(--topbar-h) - 16px); }
-        .kpi-card .display-6{ font-size:26px; }
         .pkt-total .n{ font-size:26px; }
         .pkt-right{ width: 110px; }
         .pkt-donut{ width: 98px; height: 98px; }
     }
 
-    /* Top10 영역 세로 살짝 줄임 */
     .sec.top .chart-box { height: 210px !important; }
 
     .kpi-main{
@@ -198,202 +191,177 @@
         font-weight:900;
         color:#566a7f;
     }
-    </style>
+</style>
 
-    <div class="dash-page">
+<div class="dash-page">
 
-    <!-- 1) Timeseries -->
     <section class="sec ts">
         <div class="row compact">
-        <div class="col-12">
-            <div class="card-sneat">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
-                <div class="d-flex align-items-center gap-2">
-                <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
-                    <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                    <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                    <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
-                </div>
-
-                </div>
-            </div>
-            <div class="chart-box">
-                <canvas id="chartTimeseries"></canvas>
-            </div>
-            </div>
-        </div>
-        </div>
-    </section>
-
-    <!-- 2) Top10 -->
-    <section class="sec top">
-        <div class="row compact">
-
-        <div class="col-md-6 h-100">
-            <div class="card-sneat">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <div class="fw-bold">도메인 탐지로그 (Top10)</div>
-                <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
-                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
-                </div>
-            </div>
-            <div class="chart-box">
-                <canvas id="chartTopDomains"></canvas>
-            </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 h-100">
-            <div class="card-sneat">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
-                <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
-                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
-                </div>
-            </div>
-            <div class="chart-box">
-                <canvas id="chartTopRegex"></canvas>
-            </div>
-            </div>
-        </div>
-
-        </div>
-    </section>
-
-    <!-- 3) KPI 3개 -->
-    <section class="sec kpi">
-    <div class="row compact">
-
-        <!-- policy -->
-        <div class="col-lg-4 h-100">
-            <div class="card-sneat kpi-card">
-                <div class="text-muted fw-bold">policy</div>
-
-                <div class="kpi-main">
-                    <div class="kpi-value" id="kpiPolicy">-</div>
-                </div>
-
-                <div class="kpi-delta-row">
-                    <span class="kpi-delta-label">전일 대비</span>
-                    <span class="kpi-delta" id="kpiPolicyDelta">-</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- ai_analysis_result -->
-        <div class="col-lg-4 h-100">
-            <div class="card-sneat kpi-card">
-                <div class="text-muted fw-bold">ai_analysis_result</div>
-
-                <div class="kpi-main">
-                    <div class="kpi-value" id="kpiAi">-</div>
-                </div>
-
-                <div class="kpi-delta-row">
-                    <span class="kpi-delta-label">전일 대비</span>
-                    <span class="kpi-delta" id="kpiAiDelta">-</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- integrated_detection_logs -->
-        <div class="col-lg-4 h-100">
-            <div class="card-sneat kpi-card">
-                <div class="text-muted fw-bold">integrated_detection_logs</div>
-
-                <div class="kpi-main">
-                    <div class="kpi-value" id="kpiBlocked">-</div>
-                </div>
-
-                <div class="kpi-delta-row">
-                    <span class="kpi-delta-label">전일 대비</span>
-                    <span class="kpi-delta" id="kpiBlockedDelta">-</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</section>
-
-    <!-- 4) 하단 -->
-    <section class="sec bot">
-        <div class="row compact">
-
-        <div class="col-lg-8 h-100">
-            <div class="card-sneat h-100">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
-                <div class="text-muted small" id="ipWindowText">최근 10분</div>
-            </div>
-            <div class="chart-box">
-                <canvas id="chartTopIps"></canvas>
-            </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 h-100">
-            <div class="card-sneat pkt-kpi">
-
-            <div class="pkt-left">
-                <div class="pkt-title">
-                <div class="t">일일 패킷 현황</div>
-                </div>
-
-                <div>
-                <div class="text-muted small">TOTAL</div>
-                <div class="pkt-total">
-                    <div class="n" id="sysTotalText"></div>
-                </div>
-
-                <div class="pkt-delta">
-                    <span class="text-muted small">전일 대비</span>
-                    <span class="d" id="dailyDeltaText"></span>
-                </div>
-                </div>
-
-                <div class="pkt-mini">
-                <span class="pkt-pill"><span class="badge text-bg-primary">통과</span><span id="kpiTotalAi">-</span></span>
-                <span class="pkt-pill danger"><span class="badge text-bg-danger">차단</span><span id="kpiTotalBlocked">-</span></span>
-                </div>
-            </div>
-
-            <div class="pkt-right">
-                <div class="pkt-donut">
-                <canvas id="chartBlockedRatio"></canvas>
-                <div class="pkt-center">
-                    <div>
-                    <div class="t1">TOTAL</div>
-                    <div class="t2" id="donutTotalText">-</div>
+            <div class="col-12">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
+                                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTimeseries"></canvas>
                     </div>
                 </div>
-                </div>
             </div>
-
-            </div>
-        </div>
-
         </div>
     </section>
 
-    </div>
-    {% endblock %}
+    <section class="sec top">
+        <div class="row compact">
+            <div class="col-md-6 h-100">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">도메인 탐지로그 (Top10)</div>
+                        <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
+                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopDomains"></canvas>
+                    </div>
+                </div>
+            </div>
 
-    {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-    (function(){
+            <div class="col-md-6 h-100">
+                <div class="card-sneat">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
+                        <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
+                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
+                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopRegex"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec kpi">
+        <div class="row compact">
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">policy</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiPolicy">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiPolicyDelta">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">ai_analysis_result</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiAi">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiAiDelta">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat kpi-card">
+                    <div class="text-muted fw-bold">integrated_detection_logs</div>
+                    <div class="kpi-main">
+                        <div class="kpi-value" id="kpiBlocked">-</div>
+                    </div>
+                    <div class="kpi-delta-row">
+                        <span class="kpi-delta-label">전일 대비</span>
+                        <span class="kpi-delta" id="kpiBlockedDelta">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sec bot">
+        <div class="row compact">
+            <div class="col-lg-8 h-100">
+                <div class="card-sneat h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <div class="fw-bold">실시간 이상 감지 모니터링 (IP Top10)</div>
+                        <div class="text-muted small" id="ipWindowText">최근 10분</div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="chartTopIps"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 h-100">
+                <div class="card-sneat pkt-kpi">
+                    <div class="pkt-left">
+                        <div class="pkt-title">
+                            <div class="t">일일 패킷 현황</div>
+                        </div>
+
+                        <div>
+                            <div class="text-muted small">TOTAL</div>
+                            <div class="pkt-total">
+                                <div class="n" id="sysTotalText">-</div>
+                            </div>
+
+                            <div class="pkt-delta">
+                                <span class="text-muted small">전일 대비</span>
+                                <span class="d" id="dailyDeltaText">-</span>
+                            </div>
+                        </div>
+
+                        <div class="pkt-mini">
+                            <span class="pkt-pill"><span class="badge text-bg-primary">통과</span><span id="kpiTotalAi">-</span></span>
+                            <span class="pkt-pill danger"><span class="badge text-bg-danger">차단</span><span id="kpiTotalBlocked">-</span></span>
+                        </div>
+                    </div>
+
+                    <div class="pkt-right">
+                        <div class="pkt-donut">
+                            <canvas id="chartBlockedRatio"></canvas>
+                            <div class="pkt-center">
+                                <div>
+                                    <div class="t1">TOTAL</div>
+                                    <div class="t2" id="donutTotalText">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
     const REFRESH_MS = 5000;
     const state = { ts:"day", dom:"day", rx:"day" };
-
-    // Top10 라벨칸(왼쪽) 폭 / 오른쪽 여백
-    const TOP_LEFT_W_DOM = 200;
-    const TOP_LEFT_W_RX  = 220;
-    const TOP_RIGHT_PAD  = 18;
+    const TOP_RIGHT_PAD = 18;
 
     const kpiPolicy = document.getElementById("kpiPolicy");
     const kpiAi = document.getElementById("kpiAi");
@@ -409,15 +377,12 @@
     const sysTotalText = document.getElementById("sysTotalText");
     const donutTotalText = document.getElementById("donutTotalText");
     const dailyDeltaText = document.getElementById("dailyDeltaText");
-    const dailyGranText = document.getElementById("dailyGranText");
 
     async function getJSON(url){
-        const res = await fetch(url, { credentials:"same-origin" });
-        if(!res.ok) throw new Error(`API Error ${res.status} ${url}`);
-        const ct = (res.headers.get("content-type") || "").toLowerCase();
-        if(!ct.includes("application/json")){
-        const text = await res.text();
-        throw new Error(`Not JSON (${ct}) from ${url}. First 120 chars: ${text.slice(0,120)}`);
+        const res = await fetch(url, { credentials:"same-origin", cache:"no-store" });
+        if(!res.ok){
+            const text = await res.text();
+            throw new Error(`API Error ${res.status} ${url} :: ${text.slice(0, 120)}`);
         }
         return await res.json();
     }
@@ -428,57 +393,48 @@
         return `${sign} ${Math.abs(num)}`;
     }
 
-    // ---------- Charts ----------
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
         type: "bar",
         data: {
             labels: [],
             datasets: [
-            {
-                label: "DOMAIN",
-                data: [],
-                borderWidth: 1,
-
-                // ✅ 막대 두께 줄이기
-                maxBarThickness: 12,
-                // barThickness: 12,            // ← 고정 두께로 하고 싶으면 이걸 쓰고 maxBarThickness는 제거
-                categoryPercentage: 0.65,      // ✅ 카테고리(시간 칸) 안에서 막대가 차지하는 비율
-                barPercentage: 0.8             // ✅ 같은 카테고리 내 막대 폭 비율(도메인/정규 두 개)
-            },
-            {
-                label: "REGEX",
-                data: [],
-                borderWidth: 1,
-
-                // ✅ 막대 두께 줄이기
-                maxBarThickness: 12,
-                categoryPercentage: 0.65,
-                barPercentage: 0.8
-            },
-            {
-                label: "TOTAL",
-                type: "line",
-                data: [],
-                tension: 0.35,
-                borderWidth: 1,
-                pointRadius: 0,
-                pointHitRadius: 12
-            }
+                {
+                    label: "DOMAIN",
+                    data: [],
+                    borderWidth: 1,
+                    maxBarThickness: 12,
+                    categoryPercentage: 0.65,
+                    barPercentage: 0.8
+                },
+                {
+                    label: "REGEX",
+                    data: [],
+                    borderWidth: 1,
+                    maxBarThickness: 12,
+                    categoryPercentage: 0.65,
+                    barPercentage: 0.8
+                },
+                {
+                    label: "TOTAL",
+                    type: "line",
+                    data: [],
+                    tension: 0.35,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    pointHitRadius: 12
+                }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-
-            // ✅ 막대+선 겹칠 때 툴팁/호버 더 자연스럽게
             interaction: { mode: "nearest", intersect: false },
-
             plugins: {
-            legend: { position: "top" },
-            tooltip: { enabled: true, mode: "nearest", intersect: false }
+                legend: { position: "top" },
+                tooltip: { enabled: true, mode: "nearest", intersect: false }
             },
             scales: {
-            y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+                y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
             }
         }
     });
@@ -486,125 +442,127 @@
     const chartTopDomains = new Chart(document.getElementById("chartTopDomains"), {
         type: "bar",
         data: {
-        labels: [],
-        datasets: [{
-            label: "차단 횟수",
-            data: [],
-            borderWidth: 1,
-            maxBarThickness: 14,
-            categoryPercentage: 0.7,
-            barPercentage: 0.7
-        }]
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
         },
         options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        layout: { padding: { right: TOP_RIGHT_PAD } },
-        scales: {
-            x: {
-            beginAtZero: true,
-            grace: "15%",
-            grid: { display: false },
-            ticks: { precision: 0, stepSize: 1 }
-            },
-            y: {
-                grid: { display: false },
-                afterFit: (scale) => { scale.width = 170; },
-
-                ticks: {
-                    autoSkip: false,      // ✅ 라벨 10개 전부 표시
-                    padding: 6,
-                    callback: function(value){
-                    const label = this.getLabelForValue(value);
-                    if (!label) return "";
-                    return label.length > 22 ? label.slice(0, 22) + "…" : label;
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            layout: { padding: { right: TOP_RIGHT_PAD } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grace: "15%",
+                    grid: { display: false },
+                    ticks: { precision: 0, stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false },
+                    afterFit: (scale) => { scale.width = 170; },
+                    ticks: {
+                        autoSkip: false,
+                        padding: 6,
+                        callback: function(value){
+                            const label = this.getLabelForValue(value);
+                            if (!label) return "";
+                            return label.length > 22 ? label.slice(0, 22) + "…" : label;
+                        }
                     }
                 }
             }
-        }
         }
     });
 
     const chartTopRegex = new Chart(document.getElementById("chartTopRegex"), {
         type: "bar",
         data: {
-        labels: [],
-        datasets: [{
-            label: "차단 횟수",
-            data: [],
-            borderWidth: 1,
-            maxBarThickness: 14,
-            categoryPercentage: 0.7,
-            barPercentage: 0.7
-        }]
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
         },
         options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        layout: { padding: { right: TOP_RIGHT_PAD } },
-        scales: {
-            x: {
-            beginAtZero: true,
-            grace: "15%",
-            ticks: { precision: 0, stepSize: 1 }
-            },
-            y: {
-                grid: { display: false },
-                afterFit: (scale) => { scale.width = 170; },
-
-                ticks: {
-                    autoSkip: false,
-                    padding: 6,
-                    callback: function(value){
-                    const label = this.getLabelForValue(value);
-                    if (!label) return "";
-                    return label.length > 26 ? label.slice(0, 26) + "…" : label;
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            layout: { padding: { right: TOP_RIGHT_PAD } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grace: "15%",
+                    ticks: { precision: 0, stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false },
+                    afterFit: (scale) => { scale.width = 170; },
+                    ticks: {
+                        autoSkip: false,
+                        padding: 6,
+                        callback: function(value){
+                            const label = this.getLabelForValue(value);
+                            if (!label) return "";
+                            return label.length > 26 ? label.slice(0, 26) + "…" : label;
+                        }
                     }
                 }
             }
-        }
         }
     });
 
     const chartTopIps = new Chart(document.getElementById("chartTopIps"), {
         type: "bar",
         data: {
-        labels: [],
-        datasets: [{
-            label: "차단 횟수",
-            data: [],
-            borderWidth: 1,
-            maxBarThickness: 14,
-            categoryPercentage: 0.7,
-            barPercentage: 0.7
-        }]
+            labels: [],
+            datasets: [{
+                label: "차단 횟수",
+                data: [],
+                borderWidth: 1,
+                maxBarThickness: 14,
+                categoryPercentage: 0.7,
+                barPercentage: 0.7
+            }]
         },
         options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } } }
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+            }
         }
     });
 
     const chartBlockedRatio = new Chart(document.getElementById("chartBlockedRatio"), {
         type: "doughnut",
-        data: { labels: ["통과", "차단"], datasets: [{ data: [0,0], borderWidth: 1 }] },
+        data: {
+            labels: ["통과", "차단"],
+            datasets: [{ data: [0,0], borderWidth: 1 }]
+        },
         options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "70%",
-        radius: "95%",
-        plugins: { legend: { display: false } }
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "70%",
+            radius: "95%",
+            plugins: { legend: { display: false } }
         }
     });
 
-    // ---------- Refreshers ----------
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=total`);
 
@@ -612,22 +570,22 @@
         const aiCount      = Number(kpi.ai_count ?? 0);
         const blockedCount = Number(kpi.blocked_count ?? 0);
 
-        kpiPolicy.textContent  = policyCount;
-        kpiAi.textContent      = aiCount;
+        kpiPolicy.textContent = policyCount;
+        kpiAi.textContent = aiCount;
         kpiBlocked.textContent = blockedCount;
 
-        kpiPolicyDelta.textContent  = fmtDelta(kpi.policy_delta);
-        kpiAiDelta.textContent      = fmtDelta(kpi.ai_delta);
+        kpiPolicyDelta.textContent = fmtDelta(kpi.policy_delta);
+        kpiAiDelta.textContent = fmtDelta(kpi.ai_delta);
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
-        const total = blockedCount + aiCount;
-        if (kpiTotalBlocked) kpiTotalBlocked.textContent = blockedCount;
-        if (kpiTotalAi) kpiTotalAi.textContent = aiCount;
-        if (sysTotalText) sysTotalText.textContent = total;
-        if (donutTotalText) donutTotalText.textContent = total;
+        const total = aiCount + blockedCount;
+        kpiTotalAi.textContent = aiCount;
+        kpiTotalBlocked.textContent = blockedCount;
+        sysTotalText.textContent = total;
+        donutTotalText.textContent = total;
 
-        const totalDelta = Number(kpi.blocked_delta ?? 0) + Number(kpi.ai_delta ?? 0);
-        if (dailyDeltaText) dailyDeltaText.textContent = fmtDelta(totalDelta);
+        const totalDelta = Number(kpi.ai_delta ?? 0) + Number(kpi.blocked_delta ?? 0);
+        dailyDeltaText.textContent = fmtDelta(totalDelta);
 
         chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
         chartBlockedRatio.update();
@@ -641,15 +599,11 @@
         chartTimeseries.data.datasets[1].data = ts.regex ?? [];
         chartTimeseries.data.datasets[2].data = ts.total ?? [];
         chartTimeseries.update();
-
-        if (dailyGranText) dailyGranText.textContent =
-        (gran === "day" ? "일별" : (gran === "week" ? "주별" : "월별"));
     }
 
     async function refreshTopDomains(){
         const gran = state.dom;
         const dom = await getJSON(`/api/top-domains/?gran=${gran}&limit=10`);
-
         chartTopDomains.data.labels = (dom.labels ?? []).map(v => String(v ?? ""));
         chartTopDomains.data.datasets[0].data = dom.values ?? [];
         chartTopDomains.update();
@@ -658,7 +612,6 @@
     async function refreshTopRegex(){
         const gran = state.rx;
         const rx = await getJSON(`/api/top-regex/?gran=${gran}&limit=10`);
-
         chartTopRegex.data.labels = (rx.labels ?? []).map(v => String(v ?? ""));
         chartTopRegex.data.datasets[0].data = rx.values ?? [];
         chartTopRegex.update();
@@ -666,38 +619,44 @@
 
     async function refreshIps(){
         const ip = await getJSON(`/api/top-ips/?window_minutes=10&limit=10`);
-        if (ipWindowText) ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
+        ipWindowText.textContent = `최근 ${ip.window_minutes ?? 10}분`;
         chartTopIps.data.labels = ip.labels ?? [];
         chartTopIps.data.datasets[0].data = ip.values ?? [];
         chartTopIps.update();
     }
 
-    async function safe(fn){ try { await fn(); } catch(e){ console.error(e); } }
+    async function safe(name, fn){
+        try {
+            await fn();
+        } catch(e) {
+            console.error(`[${name}]`, e);
+        }
+    }
 
     async function refreshAll(){
         await Promise.all([
-        safe(refreshKpi),
-        safe(refreshTimeseries),
-        safe(refreshTopDomains),
-        safe(refreshTopRegex),
-        safe(refreshIps),
+            safe("kpi", refreshKpi),
+            safe("timeseries", refreshTimeseries),
+            safe("topDomains", refreshTopDomains),
+            safe("topRegex", refreshTopRegex),
+            safe("topIps", refreshIps),
         ]);
     }
 
     function bindGranButtons(){
-        document.querySelectorAll(".btn-group[data-ctl]").forEach(group=>{
-        const ctl = group.dataset.ctl;
-        group.querySelectorAll("button[data-gran]").forEach(btn=>{
-            btn.addEventListener("click", async ()=>{
-            group.querySelectorAll("button").forEach(b=>b.classList.remove("active"));
-            btn.classList.add("active");
-            state[ctl] = btn.dataset.gran;
+        document.querySelectorAll(".btn-group[data-ctl]").forEach(group => {
+            const ctl = group.dataset.ctl;
+            group.querySelectorAll("button[data-gran]").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    state[ctl] = btn.dataset.gran;
 
-            if(ctl === "ts") await safe(refreshTimeseries);
-            if(ctl === "dom") await safe(refreshTopDomains);
-            if(ctl === "rx") await safe(refreshTopRegex);
+                    if (ctl === "ts") await safe("timeseries", refreshTimeseries);
+                    if (ctl === "dom") await safe("topDomains", refreshTopDomains);
+                    if (ctl === "rx") await safe("topRegex", refreshTopRegex);
+                });
             });
-        });
         });
     }
 
