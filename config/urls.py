@@ -22,15 +22,12 @@ from .views_auth import login_view, logout_view, otp_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
-    # ✅ 임시 대시보드
     path("", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
 
     path("login/", login_view, name="login"),
-     path("otp/", otp_view, name="otp"),
+    path("otp/", otp_view, name="otp"),
     path("logout/", logout_view, name="logout"),
 
-    # ✅ 각 앱 임시 페이지
     path("policy/", include("policy.urls")),
     path("policy-history/", include("policy_history.urls")),
     path("ai/", include("ai_analysis_result.urls"), name="ai"),
