@@ -1,13 +1,6 @@
-<!-- templates/ai/_ai_log_partial.html
-AI 로그 리스트 partial
-Ajax fetch로 listArea만 교체할 때 사용
--->
+<!-- templates/ai/ai_log_partial.html -->
 
-<!-- ===============================
-테이블 상단 바
-=============================== -->
 <div class="table-topbar" id="topbarArea">
-
     <div class="text-muted">
         조회 : {{ page_obj.paginator.count }}건
     </div>
@@ -20,224 +13,158 @@ Ajax fetch로 listArea만 교체할 때 사용
             최신순
         </a>
     </div>
-
 </div>
 
-
-
-<!-- ===============================
-테이블 영역
-=============================== -->
 <div class="table-viewport table-responsive text-nowrap">
+    <table class="table table-hover align-middle mb-0" id="aiTable">
+        <thead>
+            <tr>
+                <th style="width:70px;">no</th>
+                <th>도메인</th>
+                <th>AI판단 결과</th>
+                <th class="text-center">판단 확률</th>
+                <th class="text-center">관리자 검토 결과</th>
+                <th class="text-center">정책 타입</th>
+                <th class="text-center">정책 추가 시간</th>
+                <th class="text-center">AI결과 로그 시간</th>
+                <th class="text-center">검토 여부</th>
+                <th class="text-center">작성자</th>
+            </tr>
+        </thead>
 
-<table class="table table-hover align-middle mb-0" id="aiTable">
+        <tbody id="rowsArea">
+            {% for row in page_obj %}
+            <tr class="js-row" style="cursor:pointer;"
+                data-id="{{ row.id }}"
+                data-domain="{{ row.domain|default:'' }}"
+                data-request-url="{{ row.request_url|default:'' }}"
+                data-confidence="{{ row.confidence_score|default:'' }}"
+                data-is-checked="{% if row.is_checked %}true{% else %}false{% endif %}"
+                data-checked-result="{{ row.checked_result|default:'' }}"
+                data-policy-type="{{ row.policy_type|default:'' }}"
+                data-applied-at="{% if row.applied_at %}{{ row.applied_at|date:'Y-m-d H:i' }}{% endif %}"
+                data-last-seen="{% if row.last_seen %}{{ row.last_seen|date:'Y-m-d H:i' }}{% endif %}"
+                data-admin="{{ row.admin|default:'' }}"
+                data-ai-result="{% if row.confidence_score is not None %}{% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}{% else %}-{% endif %}"
+                data-hit-count="{{ row.hit_count|default:1 }}"
+            >
+                <td class="fw-semibold">
+                    {{ page_obj.start_index|add:forloop.counter0 }}
+                </td>
 
-<thead>
-<tr>
-    <th style="width:70px;">no</th>
-    <th>도메인</th>
-    <th>AI판단 결과</th>
-    <th class="text-center">판단 확률</th>
-    <th class="text-center">관리자 검토 결과</th>
-    <th class="text-center">정책 타입</th>
-    <th class="text-center">정책 추가 시간</th>
-    <th class="text-center">AI결과 로그 시간</th>
-    <th class="text-center">검토 여부</th>
-    <th class="text-center">작성자</th>
-</tr>
-</thead>
+                <td class="cell-truncate-sm domain-cell">
+                    {{ row.domain|default:"-" }}
+                    {% if row.hit_count|default:0 > 1 %}
+                    <span class="dup-badge">
+                        {{ row.hit_count }}건
+                    </span>
+                    {% endif %}
+                </td>
 
+                <td>
+                    {% if row.confidence_score is not None %}
+                        {% if row.confidence_score >= 50 %}
+                            Harmful
+                        {% else %}
+                            Not harm
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
 
+                <td class="text-center">
+                    {% if row.confidence_score is not None %}
+                        {{ row.confidence_score }}%
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
 
-<tbody id="rowsArea">
+                <td class="text-center">
+                    {{ row.checked_result|default:"-" }}
+                </td>
 
-{% for row in page_obj %}
+                <td class="text-center">
+                    {{ row.policy_type|default:"-" }}
+                </td>
 
-<!-- row dataset (JS 상세패널용) -->
-<tr class="js-row" style="cursor:pointer;"
-    data-id="{{ row.id }}"
-    data-domain="{{ row.domain|default:'' }}"
-    data-request-url="{{ row.request_url|default:'' }}"
-    data-confidence="{{ row.confidence_score|default:'' }}"
-    data-is-checked="{% if row.is_checked %}true{% else %}false{% endif %}"
-    data-checked-result-hidden="{{ row.checked_result|default:'' }}"
-    data-policy-type="{{ row.policy_type|default:'' }}"
-    data-applied-at="{% if row.applied_at %}{{ row.applied_at|date:'Y-m-d H:i' }}{% endif %}"
-    data-create-at="{% if row.create_at %}{{ row.create_at|date:'Y-m-d H:i' }}{% endif %}"
-    data-admin="{{ row.admin|default:'' }}"
-    data-ai-result="{% if row.confidence_score is not None %}{% if row.confidence_score >= 50 %}Harmful{% else %}Not harm{% endif %}{% else %}-{% endif %}"
-    data-hit-count="{{ row.hit_count|default:1 }}"
->
+                <td class="text-center">
+                    {% if row.applied_at %}
+                        {{ row.applied_at|date:"Y/m/d H:i" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
 
-<td class="fw-semibold">
-{{ page_obj.start_index|add:forloop.counter0 }}
-</td>
+                <td class="text-center">
+                    {% if row.last_seen %}
+                        {{ row.last_seen|date:"Y/m/d H:i" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
 
+                <td class="text-center">
+                    {% if row.is_checked %}
+                        검토됨
+                    {% else %}
+                        미검토
+                    {% endif %}
+                </td>
 
-
-<td class="cell-truncate-sm domain-cell">
-
-{{ row.domain }}
-
-{% if row.hit_count|default:0 > 1 %}
-<span class="dup-badge">
-{{ row.hit_count }}건
-</span>
-{% endif %}
-
-</td>
-
-
-
-<td>
-
-{% if row.confidence_score is not None %}
-    {% if row.confidence_score >= 50 %}
-        Harmful
-    {% else %}
-        Not harm
-    {% endif %}
-{% else %}
--
-{% endif %}
-
-</td>
-
-
-
-<td class="text-center">
-
-{% if row.confidence_score is not None %}
-{{ row.confidence_score }}%
-{% else %}
--
-{% endif %}
-
-</td>
-
-
-
-<td class="text-center">
-{{ row.checked_result|default:"-" }}
-</td>
-
-
-
-<td class="text-center">
-{{ row.policy_type|default:"-" }}
-</td>
-
-
-
-<td class="text-center">
-
-{% if row.applied_at %}
-{{ row.applied_at|date:"Y/m/d H:i" }}
-{% else %}
--
-{% endif %}
-
-</td>
-
-
-
-<td class="text-center">
-
-{% if row.create_at %}
-{{ row.create_at|date:"Y/m/d H:i" }}
-{% else %}
--
-{% endif %}
-
-</td>
-
-
-
-<td class="text-center">
-
-{% if row.is_checked %}
-검토됨
-{% else %}
-미검토
-{% endif %}
-
-</td>
-
-
-
-<td class="text-center">
-{{ row.admin|default:"-" }}
-</td>
-
-</tr>
-
-
-
-{% empty %}
-
-<tr>
-<td colspan="10" class="text-center text-muted py-4">
-조회 결과가 없습니다.
-</td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-</table>
-
+                <td class="text-center">
+                    {{ row.admin|default:"-" }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">
+                    조회 결과가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
-
-
-<!-- ===============================
-페이지네이션
-=============================== -->
 <div class="pager" id="pagerArea">
+    <div class="text-muted">
+        총 {{ page_obj.paginator.count }}건 ·
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+    </div>
 
-<div class="text-muted">
-총 {{ page_obj.paginator.count }}건 ·
-{{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-</div>
+    <nav>
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">
+                    이전
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">이전</span>
+            </li>
+            {% endif %}
 
-<nav>
-<ul class="pagination mb-0">
+            <li class="page-item disabled">
+                <span class="page-link">
+                    {{ page_obj.number }}
+                </span>
+            </li>
 
-{% if page_obj.has_previous %}
-<li class="page-item">
-<a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">
-이전
-</a>
-</li>
-{% else %}
-<li class="page-item disabled">
-<span class="page-link">이전</span>
-</li>
-{% endif %}
-
-
-
-<li class="page-item disabled">
-<span class="page-link">
-{{ page_obj.number }}
-</span>
-</li>
-
-
-
-{% if page_obj.has_next %}
-<li class="page-item">
-<a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">
-다음
-</a>
-</li>
-{% else %}
-<li class="page-item disabled">
-<span class="page-link">다음</span>
-</li>
-{% endif %}
-
-</ul>
-</nav>
-
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">
+                    다음
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">다음</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>

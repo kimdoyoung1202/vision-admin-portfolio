@@ -19,190 +19,243 @@
 
     <style>
         :root{
-        --sneat-bg: #f5f6fa;
-        --card-bg: #ffffff;
-        --text: #566a7f;
-        --muted: #a1acb8;
-        --primary: #696cff;
-        --primary-2: #5f61e6;
-        --border: #e7e7ff;
-        --shadow: 0 10px 26px rgba(67, 89, 113, 0.14);
+            --sneat-bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #566a7f;
+            --muted: #a1acb8;
+            --primary: #696cff;
+            --primary-2: #5f61e6;
+            --border: #e7e7ff;
+            --shadow: 0 10px 26px rgba(67, 89, 113, 0.14);
         }
 
         *{ box-sizing: border-box; }
         html, body{ height: 100%; }
         body{
-        margin: 0;
-        font-family: "Public Sans", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
-        color: var(--text);
-        background: var(--sneat-bg);
+            margin: 0;
+            font-family: "Public Sans", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+            color: var(--text);
+            background: var(--sneat-bg);
         }
 
         .bg-orb{
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        overflow: hidden;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
         }
         .bg-orb:before, .bg-orb:after{
-        content:"";
-        position:absolute;
-        width: 520px;
-        height: 520px;
-        border-radius: 50%;
-        opacity: .22;
-        background: radial-gradient(circle at 30% 30%, rgba(105,108,255,.95), rgba(105,108,255,0) 60%);
-        transform: translate3d(0,0,0);
+            content:"";
+            position:absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            opacity: .22;
+            background: radial-gradient(circle at 30% 30%, rgba(105,108,255,.95), rgba(105,108,255,0) 60%);
+            transform: translate3d(0,0,0);
         }
         .bg-orb:before{
-        top: -180px;
-        right: -180px;
+            top: -180px;
+            right: -180px;
         }
         .bg-orb:after{
-        bottom: -200px;
-        left: -200px;
-        opacity: .16;
-        background: radial-gradient(circle at 30% 30%, rgba(105,108,255,.75), rgba(105,108,255,0) 60%);
+            bottom: -200px;
+            left: -200px;
+            opacity: .16;
+            background: radial-gradient(circle at 30% 30%, rgba(105,108,255,.75), rgba(105,108,255,0) 60%);
         }
 
         .wrap{
-        min-height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
         }
 
         .login-card{
-        width: 100%;
-        max-width: 420px;
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
-        overflow: hidden;
+            width: 100%;
+            max-width: 420px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
 
         .login-header{
-        padding: 18px 18px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+            padding: 18px 18px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
 
         .brand{
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
         }
 
         .brand-badge{
-        width: 40px;
-        height: 40px;
-        border-radius: 14px;
-        display: grid;
-        place-items: center;
-        background: rgba(105,108,255,.12);
-        border: 1px solid rgba(105,108,255,.22);
-        color: var(--primary);
-        font-weight: 800;
-        letter-spacing: .5px;
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: rgba(105,108,255,.12);
+            border: 1px solid rgba(105,108,255,.22);
+            color: var(--primary);
+            font-weight: 800;
+            letter-spacing: .5px;
         }
 
         .brand-title{
-        font-weight: 800;
-        color: #2f3a45;
-        line-height: 1.1;
-        margin: 0;
-        font-size: 16px;
+            font-weight: 800;
+            color: #2f3a45;
+            line-height: 1.1;
+            margin: 0;
+            font-size: 16px;
         }
 
         .brand-sub{
-        margin: 2px 0 0;
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 700;
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
         }
 
         .login-body{
-        padding: 14px 18px 18px;
+            padding: 14px 18px 18px;
+        }
+
+        .section-title{
+            font-size: 22px;
+            font-weight: 800;
+            color: #2f3a45;
+            margin-bottom: 8px;
+        }
+
+        .section-desc{
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.6;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .section-desc strong{
+            color: var(--primary);
+            word-break: break-all;
         }
 
         .form-label{
-        font-weight: 800;
-        font-size: 12px;
-        color: #2f3a45;
-        margin-bottom: 6px;
+            font-weight: 800;
+            font-size: 12px;
+            color: #2f3a45;
+            margin-bottom: 6px;
         }
 
         .form-control{
-        border-radius: 12px;
-        border-color: rgba(105,108,255,.18);
-        padding: .7rem .9rem;
-        font-weight: 600;
-        color: #2f3a45;
+            border-radius: 12px;
+            border-color: rgba(105,108,255,.18);
+            padding: .7rem .9rem;
+            font-weight: 600;
+            color: #2f3a45;
         }
 
         .form-control:focus{
-        box-shadow: 0 0 0 .18rem rgba(105,108,255,.16);
-        border-color: rgba(105,108,255,.42);
+            box-shadow: 0 0 0 .18rem rgba(105,108,255,.16);
+            border-color: rgba(105,108,255,.42);
         }
 
         .input-group .btn{
-        border-radius: 12px;
-        border-color: rgba(105,108,255,.18);
-        color: var(--primary);
-        font-weight: 900;
+            border-radius: 12px;
+            border-color: rgba(105,108,255,.18);
+            color: var(--primary);
+            font-weight: 900;
         }
 
         .input-group .btn:hover{
-        background: rgba(105,108,255,.08);
+            background: rgba(105,108,255,.08);
         }
 
         .btn-primary{
-        background: var(--primary);
-        border-color: var(--primary);
-        border-radius: 12px;
-        font-weight: 900;
-        padding: .7rem .9rem;
+            background: var(--primary);
+            border-color: var(--primary);
+            border-radius: 12px;
+            font-weight: 900;
+            padding: .7rem .9rem;
         }
 
         .btn-primary:hover{
-        background: var(--primary-2);
-        border-color: var(--primary-2);
+            background: var(--primary-2);
+            border-color: var(--primary-2);
+        }
+
+        .btn-lightish{
+            border-radius: 12px;
+            font-weight: 800;
+            padding: .7rem .9rem;
+            border: 1px solid rgba(105,108,255,.18);
+            background: #fff;
+            color: #566a7f;
+        }
+
+        .btn-lightish:hover{
+            background: rgba(105,108,255,.05);
         }
 
         .tiny{
-        font-size: 12px;
-        color: var(--muted);
-        font-weight: 700;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
         }
 
         .field-error{
-        margin-top: 6px;
-        font-size: 12px;
-        color: #dc3545;
-        font-weight: 800;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #dc3545;
+            font-weight: 800;
         }
 
         .alert{
-        border-radius: 14px;
-        font-weight: 800;
-        font-size: 13px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .helper-box{
+            background: rgba(105,108,255,.06);
+            border: 1px solid rgba(105,108,255,.12);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
         }
 
         .footer-note{
-        padding: 12px 18px 16px;
-        border-top: 1px dashed rgba(105,108,255,.18);
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 700;
-        display:flex;
-        align-items:center;
-        justify-content: space-between;
-        gap: 10px;
+            padding: 12px 18px 16px;
+            border-top: 1px dashed rgba(105,108,255,.18);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            display:flex;
+            align-items:center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .d-none-force{
+            display: none !important;
+        }
+
+        .spinner-border-sm{
+            width: 1rem;
+            height: 1rem;
         }
     </style>
 </head>
@@ -218,7 +271,7 @@
                     <div class="brand-badge">V</div>
                     <div>
                         <p class="brand-title mb-0">VISION Admin</p>
-                        <p class="brand-sub mb-0">운영자 콘솔 로그인</p>
+                        <p class="brand-sub mb-0" id="headerSub">운영자 콘솔 로그인</p>
                     </div>
                 </div>
                 <div class="tiny">
@@ -227,76 +280,101 @@
             </div>
 
             <div class="login-body">
+                <div id="alertArea"></div>
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
-                            <i class="bx bx-error-circle" style="font-size:18px;"></i>
-                            <div>{{ message }}</div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                {% if form_error %}
-                    <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
-                        <i class="bx bx-error-circle" style="font-size:18px;"></i>
-                        <div>{{ form_error }}</div>
-                    </div>
-                {% endif %}
-
-                <form method="post">
-                    {% csrf_token %}
-
-                    <input type="hidden" name="next" value="{{ next }}">
-
-                    <div class="mb-3">
-                        <label class="form-label" for="id_username">아이디</label>
-                        <input
-                            type="text"
-                            name="username"
-                            id="id_username"
-                            class="form-control {% if field_errors.username %}is-invalid{% endif %}"
-                            placeholder="username"
-                            value="{{ username|default:'' }}"
-                            autocomplete="username"
-                            required
-                        />
-                        {% if field_errors.username %}
-                            <div class="field-error">{{ field_errors.username }}</div>
-                        {% endif %}
+                <div id="loginSection">
+                    <div class="section-title">로그인</div>
+                    <div class="section-desc">
+                        관리자 계정으로 로그인한 뒤 2차 인증을 진행합니다.
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label" for="id_password">비밀번호</label>
-                        <div class="input-group">
+                    <form method="post" id="loginForm" action="{% url 'login' %}" target="_self">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ next|default:'/' }}">
+
+                        <div class="mb-3">
+                            <label class="form-label" for="id_username">아이디</label>
                             <input
-                                type="password"
-                                name="password"
-                                id="id_password"
-                                class="form-control {% if field_errors.password %}is-invalid{% endif %}"
-                                placeholder="••••••••"
-                                autocomplete="current-password"
+                                type="text"
+                                name="username"
+                                id="id_username"
+                                class="form-control"
+                                placeholder="username"
+                                value="{{ username|default:'' }}"
+                                autocomplete="username"
                                 required
                             />
-                            <button class="btn btn-outline-secondary" type="button" id="togglePw" aria-label="Show password">
-                                <i class="bx bx-show" style="font-size:18px;"></i>
-                            </button>
+                            <div class="field-error d-none-force" id="usernameError"></div>
                         </div>
-                        {% if field_errors.password %}
-                            <div class="field-error">{{ field_errors.password }}</div>
-                        {% endif %}
+
+                        <div class="mb-2">
+                            <label class="form-label" for="id_password">비밀번호</label>
+                            <div class="input-group">
+                                <input
+                                    type="password"
+                                    name="password"
+                                    id="id_password"
+                                    class="form-control"
+                                    placeholder="••••••••"
+                                    autocomplete="current-password"
+                                    required
+                                />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePw" aria-label="Show password">
+                                    <i class="bx bx-show" style="font-size:18px;"></i>
+                                </button>
+                            </div>
+                            <div class="field-error d-none-force" id="passwordError"></div>
+                        </div>
+
+                        <div class="tiny mb-3">
+                            <i class="bx bx-shield-quarter"></i>
+                            보안을 위해 브라우저 종료 시 자동 로그아웃됩니다.
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="loginSubmitBtn">
+                            <i class="bx bx-log-in"></i> 로그인
+                        </button>
+                    </form>
+                </div>
+
+                <div id="otpSection" class="d-none-force">
+                    <div class="section-title">OTP 인증</div>
+                    <div class="section-desc">
+                        <strong id="otpEmailText"></strong>로 전송된 6자리 인증 코드를 입력하세요.
                     </div>
 
-                    <div class="tiny mb-3">
-                        <i class="bx bx-shield-quarter"></i>
-                        보안을 위해 브라우저 종료 시 자동 로그아웃됩니다.
+                    <div class="helper-box">
+                        <i class="bx bx-info-circle"></i>
+                        메일이 보이지 않으면 스팸함도 함께 확인해 주세요.
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bx bx-log-in"></i> 로그인
-                    </button>
-                </form>
+                    <form method="post" id="otpForm" action="{% url 'otp' %}" target="_self">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="id_otp">OTP 코드</label>
+                            <input
+                                type="text"
+                                name="otp"
+                                id="id_otp"
+                                maxlength="6"
+                                class="form-control"
+                                placeholder="6자리 인증 코드 입력"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                required
+                            >
+                            <div class="field-error d-none-force" id="otpError"></div>
+                        </div>
 
+                        <button type="submit" class="btn btn-primary w-100 mb-2" id="otpSubmitBtn">
+                            <i class="bx bx-check-shield"></i> 로그인 완료
+                        </button>
+
+                        <button type="button" class="btn btn-lightish w-100" id="backToLoginBtn">
+                            <i class="bx bx-arrow-back"></i> 다시 로그인 입력
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <div class="footer-note">
@@ -309,16 +387,196 @@
 
     <script>
         (function(){
-            const btn = document.getElementById("togglePw");
-            const pw = document.getElementById("id_password");
+            const loginForm = document.getElementById("loginForm");
+            const otpForm = document.getElementById("otpForm");
+
+            const loginSection = document.getElementById("loginSection");
+            const otpSection = document.getElementById("otpSection");
+
+            const alertArea = document.getElementById("alertArea");
+            const otpEmailText = document.getElementById("otpEmailText");
+            const headerSub = document.getElementById("headerSub");
+
+            const usernameInput = document.getElementById("id_username");
+            const passwordInput = document.getElementById("id_password");
+            const otpInput = document.getElementById("id_otp");
+
+            const usernameError = document.getElementById("usernameError");
+            const passwordError = document.getElementById("passwordError");
+            const otpError = document.getElementById("otpError");
+
+            const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+            const otpSubmitBtn = document.getElementById("otpSubmitBtn");
+            const backToLoginBtn = document.getElementById("backToLoginBtn");
+
+            const togglePw = document.getElementById("togglePw");
+
             let shown = false;
 
-            btn.addEventListener("click", function(){
+            togglePw.addEventListener("click", function(){
                 shown = !shown;
-                pw.type = shown ? "text" : "password";
-                btn.innerHTML = shown
+                passwordInput.type = shown ? "text" : "password";
+                togglePw.innerHTML = shown
                     ? '<i class="bx bx-hide" style="font-size:18px;"></i>'
                     : '<i class="bx bx-show" style="font-size:18px;"></i>';
+            });
+
+            function showAlert(message, type="danger"){
+                alertArea.innerHTML = `
+                    <div class="alert alert-${type} d-flex align-items-center gap-2" role="alert">
+                        <i class="bx ${type === "success" ? "bx-check-circle" : "bx-error-circle"}" style="font-size:18px;"></i>
+                        <div>${message}</div>
+                    </div>
+                `;
+            }
+
+            function clearAlert(){
+                alertArea.innerHTML = "";
+            }
+
+            function hideError(el){
+                el.textContent = "";
+                el.classList.add("d-none-force");
+            }
+
+            function showError(el, msg){
+                el.textContent = msg || "";
+                el.classList.remove("d-none-force");
+            }
+
+            function clearLoginErrors(){
+                hideError(usernameError);
+                hideError(passwordError);
+                usernameInput.classList.remove("is-invalid");
+                passwordInput.classList.remove("is-invalid");
+            }
+
+            function clearOtpErrors(){
+                hideError(otpError);
+                otpInput.classList.remove("is-invalid");
+            }
+
+            function setButtonLoading(btn, loading, textHtml){
+                if (loading){
+                    btn.disabled = true;
+                    btn.dataset.originalHtml = btn.innerHTML;
+                    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>${textHtml}`;
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalHtml || textHtml;
+                }
+            }
+
+            function showOtpSection(email){
+                loginSection.classList.add("d-none-force");
+                otpSection.classList.remove("d-none-force");
+                otpEmailText.textContent = email || "";
+                headerSub.textContent = "2단계 인증 확인";
+                clearAlert();
+                clearOtpErrors();
+                otpInput.focus();
+            }
+
+            function showLoginSection(){
+                otpSection.classList.add("d-none-force");
+                loginSection.classList.remove("d-none-force");
+                headerSub.textContent = "운영자 콘솔 로그인";
+                clearAlert();
+                clearOtpErrors();
+                passwordInput.focus();
+            }
+
+            loginForm.addEventListener("submit", async function(e){
+                e.preventDefault();
+                clearAlert();
+                clearLoginErrors();
+
+                const formData = new FormData(loginForm);
+
+                try{
+                    setButtonLoading(loginSubmitBtn, true, "로그인 확인 중...");
+
+                    const response = await fetch(loginForm.action, {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
+                        body: formData,
+                        credentials: "same-origin"
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.ok){
+                        if (data.field_errors){
+                            if (data.field_errors.username){
+                                usernameInput.classList.add("is-invalid");
+                                showError(usernameError, data.field_errors.username);
+                            }
+                            if (data.field_errors.password){
+                                passwordInput.classList.add("is-invalid");
+                                showError(passwordError, data.field_errors.password);
+                            }
+                        }
+
+                        showAlert(data.message || "로그인 처리 중 오류가 발생했습니다.");
+                        return;
+                    }
+
+                    showAlert(data.message || "인증 코드가 발송되었습니다.", "success");
+                    showOtpSection(data.email);
+
+                } catch (err){
+                    showAlert("서버 통신 중 오류가 발생했습니다.");
+                } finally {
+                    setButtonLoading(loginSubmitBtn, false, "로그인");
+                }
+            });
+
+            otpForm.addEventListener("submit", async function(e){
+                e.preventDefault();
+                clearAlert();
+                clearOtpErrors();
+
+                const formData = new FormData(otpForm);
+
+                try{
+                    setButtonLoading(otpSubmitBtn, true, "인증 확인 중...");
+
+                    const response = await fetch(otpForm.action, {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
+                        body: formData,
+                        credentials: "same-origin"
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.ok){
+                        otpInput.classList.add("is-invalid");
+                        showError(otpError, data.message || "OTP 인증에 실패했습니다.");
+                        showAlert(data.message || "OTP 인증에 실패했습니다.");
+                        return;
+                    }
+
+                    showAlert(data.message || "인증 완료", "success");
+                    window.location.href = data.redirect_url || "/";
+
+                } catch (err){
+                    showAlert("서버 통신 중 오류가 발생했습니다.");
+                } finally {
+                    setButtonLoading(otpSubmitBtn, false, "로그인 완료");
+                }
+            });
+
+            backToLoginBtn.addEventListener("click", function(){
+                showLoginSection();
+            });
+
+            otpInput.addEventListener("input", function(){
+                this.value = this.value.replace(/[^0-9]/g, "").slice(0, 6);
             });
         })();
     </script>

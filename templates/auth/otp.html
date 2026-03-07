@@ -246,14 +246,6 @@
                     <strong>{{ email }}</strong>로 전송된 6자리 인증 코드를 입력하세요.
                 </div>
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
-                            <i class="bx bx-error-circle" style="font-size:18px;"></i>
-                            <div>{{ message }}</div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
 
                 <div class="helper-box">
                     <i class="bx bx-info-circle"></i>
