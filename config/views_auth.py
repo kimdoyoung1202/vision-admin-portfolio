@@ -1,7 +1,9 @@
 import random
 import smtplib
+import threading
 from email.mime.text import MIMEText
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.http import JsonResponse
@@ -14,22 +16,40 @@ def send_otp_email(to_email, otp_code):
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
 
-    gmail_id = "qudcks3655@gmail.com"
-    gmail_password = "vhnq qciu bqgz qxpy"
+    gmail_id =  "qudcks3655@gmail.com"
+    gmail_password = "udbd ozof thsk jmyt"
 
     subject = "OTP 인증 코드"
     body = f"인증 코드는 {otp_code} 입니다."
 
-    msg = MIMEText(body)
+    msg = MIMEText(body, _charset="utf-8")
     msg["Subject"] = subject
     msg["From"] = gmail_id
     msg["To"] = to_email
 
-    server = smtplib.SMTP(smtp_server, smtp_port)
-    server.starttls()
-    server.login(gmail_id, gmail_password)
-    server.sendmail(gmail_id, to_email, msg.as_string())
-    server.quit()
+    server = None
+    try:
+        server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(gmail_id, gmail_password)
+        server.sendmail(gmail_id, [to_email], msg.as_string())
+    finally:
+        if server:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
+
+def send_otp_email_async(to_email, otp_code):
+    t = threading.Thread(
+        target=send_otp_email,
+        args=(to_email, otp_code),
+        daemon=True,
+    )
+    t.start()
 
 
 def _is_ajax(request):
@@ -103,7 +123,8 @@ def login_view(request):
         request.session["otp_email"] = user.email
         request.session["next_url"] = next_url
 
-        send_otp_email(user.email, otp_code)
+        # 기존: send_otp_email(user.email, otp_code)
+        send_otp_email_async(user.email, otp_code)
 
         if _is_ajax(request):
             return JsonResponse({

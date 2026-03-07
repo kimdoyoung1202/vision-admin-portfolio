@@ -87,7 +87,7 @@ DATABASES = {
         'NAME': 'SecurityAdmin',
         'USER': 'ktech',
         'PASSWORD': 'ktech!@#$',
-        'HOST': '192.168.1.43',
+        'HOST': '192.168.100.25',
         'PORT': '3306',
         'OPTIONS':{
             'charset': 'utf8mb4',

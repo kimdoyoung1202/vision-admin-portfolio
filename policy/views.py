@@ -185,6 +185,9 @@ def policy_add(request):
             })
 
         with transaction.atomic():
+
+            now = timezone.now()
+            admin_name = request.user.username if request.user.is_authenticated else "system"
             new_policy_id = generate_policy_id(policy_type)
 
             data = {
@@ -204,14 +207,31 @@ def policy_add(request):
 
             Policy.objects.create(**data)
 
-            if ai_id and ai_row:
+            if policy_type == "DOMAIN":
+                AiAnalysisResult.objects.filter(
+                    domain__iexact=content
+                ).update(
+                    is_checked=True,
+                    checked_result="ADD",
+                    policy_type="DOMAIN",
+                    applied_at=now,
+                    admin=admin_name,
+                )
+
+            # REGEX 정책이면 현재 선택한 행 1건만 처리 (원하면 나중에 확장)
+            elif policy_type == "REGEX" and ai_id and ai_row:
                 ai_row.is_checked = True
                 ai_row.checked_result = "ADD"
-                ai_row.policy_type = policy_type
-                ai_row.applied_at = timezone.now()
-                ai_row.admin = request.user.username if request.user.is_authenticated else "system"
-                ai_row.save(update_fields=["is_checked", "checked_result", "policy_type", "applied_at", "admin"])
-
+                ai_row.policy_type = "REGEX"
+                ai_row.applied_at = now
+                ai_row.admin = admin_name
+                ai_row.save(update_fields=[
+                    "is_checked",
+                    "checked_result",
+                    "policy_type",
+                    "applied_at",
+                    "admin",
+                ])
         try:
             send_reload_signal("reload")
             messages.success(request, "정책이 추가되었습니다. (엔진 반영 완료)")
