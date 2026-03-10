@@ -6,7 +6,6 @@
 
 {% block extra_css %}
 <style>
-    /* 한 화면 고정 */
     .logs-page{
         --topbarH: 64px;
         --gap: 10px;
@@ -23,7 +22,6 @@
 
     .logs-page .card{ margin-bottom: var(--gap) !important; }
 
-    /* 필터 카드 */
     .filter-card .card-body{ padding: 10px 12px 8px; }
     .filter-card .form-label{
         margin-bottom: 6px;
@@ -49,7 +47,6 @@
     .radio-line input{ margin-top:0; }
     input[type="datetime-local"]{ max-width:220px; }
 
-    /* 작업영역 */
     .workspace{
         height: calc(100% - 148px);
         display: flex;
@@ -101,8 +98,18 @@
         padding-bottom: 8px;
     }
 
-    .cell-truncate{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cell-truncate{
+        max-width:520px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+    .cell-truncate-sm{
+        max-width:220px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
 
     .pager-bar{
         height: var(--pagerH);
@@ -113,12 +120,16 @@
     }
     .pagination{ margin-bottom:0 !important; }
 
-    /* 상세 */
     .detail-card{ height: 100%; overflow: hidden; }
     .detail-card .card-body{
         padding: 10px 12px;
         height: 100%;
         overflow: hidden;
+    }
+    .detail-title{
+        font-weight: 800;
+        font-size: .98rem;
+        margin-bottom: .65rem;
     }
     .detail-k{
         color:#6c757d;
@@ -143,139 +154,130 @@
 {% block content %}
 <div class="container-fluid logs-page">
 
-    <!-- 필터 카드 -->
     <div class="card filter-card">
         <div class="card-body">
         <form method="get" class="row g-2 align-items-end" id="logsFilterForm">
             <div class="col-xl-4 col-lg-6">
-            <label class="form-label">URL/도메인</label>
-            <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력 :">
+                <label class="form-label">URL/도메인</label>
+                <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력 :">
             </div>
 
             <div class="col-xl-4 col-lg-6">
-            <label class="form-label">URL쿼리 스트링</label>
-            <input class="form-control" name="query_string" value="{{ filters.query_string }}" placeholder="입력 :">
+                <label class="form-label">URL쿼리 스트링</label>
+                <input class="form-control" name="query_string" value="{{ filters.query_string }}" placeholder="입력 :">
             </div>
 
             <div class="col-xl-4 col-lg-6">
-            <label class="form-label">정책 이름/정책 ID</label>
-            <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력 :">
+                <label class="form-label">정책 이름 / 정책 타입 / 정책 내용</label>
+                <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력 :">
             </div>
 
             <div class="col-xl-3 col-lg-6">
-            <label class="form-label">사용자 IP</label>
-            <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력 :">
+                <label class="form-label">사용자 IP</label>
+                <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력 :">
             </div>
 
             <div class="col-xl-2 col-lg-6">
-            <label class="form-label">도메인 / 정규</label>
-            <div class="radio-line">
-                <label class="form-check d-flex align-items-center gap-2">
-                <input class="form-check-input" type="radio" name="policy_type" value="DOMAIN"
-                        {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
-                <span class="form-check-label">도메인</span>
-                </label>
-                <label class="form-check d-flex align-items-center gap-2">
-                <input class="form-check-input" type="radio" name="policy_type" value="REGEX"
-                        {% if filters.policy_type == "REGEX" %}checked{% endif %}>
-                <span class="form-check-label">정규</span>
-                </label>
-            </div>
+                <label class="form-label">도메인 / 정규</label>
+                <div class="radio-line">
+                    <label class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="radio" name="policy_type" value="DOMAIN"
+                               {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
+                        <span class="form-check-label">도메인</span>
+                    </label>
+                    <label class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="radio" name="policy_type" value="REGEX"
+                               {% if filters.policy_type == "REGEX" %}checked{% endif %}>
+                        <span class="form-check-label">정규</span>
+                    </label>
+                </div>
             </div>
 
             <div class="col-xl-2 col-lg-6">
-            <label class="form-label">POST / GET</label>
-            <div class="radio-line">
-                <label class="form-check d-flex align-items-center gap-2">
-                <input class="form-check-input" type="radio" name="method" value="POST"
-                        {% if filters.method == "POST" %}checked{% endif %}>
-                <span class="form-check-label">POST</span>
-                </label>
-                <label class="form-check d-flex align-items-center gap-2">
-                <input class="form-check-input" type="radio" name="method" value="GET"
-                        {% if filters.method == "GET" %}checked{% endif %}>
-                <span class="form-check-label">GET</span>
-                </label>
-            </div>
+                <label class="form-label">POST / GET</label>
+                <div class="radio-line">
+                    <label class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="radio" name="method" value="POST"
+                               {% if filters.method == "POST" %}checked{% endif %}>
+                        <span class="form-check-label">POST</span>
+                    </label>
+                    <label class="form-check d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="radio" name="method" value="GET"
+                               {% if filters.method == "GET" %}checked{% endif %}>
+                        <span class="form-check-label">GET</span>
+                    </label>
+                </div>
             </div>
 
             <div class="col-xl-3 col-lg-12">
-            <label class="form-label">탐지 기간(날짜/시간)</label>
-            <div class="d-flex gap-2 align-items-center">
-                <input class="form-control" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
-                <div class="text-muted">~</div>
-                <input class="form-control" type="datetime-local" name="end_dt" value="{{ filters.end_dt }}">
-            </div>
+                <label class="form-label">탐지 기간(날짜/시간)</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <input class="form-control" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
+                    <div class="text-muted">~</div>
+                    <input class="form-control" type="datetime-local" name="end_dt" value="{{ filters.end_dt }}">
+                </div>
             </div>
 
             <div class="col-auto ms-auto d-flex gap-1">
-            <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
-            <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
+                <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
+                <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
             </div>
         </form>
         </div>
     </div>
 
-    <!-- 본문(테이블 + 상세) -->
     <div class="workspace" id="mainWorkspace">
 
         <div class="table-wrap" id="tableCol">
-        <div class="card list-card">
-            <div class="card-body">
-
-            <!-- 비동기 갱신 대상 영역 -->
-            <div id="logsPartial">
-                {% include "integrated_detection_logs/log_partial.html" %}
-            </div>
-
+            <div class="card list-card">
+                <div class="card-body">
+                    <div id="logsPartial">
+                        {% include "integrated_detection_logs/log_partial.html" %}
+                    </div>
+                </div>
             </div>
         </div>
-        </div>
 
-        <!-- 상세 패널 -->
         <div class="detail-wrap d-none" id="detailCol">
-        <div class="card detail-card">
-            <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="badge bg-label-primary" id="dId">ID</div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+            <div class="card detail-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="detail-title">상세 정보</div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                    </div>
+
+                    <div class="detail-k">URL</div>
+                    <div class="detail-v" id="dRequestUrl">-</div>
+
+                    <div class="detail-k">도메인</div>
+                    <div class="detail-v" id="dDomain">-</div>
+
+                    <div class="detail-k">URL 쿼리스트링</div>
+                    <div class="detail-v" id="dQuery">-</div>
+
+                    <hr>
+
+                    <div class="detail-k">정책 이름</div>
+                    <div class="detail-v" id="dPolicyName">-</div>
+
+                    <div class="detail-k">정책 타입</div>
+                    <div class="detail-v" id="dPolicyType">-</div>
+
+                    <div class="detail-k">정책 내용</div>
+                    <div class="detail-v" id="dPolicyContent">-</div>
+
+                    <hr>
+
+                    <div class="detail-k">서버 포트</div>
+                    <div class="detail-v" id="dDstPort">-</div>
+
+                    <div class="detail-k">메서드</div>
+                    <div class="detail-v" id="dMethod">-</div>
+
+                    <div class="detail-k">로그 추가시간</div>
+                    <div class="detail-v" id="dCreateAt">-</div>
+                </div>
             </div>
-
-            <div class="detail-k">URL</div>
-            <div class="detail-v" id="dRequestUrl">-</div>
-
-            <div class="detail-k">도메인</div>
-            <div class="detail-v" id="dDomain">-</div>
-
-            <div class="detail-k">URL 쿼리스트링</div>
-            <div class="detail-v" id="dQuery">-</div>
-
-            <hr>
-
-            <div class="detail-k">정책 ID</div>
-            <div class="detail-v" id="dPolicyId">-</div>
-
-            <div class="detail-k">정책 이름</div>
-            <div class="detail-v" id="dPolicyName">-</div>
-
-            <div class="detail-k">정책 타입</div>
-            <div class="detail-v" id="dPolicyType">-</div>
-
-            <div class="detail-k">정책 내용</div>
-            <div class="detail-v" id="dPolicyDesc">-</div>
-
-            <hr>
-
-            <div class="detail-k">서버 포트</div>
-            <div class="detail-v" id="dDstPort">-</div>
-
-            <div class="detail-k">메서드</div>
-            <div class="detail-v" id="dMethod">-</div>
-
-            <div class="detail-k">로그 추가시간</div>
-            <div class="detail-v" id="dCreateAt">-</div>
-            </div>
-        </div>
         </div>
 
     </div>
@@ -289,14 +291,12 @@
     const detailCol = document.getElementById("detailCol");
     const detailCloseBtn = document.getElementById("detailCloseBtn");
 
-    const dId = document.getElementById("dId");
     const dRequestUrl = document.getElementById("dRequestUrl");
     const dDomain = document.getElementById("dDomain");
     const dQuery = document.getElementById("dQuery");
-    const dPolicyId = document.getElementById("dPolicyId");
     const dPolicyName = document.getElementById("dPolicyName");
     const dPolicyType = document.getElementById("dPolicyType");
-    const dPolicyDesc = document.getElementById("dPolicyDesc");
+    const dPolicyContent = document.getElementById("dPolicyContent");
     const dDstPort = document.getElementById("dDstPort");
     const dMethod = document.getElementById("dMethod");
     const dCreateAt = document.getElementById("dCreateAt");
@@ -315,17 +315,12 @@
         row.classList.add("table-active");
         detailCol.classList.remove("d-none");
 
-        dId.textContent = `ID ${row.dataset.id || "-"}`;
         dRequestUrl.textContent = row.dataset.requestUrl || "-";
         dDomain.textContent = row.dataset.domain || "-";
         dQuery.textContent = row.dataset.query || "-";
-        dPolicyId.textContent = row.dataset.policyId || "-";
         dPolicyName.textContent = row.dataset.policyName || "-";
         dPolicyType.textContent = row.dataset.policyType || "-";
-
-        /* 정책 설명이 아니라 policy.content */
-        dPolicyDesc.textContent = row.dataset.policyContent || "-";
-
+        dPolicyContent.textContent = row.dataset.policyContent || "-";
         dDstPort.textContent = row.dataset.dstPort || "-";
         dMethod.textContent = row.dataset.method || "-";
         dCreateAt.textContent = row.dataset.createAt || "-";
@@ -339,7 +334,9 @@
     }
 
     function bindClose(){
-        detailCloseBtn.addEventListener("click", closeDetail);
+        if(detailCloseBtn){
+            detailCloseBtn.addEventListener("click", closeDetail);
+        }
     }
 
     function bindPagerClicks(){

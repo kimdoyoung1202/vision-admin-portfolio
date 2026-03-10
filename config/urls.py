@@ -11,7 +11,8 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
 
     path("policy/", include("policy.urls")),
-    path("policy-history/", include("policy_history.urls")),
     path("ai/", include("ai_analysis_result.urls"), name="ai"),
     path("logs/", include("integrated_detection_logs.urls"), name="logs"),
+    path('policy-delete-history/', include('policy_delete_history.urls')),
+    path('policy-update-history/', include('policy_update_history.urls')),
 ]

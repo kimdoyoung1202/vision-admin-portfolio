@@ -1,0 +1,247 @@
+{% comment %} policy_delete_history/policy_delete_history_partial.html {% endcomment %}
+
+<style>
+    #phTable th,
+    #phTable td{
+        padding-top: 8px;
+        padding-bottom: 8px;
+        font-size: .92rem;
+        vertical-align: middle;
+    }
+
+    #phTable thead th{
+        font-weight: 900;
+    }
+
+    .ph-pager{
+        margin-top: 10px !important;
+    }
+
+    .ph-pager .pagination{
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .ph-pager .page-item{
+        margin: 0;
+    }
+
+    .ph-pager .page-link{
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        color: #6b7280;
+        font-size: .88rem;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: none;
+        transition: all .15s ease;
+    }
+
+    .ph-pager .page-link:hover{
+        color: #696cff;
+        border-color: #cfd3ff;
+        background-color: #f6f7ff;
+    }
+
+    .ph-pager .page-item.active .page-link{
+        background-color: #696cff;
+        border-color: #696cff;
+        color: #fff;
+    }
+
+    .ph-pager .page-item.disabled .page-link{
+        background-color: #f9fafb;
+        border-color: #eceef2;
+        color: #b5bcc8;
+    }
+</style>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="text-muted">조회 결과</div>
+        </div>
+
+        <div class="table-responsive text-nowrap">
+            <table class="table table-hover align-middle" id="phTable">
+                <thead>
+                    <tr>
+                        <th>정책 타입</th>
+                        <th>정책 이름</th>
+                        <th>정책 URL/표현식</th>
+                        <th class="td-center" style="width:110px">정책 적용 여부</th>
+                        <th class="td-center" style="width:100px">처리 유형</th>
+                        <th>정책 삭제자 id</th>
+                        <th>삭제 시간</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for h in page_obj %}
+                    <tr class="js-row clickable-row"
+                        data-history-id="{{ h.id }}"
+                        data-policy-type="{{ h.policy_type|default_if_none:'' }}"
+                        data-policy-name="{{ h.policy_name|default_if_none:''|escape }}"
+                        data-content="{{ h.content|default_if_none:''|escape }}"
+                        data-is-active="{% if h.is_active %}true{% else %}false{% endif %}"
+                        data-handling-type="{{ h.handling_type|default_if_none:'' }}"
+                        data-delete-by="{{ h.delete_by|default_if_none:''|escape }}"
+                        data-delete-at="{% if h.delete_at %}{{ h.delete_at|date:'Y/m/d H:i' }}{% endif %}"
+                        data-policy-desc="{{ h.description|default:''|escape }}"
+                        data-restore-action="{% url 'policy_delete_history:restore' h.id %}">
+                        <td>{{ h.policy_type }}</td>
+                        <td>{{ h.policy_name }}</td>
+                        <td class="cell-truncate">{{ h.content }}</td>
+
+                        <td class="td-center">
+                            {% if h.is_active %}
+                                <span class="pill pill-active">적용</span>
+                            {% else %}
+                                <span class="pill pill-inactive">미적용</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="td-center">
+                            {% if h.handling_type == "block" %}
+                                <span class="pill pill-block">BLOCK</span>
+                            {% else %}
+                                <span class="pill pill-log">LOG</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ h.delete_by }}</td>
+                        <td>{% if h.delete_at %}{{ h.delete_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}</td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">조회 결과가 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="ph-pager">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="text-muted">
+                    총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+                </div>
+                <div></div>
+            </div>
+
+            <nav class="d-flex justify-content-center">
+                <ul class="pagination mb-0">
+
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link js-page"
+                            href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                            이전
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">이전</span>
+                        </li>
+                    {% endif %}
+
+                    {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+                        {% if total <= 5 %}
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if num == current %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link js-page"
+                                        href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                        {{ num }}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% if current <= 3 %}
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if num <= 5 %}
+                                        {% if num == current %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link js-page"
+                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                {{ num }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% elif current >= total|add:"-2" %}
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if num >= total|add:"-4" %}
+                                        {% if num == current %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link js-page"
+                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                {{ num }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if num >= current|add:"-2" and num <= current|add:"2" %}
+                                        {% if num == current %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link js-page"
+                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                {{ num }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link js-page"
+                            href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                            다음
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">다음</span>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>

@@ -133,6 +133,70 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .pm-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 25, 40, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1055;
+    padding: 20px;
+  }
+
+  .pm-backdrop.show{
+    display: flex;
+  }
+
+  .pm-modal{
+    width: 100%;
+    max-width: 760px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, .18);
+    overflow: hidden;
+  }
+
+  .pm-head{
+    padding: 14px 18px;
+    border-bottom: 1px solid #eee;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  .pm-title{
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .pm-body{
+    padding: 16px 18px 10px;
+  }
+
+  .pm-foot{
+    padding: 12px 18px 16px;
+    border-top: 1px solid #eee;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+  }
+
+  .pm-close-x{
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: #697a8d;
+  }
+
+  .pm-help{
+    font-size: .85rem;
+    color: #8592a3;
+    margin-bottom: 10px;
+  }
 </style>
 {% endblock %}
 
@@ -161,17 +225,12 @@
         <form method="get" class="row g-2 align-items-end" id="filterForm">
           <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
 
-          <div class="col-xl-1 col-lg-3">
-            <label class="form-label">정책 아이디</label>
-            <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력 :">
-          </div>
-
-          <div class="col-xl-1 col-lg-3">
+          <div class="col-xl-2 col-lg-4">
             <label class="form-label">정책 이름</label>
             <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
           </div>
 
-          <div class="col-xl-4 col-lg-6">
+          <div class="col-xl-4 col-lg-8">
             <label class="form-label">정책 URL/표현식</label>
             <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
           </div>
@@ -235,8 +294,8 @@
 
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h6 class="mb-0 fw-bold">정책 상세</h6>
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="detailEditBtn" disabled>수정</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
               </div>
             </div>
@@ -307,16 +366,78 @@
   </div>
 </div>
 
+<div class="pm-backdrop" id="editModalBackdrop">
+  <div class="pm-modal">
+    <div class="pm-head">
+      <h5 class="pm-title">정책 수정</h5>
+      <button type="button" class="pm-close-x" id="editModalCloseX">×</button>
+    </div>
+
+    <form id="editModalForm">
+      <div class="pm-body">
+        {% csrf_token %}
+        <div class="pm-help">선택한 정책 정보를 수정합니다.</div>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">정책 타입</label>
+            <select class="form-select" name="policy_type" id="mPolicyType">
+              <option value="DOMAIN">DOMAIN</option>
+              <option value="REGEX">REGEX</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">정책 적용 여부</label>
+            <select class="form-select" name="is_active" id="mIsActive">
+              <option value="true">적용</option>
+              <option value="false">미적용</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-bold">처리 유형</label>
+            <select class="form-select" name="handling_type" id="mHandlingType">
+              <option value="block">block</option>
+              <option value="log">log</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">정책 이름</label>
+            <input type="text" class="form-control" name="policy_name" id="mPolicyName">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">URL/패턴</label>
+            <input type="text" class="form-control" name="content" id="mContent">
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-bold">정책 설명</label>
+            <textarea class="form-control" name="description" id="mDescription" rows="5"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-foot">
+        <button type="button" class="btn btn-outline-secondary" id="editModalCancelBtn">취소</button>
+        <button type="submit" class="btn btn-primary" id="editModalSaveBtn">수정 저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
-(function(){
+document.addEventListener("DOMContentLoaded", function () {
   const listArea = document.getElementById("listArea");
   const filterForm = document.getElementById("filterForm");
 
   const tableCol = document.getElementById("tableCol");
   const detailCol = document.getElementById("detailCol");
   const detailCloseBtn = document.getElementById("detailCloseBtn");
+  const detailEditBtn = document.getElementById("detailEditBtn");
 
-  const badge = document.getElementById("detailIdBadge");
   const dPolicyType = document.getElementById("dPolicyType");
   const dPolicyName = document.getElementById("dPolicyName");
   const dContent = document.getElementById("dContent");
@@ -333,12 +454,29 @@
   const btnSave = document.getElementById("btnSave");
   const btnDelete = document.getElementById("btnDelete");
 
-  function buildParams(extra){
+  const editModalBackdrop = document.getElementById("editModalBackdrop");
+  const editModalForm = document.getElementById("editModalForm");
+  const editModalCloseX = document.getElementById("editModalCloseX");
+  const editModalCancelBtn = document.getElementById("editModalCancelBtn");
+  const editModalSaveBtn = document.getElementById("editModalSaveBtn");
+
+  const mPolicyType = document.getElementById("mPolicyType");
+  const mPolicyName = document.getElementById("mPolicyName");
+  const mContent = document.getElementById("mContent");
+  const mDescription = document.getElementById("mDescription");
+  const mIsActive = document.getElementById("mIsActive");
+  const mHandlingType = document.getElementById("mHandlingType");
+
+  let selectedPolicyId = null;
+  let selectedPolicyRow = null;
+  let selectedEditUrl = "";
+
+  function buildParams(extra) {
     const fd = new FormData(filterForm);
     const params = new URLSearchParams(fd);
     params.set("partial", "1");
 
-    if (extra){
+    if (extra) {
       Object.entries(extra).forEach(([k, v]) => {
         params.set(k, v);
       });
@@ -347,25 +485,25 @@
     return params;
   }
 
-  function clearActive(){
-    listArea.querySelectorAll(".js-row.table-active").forEach(row => {
+  function clearActive() {
+    listArea.querySelectorAll(".js-row.table-active").forEach((row) => {
       row.classList.remove("table-active");
     });
   }
 
-  function setButtons(enabled){
+  function setButtons(enabled) {
     btnSave.disabled = !enabled;
     btnDelete.disabled = !enabled;
+    detailEditBtn.disabled = !enabled;
   }
 
-  function openDetail(){
+  function openDetail() {
     detailCol.classList.remove("d-none");
     tableCol.classList.remove("col-12");
     tableCol.classList.add("col-8");
   }
 
-  function resetDetail(){
-    badge.textContent = "선택 없음";
+  function resetDetail() {
     dPolicyType.textContent = "-";
     dPolicyName.textContent = "-";
     dContent.textContent = "-";
@@ -374,11 +512,15 @@
     dDescription.value = "";
     dIsActive.value = "true";
     dHandlingType.value = "block";
+    selectedPolicyId = null;
+    selectedPolicyRow = null;
+    selectedEditUrl = "";
+    updateForm.action = "";
+    deleteForm.action = "";
     setButtons(false);
-    window.__selectedPolicyId = null;
   }
 
-  function closeDetail(){
+  function closeDetail() {
     detailCol.classList.add("d-none");
     tableCol.classList.remove("col-8");
     tableCol.classList.add("col-12");
@@ -386,7 +528,61 @@
     resetDetail();
   }
 
-  async function loadPage(page){
+  function openModal() {
+    editModalBackdrop.classList.add("show");
+  }
+
+  function closeModal() {
+    editModalBackdrop.classList.remove("show");
+  }
+
+  function fillDetailFromData(data) {
+    dPolicyType.textContent = data.policyType || "-";
+    dPolicyName.textContent = data.policyName || "-";
+    dContent.textContent = data.content || "-";
+    dCreateBy.textContent = data.createBy || "-";
+    dCreateAt.textContent = data.createAt || "-";
+    dDescription.value = data.description || "";
+    dIsActive.value = data.isActive === "true" ? "true" : "false";
+    dHandlingType.value = data.handlingType || "block";
+  }
+
+  function fillModalFromData(data) {
+    mPolicyType.value = data.policyType || "DOMAIN";
+    mPolicyName.value = data.policyName || "";
+    mContent.value = data.content || "";
+    mDescription.value = data.description || "";
+    mIsActive.value = data.isActive === "true" ? "true" : "false";
+    mHandlingType.value = data.handlingType || "block";
+  }
+
+  function updateSelectedRow(item) {
+    if (!selectedPolicyRow) return;
+
+    selectedPolicyRow.dataset.policyType = item.policy_type || "";
+    selectedPolicyRow.dataset.policyName = item.policy_name || "";
+    selectedPolicyRow.dataset.content = item.content || "";
+    selectedPolicyRow.dataset.description = item.description || "";
+    selectedPolicyRow.dataset.isActive = item.is_active ? "true" : "false";
+    selectedPolicyRow.dataset.handlingType = item.handling_type || "";
+    selectedPolicyRow.dataset.createBy = item.create_by || "";
+    selectedPolicyRow.dataset.createAt = item.create_at || "";
+    selectedPolicyRow.dataset.updateUrl = item.update_url || selectedPolicyRow.dataset.updateUrl;
+    selectedPolicyRow.dataset.deleteUrl = item.delete_url || selectedPolicyRow.dataset.deleteUrl;
+
+    const cells = selectedPolicyRow.querySelectorAll("td");
+    if (cells.length >= 7) {
+      cells[0].textContent = item.policy_type || "-";
+      cells[1].textContent = item.policy_name || "-";
+      cells[2].textContent = item.content || "-";
+      cells[3].textContent = item.is_active ? "적용" : "미적용";
+      cells[4].textContent = item.handling_type || "-";
+      cells[5].textContent = item.create_by || "-";
+      cells[6].textContent = item.create_at ? item.create_at.replace(/-/g, "/") : "-";
+    }
+  }
+
+  async function loadPage(page) {
     const params = buildParams({ page: page || 1 });
     const url = `${window.location.pathname}?${params.toString()}`;
 
@@ -394,7 +590,7 @@
       headers: { "X-Requested-With": "XMLHttpRequest" }
     });
 
-    if (!res.ok){
+    if (!res.ok) {
       throw new Error("partial load failed");
     }
 
@@ -408,14 +604,14 @@
     detailNext.value = fullUrl;
   }
 
-  filterForm.addEventListener("submit", (e) => {
+  filterForm.addEventListener("submit", function (e) {
     e.preventDefault();
     loadPage(1).catch(console.error);
   });
 
-  listArea.addEventListener("click", (e) => {
+  listArea.addEventListener("click", function (e) {
     const pageLink = e.target.closest("a[data-page]");
-    if (pageLink){
+    if (pageLink) {
       e.preventDefault();
       loadPage(pageLink.dataset.page).catch(console.error);
       return;
@@ -425,35 +621,109 @@
     if (!row) return;
 
     const data = row.dataset;
-    const policyId = data.id;
 
     openDetail();
     clearActive();
     row.classList.add("table-active");
-    window.__selectedPolicyId = policyId;
 
-    badge.textContent = `ID: ${policyId}`;
-    dPolicyType.textContent = data.policyType || "-";
-    dPolicyName.textContent = data.policyName || "-";
-    dContent.textContent = data.content || "-";
-    dCreateBy.textContent = data.createBy || "-";
-    dCreateAt.textContent = data.createAt || "-";
-    dDescription.value = data.description || "";
+    selectedPolicyId = data.id || null;
+    selectedPolicyRow = row;
+    selectedEditUrl = data.editUrl || "";
 
-    dIsActive.value = (data.isActive === "true") ? "true" : "false";
-    dHandlingType.value = data.handlingType || "block";
+    fillDetailFromData(data);
 
-    updateForm.action = data.updateUrl;
-    deleteForm.action = data.deleteUrl;
+    updateForm.action = data.updateUrl || "";
+    deleteForm.action = data.deleteUrl || "";
 
     setButtons(true);
   });
 
-  detailCloseBtn.addEventListener("click", closeDetail);
+  detailCloseBtn.addEventListener("click", function () {
+    closeDetail();
+  });
 
-  btnDelete.addEventListener("click", () => {
-    const policyId = window.__selectedPolicyId;
-    if (!policyId) return;
+  detailEditBtn.addEventListener("click", function () {
+    if (!selectedPolicyRow) return;
+    fillModalFromData(selectedPolicyRow.dataset);
+    openModal();
+  });
+
+  editModalCloseX.addEventListener("click", function () {
+    closeModal();
+  });
+
+  editModalCancelBtn.addEventListener("click", function () {
+    closeModal();
+  });
+
+  editModalBackdrop.addEventListener("click", function (e) {
+    if (e.target === editModalBackdrop) {
+      closeModal();
+    }
+  });
+
+  editModalForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    if (!selectedPolicyId || !selectedEditUrl) {
+      alert("선택된 정책이 없습니다.");
+      return;
+    }
+
+    editModalSaveBtn.disabled = true;
+
+    try {
+      const formData = new FormData(editModalForm);
+
+      const res = await fetch(selectedEditUrl, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: formData
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.ok) {
+        alert(json.message || "수정 중 오류가 발생했습니다.");
+        return;
+      }
+
+      const item = json.item;
+
+      dPolicyType.textContent = item.policy_type || "-";
+      dPolicyName.textContent = item.policy_name || "-";
+      dContent.textContent = item.content || "-";
+      dCreateBy.textContent = item.create_by || "-";
+      dCreateAt.textContent = item.create_at || "-";
+      dDescription.value = item.description || "";
+      dIsActive.value = item.is_active ? "true" : "false";
+      dHandlingType.value = item.handling_type || "block";
+
+      updateForm.action = item.update_url || "";
+      deleteForm.action = item.delete_url || "";
+      selectedEditUrl = item.update_url || "";
+
+      updateSelectedRow(item);
+      closeModal();
+
+      alert(json.message || "수정되었습니다.");
+    } catch (err) {
+      console.error(err);
+      alert("수정 요청 처리 중 오류가 발생했습니다.");
+    } finally {
+      editModalSaveBtn.disabled = false;
+    }
+  });
+
+  btnDelete.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    if (!selectedPolicyId || !deleteForm.action) {
+      alert("선택된 정책이 없습니다.");
+      return;
+    }
 
     const ok = confirm("정말 삭제할까요? (삭제된 정책은 삭제 관리에서 복구할 수 있습니다)");
     if (!ok) return;
@@ -462,6 +732,6 @@
   });
 
   resetDetail();
-})();
+});
 </script>
 {% endblock %}

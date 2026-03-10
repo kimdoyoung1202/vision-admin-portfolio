@@ -1,0 +1,236 @@
+<style>
+    #tableViewport{
+        width: 100%;
+        overflow: hidden;
+        flex: 1;
+        min-height: 0;
+    }
+
+    #historyTable{
+        table-layout: fixed;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    #historyTable th,
+    #historyTable td{
+        padding-top: 6px;
+        padding-bottom: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
+        font-size: .84rem;
+        vertical-align: middle;
+    }
+
+    #historyTable thead th{
+        font-weight: 900;
+        color: #566a7f;
+        background: #fcfcfd;
+        border-bottom-width: 1px;
+        font-size: .81rem;
+        letter-spacing: -.1px;
+        white-space: nowrap;
+    }
+
+    #historyTable tbody tr.js-row{
+        cursor: pointer;
+    }
+
+    #historyTable tbody tr.js-row:hover{
+        background-color: rgba(105, 108, 255, .04);
+    }
+
+    #historyTable tbody tr.table-active{
+        background-color: rgba(105, 108, 255, .08);
+    }
+
+    .history-pager{
+        margin-top: 10px !important;
+        min-height: 40px;
+    }
+
+    .cell-truncate{
+        display: block;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .col-name{ max-width: 100%; }
+    .col-url{ max-width: 100%; }
+    .col-summary{ max-width: 100%; }
+
+    .plain-text-cell{
+        color: #566a7f;
+        font-weight: 700;
+    }
+
+    .table-note{
+        font-size: .77rem;
+        color: #8592a3;
+    }
+
+    .history-pager .pagination{
+        gap: 4px;
+    }
+
+    .history-pager .page-item{
+        margin: 0;
+    }
+
+    .history-pager .page-link{
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        color: #6b7280;
+        font-size: .84rem;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: none;
+        transition: all .15s ease;
+    }
+
+    .history-pager .page-link:hover{
+        color: #696cff;
+        border-color: #cfd3ff;
+        background-color: #f6f7ff;
+    }
+
+    .history-pager .page-item.active .page-link{
+        background-color: #696cff;
+        border-color: #696cff;
+        color: #fff;
+    }
+
+    .history-pager .page-item.disabled .page-link{
+        background-color: #f9fafb;
+        border-color: #eceef2;
+        color: #b5bcc8;
+    }
+</style>
+
+<div id="tableViewport" class="text-nowrap">
+    <table class="table table-hover align-middle mb-0" id="historyTable">
+        <thead>
+            <tr>
+                <th style="width:8%;">정책 타입</th>
+                <th style="width:12%;">정책 이름</th>
+                <th style="width:7%;">정책 ID</th>
+                <th style="width:18%;">URL</th>
+                <th style="width:8%;">처리 유형</th>
+                <th style="width:8%;">적용 여부</th>
+                <th style="width:8%;">수정자 ID</th>
+                <th style="width:12%;">수정시간</th>
+                <th style="width:19%;">변경 요약</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for h in page_obj %}
+            <tr class="js-row"
+                data-id="{{ h.id }}"
+                data-policy-id="{{ h.modal_policy_id|default:''|escape }}"
+                data-policy-type="{{ h.modal_policy_type|default:''|escape }}"
+                data-policy-name="{{ h.modal_policy_name|default:''|escape }}"
+                data-content="{{ h.modal_content|default:''|escape }}"
+                data-handling-type="{{ h.modal_handling_type|default:''|escape }}"
+                data-is-active="{{ h.modal_is_active_text|default:''|escape }}"
+                data-description="{{ h.modal_description|default:''|escape }}"
+                data-update-by="{{ h.modal_update_by|default:''|escape }}"
+                data-update-at="{% if h.modal_update_at %}{{ h.modal_update_at|date:'Y-m-d H:i' }}{% endif %}"
+                data-changed-fields="{{ h.changed_fields_text|default:''|escape }}"
+                data-changed-rows='[{% for r in h.changed_rows %}{"label":"{{ r.label|escapejs }}","before":"{{ r.before|escapejs }}","after":"{{ r.after|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>
+
+                <td>{{ h.policy_type|default:"-" }}</td>
+
+                <td title="{{ h.policy_name|default:'' }}">
+                    <span class="cell-truncate col-name">{{ h.policy_name|default:"-" }}</span>
+                </td>
+
+                <td>{{ h.policy_id|default:"-" }}</td>
+
+                <td title="{{ h.content|default:'' }}">
+                    <span class="cell-truncate col-url">{{ h.content|default:"-" }}</span>
+                </td>
+
+                <td class="plain-text-cell">{{ h.handling_type|default:"-" }}</td>
+
+                <td class="plain-text-cell">{{ h.is_active_text|default:"-" }}</td>
+
+                <td>{{ h.update_by|default:"-" }}</td>
+
+                <td>
+                    {% if h.update_at %}
+                        {{ h.update_at|date:"Y/m/d H:i" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td title="{{ h.changed_fields_text|default:'' }}">
+                    <span class="cell-truncate col-summary">{{ h.changed_fields_text|default:"-" }}</span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center text-muted py-4">
+                    조회 결과가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex align-items-center history-pager">
+    <div class="text-muted table-note" style="min-width:220px;">
+        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+    </div>
+
+    <div class="flex-grow-1 d-flex justify-content-center">
+        <nav aria-label="수정이력 페이지 이동">
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">이전</span>
+                </li>
+                {% endif %}
+
+                {% for p in page_numbers %}
+                    {% if p == page_obj.number %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ p }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="{{ p }}">{{ p }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">다음</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <div style="min-width:220px;"></div>
+</div>

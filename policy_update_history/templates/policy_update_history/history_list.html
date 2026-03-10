@@ -1,0 +1,691 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}정책 수정내역{% endblock %}
+{% block page_subtitle %}정책 수정 이력 조회{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root{
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-primary-soft: rgba(105,108,255,.12);
+        --vision-border: #e7eaf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
+
+        --pageH: calc(100vh - 64px);
+        --filterH: 132px;
+        --pagerH: 46px;
+        --theadH: 42px;
+        --rowH: 38px;
+        --rows: 8;
+    }
+
+    .history-page{
+        height: var(--pageH);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .history-fluid{
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        padding: 8px 14px !important;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .history-fluid .card{
+        margin: 0 !important;
+        border-radius: 16px;
+        border: 1px solid var(--vision-border);
+        box-shadow: 0 2px 10px rgba(67,89,113,.05);
+    }
+
+    .filter-card .card-body{
+        padding: 10px 12px;
+    }
+
+    .list-card .card-body{
+        padding: 8px 10px;
+        height: 100%;
+    }
+
+    .filter-form{
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .filter-row{
+        display: grid;
+        gap: 8px;
+        align-items: end;
+    }
+
+    .filter-row-top{
+        grid-template-columns: 1fr 1fr .8fr 1.45fr .75fr .75fr auto;
+    }
+
+    .filter-row-bottom{
+        grid-template-columns: 1fr 1.45fr auto;
+    }
+
+    .filter-item{
+        min-width: 0;
+    }
+
+    .filter-card .form-label{
+        margin-bottom: 4px;
+        font-weight: 800;
+        font-size: .76rem;
+        line-height: 1.1;
+        color: var(--vision-text);
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select{
+        padding: .28rem .62rem;
+        border-radius: 10px;
+        height: 33px;
+        font-size: .85rem;
+        border-color: #d9deea;
+        box-shadow: none !important;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus{
+        border-color: var(--vision-primary);
+        box-shadow: 0 0 0 .18rem rgba(105,108,255,.14) !important;
+    }
+
+    .date-range{
+        display: grid;
+        grid-template-columns: 1fr 18px 1fr;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .date-sep{
+        text-align: center;
+        color: var(--vision-muted);
+        font-weight: 700;
+        font-size: .84rem;
+    }
+
+    .filter-actions{
+        display: flex;
+        align-items: end;
+        justify-content: flex-end;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .filter-actions .btn{
+        min-width: 78px;
+        height: 33px;
+        padding: 0 1rem;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: .84rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .btn-search{
+        background: linear-gradient(135deg, #696cff 0%, #5f63f2 100%);
+        border: 1px solid #696cff;
+        color: #fff !important;
+        box-shadow: 0 6px 14px rgba(105,108,255,.24);
+    }
+
+    .btn-search:hover,
+    .btn-search:focus{
+        background: linear-gradient(135deg, #5f63f2 0%, #5458ea 100%);
+        border-color: #5f63f2;
+        color: #fff !important;
+        transform: translateY(-1px);
+    }
+
+    .btn-reset{
+        background: #fff;
+        border: 1px solid #cfd6e4;
+        color: #566a7f !important;
+    }
+
+    .btn-reset:hover{
+        background: #f7f8fc;
+        border-color: #c6cede;
+    }
+
+    .workspace{
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .workspace-card{
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .workspace-card .card-body{
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #listArea{
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .history-modal .modal-dialog{
+        max-width: 920px;
+    }
+
+    .history-modal .modal-content{
+        border: none;
+        border-radius: 18px;
+        overflow: hidden;
+    }
+
+    .history-modal .modal-header{
+        padding: 14px 18px;
+        border-bottom: 1px solid #ebeef3;
+    }
+
+    .history-modal .modal-body{
+        padding: 14px 18px 16px;
+        max-height: calc(100vh - 180px);
+        overflow: auto;
+    }
+
+    .modal-subtext{
+        font-size: .90rem;
+        color: var(--vision-muted);
+    }
+
+    .policy-id-text{
+        font-weight: 800;
+        color: var(--vision-text);
+    }
+
+    .meta-table{
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    .meta-table th{
+        width: 115px;
+        color: var(--vision-muted);
+        font-weight: 800;
+        background: #fcfcfd;
+    }
+
+    .meta-table td,
+    .meta-table th{
+        padding: 9px 11px !important;
+        vertical-align: middle;
+        font-size: .90rem;
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    .compare-wrap{
+        margin-top: 12px;
+    }
+
+    .compare-title{
+        font-size: .92rem;
+        font-weight: 800;
+        color: var(--vision-text);
+        margin-bottom: 8px;
+    }
+
+    .compare-box{
+        border: 1px solid #ebeef3;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .compare-head{
+        display: grid;
+        grid-template-columns: 120px 1fr 1fr;
+        background: #f8f9fc;
+        border-bottom: 1px solid #ebeef3;
+        font-weight: 800;
+        color: var(--vision-text);
+        font-size: .88rem;
+    }
+
+    .compare-head > div,
+    .compare-row > div{
+        padding: 9px 11px;
+        min-width: 0;
+        word-break: break-word;
+        white-space: pre-wrap;
+        font-size: .89rem;
+        line-height: 1.45;
+    }
+
+    .compare-row{
+        display: grid;
+        grid-template-columns: 120px 1fr 1fr;
+        border-bottom: 1px solid #f0f2f6;
+    }
+
+    .compare-row:last-child{
+        border-bottom: none;
+    }
+
+    .compare-label{
+        background: #fbfbfd;
+        font-weight: 700;
+        color: #697a8d;
+    }
+
+    .compare-before{
+        background: #fffaf8;
+    }
+
+    .compare-after{
+        background: #f8fffb;
+    }
+
+    .compare-empty{
+        padding: 14px 12px;
+        text-align: center;
+        color: var(--vision-muted);
+        font-size: .89rem;
+        background: #fff;
+    }
+
+    @media (max-width: 1500px){
+        .filter-row-top{
+            grid-template-columns: 1fr 1fr .8fr 1.2fr .75fr .75fr auto;
+        }
+    }
+
+    @media (max-width: 1280px){
+        .filter-row-top{
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .filter-row-bottom{
+            grid-template-columns: 1fr 1fr auto;
+        }
+    }
+
+    @media (max-width: 992px){
+        .filter-row-top,
+        .filter-row-bottom{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filter-actions{
+            grid-column: 1 / -1;
+            justify-content: stretch;
+        }
+
+        .filter-actions .btn{
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <div class="container-fluid history-fluid container-p-y">
+
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="get" class="filter-form" id="filterForm">
+
+                    <div class="filter-row filter-row-top">
+                        <div class="filter-item">
+                            <label class="form-label">정책 타입</label>
+                            <select class="form-select" name="policy_type">
+                                <option value="" {% if filters.policy_type == "" %}selected{% endif %}>전체</option>
+                                <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>DOMAIN</option>
+                                <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>REGEX</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">정책 이름</label>
+                            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력">
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">정책 ID</label>
+                            <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력">
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">URL</label>
+                            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력">
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">처리 유형</label>
+                            <select class="form-select" name="handling_type">
+                                <option value="" {% if filters.handling_type == "" %}selected{% endif %}>전체</option>
+                                <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
+                                <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">적용 여부</label>
+                            <select class="form-select" name="is_active">
+                                <option value="" {% if filters.is_active == "" %}selected{% endif %}>전체</option>
+                                <option value="적용" {% if filters.is_active == "적용" %}selected{% endif %}>적용</option>
+                                <option value="미적용" {% if filters.is_active == "미적용" %}selected{% endif %}>미적용</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn btn-search" type="submit">검색</button>
+                            <a class="btn btn-reset" href="{% url 'policy_update_history:list' %}">초기화</a>
+                        </div>
+                    </div>
+
+                    <div class="filter-row filter-row-bottom">
+                        <div class="filter-item">
+                            <label class="form-label">수정자 ID</label>
+                            <input class="form-control" name="update_by" value="{{ filters.update_by }}" placeholder="입력">
+                        </div>
+
+                        <div class="filter-item">
+                            <label class="form-label">수정시간</label>
+                            <div class="date-range">
+                                <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
+                                <div class="date-sep">~</div>
+                                <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+                            </div>
+                        </div>
+
+                        <div></div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="row g-2 workspace">
+            <div class="col-12">
+                <div class="card list-card workspace-card">
+                    <div class="card-body">
+                        <div id="listArea">
+                            {% include "policy_update_history/history_list_partial.html" %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade history-modal" id="historyDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold mb-1">정책 수정 상세</h5>
+                    <div class="modal-subtext">
+                        <span class="policy-id-text" id="mPolicyId">-</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <table class="table table-sm table-bordered align-middle meta-table">
+                        <tbody>
+                            <tr>
+                                <th>정책 타입</th>
+                                <td id="mPolicyType">-</td>
+                                <th>정책 이름</th>
+                                <td id="mPolicyName">-</td>
+                            </tr>
+                            <tr>
+                                <th>URL</th>
+                                <td id="mContent" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>처리 유형</th>
+                                <td id="mHandlingType">-</td>
+                                <th>적용 여부</th>
+                                <td id="mIsActive">-</td>
+                            </tr>
+                            <tr>
+                                <th>정책 설명</th>
+                                <td id="mDescription" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>수정자 ID</th>
+                                <td id="mUpdateBy">-</td>
+                                <th>수정시간</th>
+                                <td id="mUpdateAt">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="compare-wrap">
+                    <div class="compare-title">변경 필드 비교</div>
+
+                    <div class="compare-box">
+                        <div class="compare-head">
+                            <div>항목</div>
+                            <div>수정 전</div>
+                            <div>수정 후</div>
+                        </div>
+
+                        <div id="compareRows"></div>
+                        <div id="compareEmpty" class="compare-empty" style="display:none;">변경된 필드가 없습니다.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const listArea = document.getElementById("listArea");
+    const filterForm = document.getElementById("filterForm");
+    const historyModalEl = document.getElementById("historyDetailModal");
+
+    let historyModal = null;
+
+    function initModal(){
+        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
+            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(historyModalEl);
+    }
+
+    const mPolicyId = document.getElementById("mPolicyId");
+    const mPolicyType = document.getElementById("mPolicyType");
+    const mPolicyName = document.getElementById("mPolicyName");
+    const mContent = document.getElementById("mContent");
+    const mHandlingType = document.getElementById("mHandlingType");
+    const mIsActive = document.getElementById("mIsActive");
+    const mDescription = document.getElementById("mDescription");
+    const mUpdateBy = document.getElementById("mUpdateBy");
+    const mUpdateAt = document.getElementById("mUpdateAt");
+
+    const compareRows = document.getElementById("compareRows");
+    const compareEmpty = document.getElementById("compareEmpty");
+
+    function buildParams(extra){
+        const fd = new FormData(filterForm);
+        const params = new URLSearchParams(fd);
+        params.set("partial", "1");
+
+        if (extra){
+            Object.entries(extra).forEach(([k, v]) => params.set(k, v));
+        }
+        return params;
+    }
+
+    function textOrDash(v){
+        if (v === undefined || v === null || String(v).trim() === "") return "-";
+        return v;
+    }
+
+    function escapeHtml(value){
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function clearActive(){
+        listArea.querySelectorAll(".js-row.table-active").forEach(row => {
+            row.classList.remove("table-active");
+        });
+    }
+
+    function resetModal(){
+        mPolicyId.textContent = "-";
+        mPolicyType.textContent = "-";
+        mPolicyName.textContent = "-";
+        mContent.textContent = "-";
+        mHandlingType.textContent = "-";
+        mIsActive.textContent = "-";
+        mDescription.textContent = "-";
+        mUpdateBy.textContent = "-";
+        mUpdateAt.textContent = "-";
+
+        compareRows.innerHTML = "";
+        compareEmpty.style.display = "none";
+    }
+
+    function parseChangedRows(raw){
+        if (!raw) return [];
+        try{
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        }catch(e){
+            console.error("changed_rows parse error", e);
+            return [];
+        }
+    }
+
+    function renderChangedRows(rows){
+        compareRows.innerHTML = "";
+
+        if (!rows.length){
+            compareEmpty.style.display = "block";
+            return;
+        }
+
+        compareEmpty.style.display = "none";
+
+        compareRows.innerHTML = rows.map(item => `
+            <div class="compare-row">
+                <div class="compare-label">${escapeHtml(textOrDash(item.label))}</div>
+                <div class="compare-before">${escapeHtml(textOrDash(item.before))}</div>
+                <div class="compare-after">${escapeHtml(textOrDash(item.after))}</div>
+            </div>
+        `).join("");
+    }
+
+    function fillModal(d){
+        mPolicyId.textContent = textOrDash(d.policyId);
+        mPolicyType.textContent = textOrDash(d.policyType);
+        mPolicyName.textContent = textOrDash(d.policyName);
+        mContent.textContent = textOrDash(d.content);
+        mHandlingType.textContent = textOrDash(d.handlingType);
+        mIsActive.textContent = textOrDash(d.isActive);
+        mDescription.textContent = textOrDash(d.description);
+        mUpdateBy.textContent = textOrDash(d.updateBy);
+        mUpdateAt.textContent = textOrDash(d.updateAt);
+
+        renderChangedRows(parseChangedRows(d.changedRows));
+    }
+
+    async function loadPage(page){
+        const params = buildParams({ page: page || 1 });
+        const url = `${window.location.pathname}?${params.toString()}`;
+
+        const res = await fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+
+        if (!res.ok){
+            throw new Error("partial load failed");
+        }
+
+        listArea.innerHTML = await res.text();
+        clearActive();
+        resetModal();
+
+        if (historyModal){
+            historyModal.hide();
+        }
+
+        params.delete("partial");
+        const fullUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", fullUrl);
+    }
+
+    filterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loadPage(1).catch(console.error);
+    });
+
+    listArea.addEventListener("click", (e) => {
+        const pageLink = e.target.closest("a[data-page]");
+        if (pageLink){
+            e.preventDefault();
+            loadPage(pageLink.dataset.page).catch(console.error);
+            return;
+        }
+
+        const row = e.target.closest("tr.js-row");
+        if (!row) return;
+
+        clearActive();
+        row.classList.add("table-active");
+
+        fillModal(row.dataset);
+
+        if (!historyModal){
+            historyModal = initModal();
+        }
+
+        if (historyModal){
+            historyModal.show();
+        }
+    });
+
+    historyModalEl.addEventListener("hidden.bs.modal", () => {
+        clearActive();
+    });
+
+    resetModal();
+    historyModal = initModal();
+})();
+</script>
+{% endblock %}

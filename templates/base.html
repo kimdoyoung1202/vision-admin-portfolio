@@ -8,7 +8,6 @@
 
   <title>{% block title %}VISION Admin{% endblock %}</title>
 
-  <!-- Sneat 느낌: 폰트/아이콘/부트스트랩 -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -24,7 +23,7 @@
       --card-bg: #ffffff;
       --text: #566a7f;
       --muted: #a1acb8;
-      --primary: #696cff;      /* Sneat 대표 톤 */
+      --primary: #696cff;
       --primary-2: #5f61e6;
       --sidebar-bg: #ffffff;
       --border: #e7e7ff;
@@ -32,7 +31,7 @@
 
       --header-h: 64px;
       --sidebar-w: 260px;
-      --sidebar-w-collapsed: 0px; /* 완전 접힘 */
+      --sidebar-w-collapsed: 0px;
     }
 
     *{ box-sizing: border-box; }
@@ -42,17 +41,15 @@
       font-family: "Public Sans", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
       color: var(--text);
       background: var(--sneat-bg);
-      overflow: hidden; /* PC 고정 레이아웃 */
+      overflow: hidden;
     }
 
-    /* ====== LAYOUT WRAPPER ====== */
     .layout{
       height: 100%;
       display: flex;
       flex-direction: column;
     }
 
-    /* ====== HEADER (고정) ====== */
     .topbar{
       height: var(--header-h);
       min-height: var(--header-h);
@@ -124,21 +121,19 @@
     }
     .topbar-right a:hover{ background: rgba(255,255,255,0.12); }
 
-    /* ====== BODY ====== */
     .body{
       flex: 1;
       display: flex;
-      min-height: 0; /* 스크롤 계산 필수 */
+      min-height: 0;
     }
 
-    /* ====== SIDEBAR ====== */
     .sidebar{
       width: var(--sidebar-w);
       background: var(--sidebar-bg);
       border-right: 1px solid var(--border);
       box-shadow: 2px 0 10px rgba(67, 89, 113, 0.06);
       transition: width 220ms ease;
-      overflow: hidden; /* 접힐 때 내용 숨김 */
+      overflow: hidden;
     }
 
     .layout.sidebar-collapsed .sidebar{
@@ -245,7 +240,6 @@
       border-color: rgba(105, 108, 255, 0.25);
     }
 
-    /* ====== MAIN CONTENT ====== */
     .main{
       flex: 1;
       min-width: 0;
@@ -283,7 +277,6 @@
       padding: 16px;
     }
 
-    /* (선택) 사이드바가 접혀도 헤더 왼쪽 영역 폭만 자연스럽게 */
     .layout.sidebar-collapsed .topbar-left{
       width: 60px;
     }
@@ -297,7 +290,6 @@
 
 <body>
   <div class="layout" id="layoutRoot">
-    <!-- ===== Header ===== -->
     <header class="topbar">
       <div class="topbar-left">
         <button class="hamburger-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
@@ -314,16 +306,13 @@
       </nav>
     </header>
 
-    <!-- ===== Body ===== -->
     <div class="body">
-      <!-- ===== Sidebar ===== -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-inner">
 
           <div class="menu-section">MENU</div>
           <ul class="menu">
 
-            <!-- 대시보드 -->
             <li class="menu-item {% if active_menu == 'dashboard:home' %}active{% endif %}">
               <a class="menu-link" href="{% url 'dashboard:home' %}">
                 <i class="bx bx-home"></i>
@@ -331,7 +320,6 @@
               </a>
             </li>
 
-            <!-- 정책 관리 (드롭다운) -->
             <li class="menu-item {% if active_group == 'policy' %}active open{% endif %}" data-dropdown="true">
               <div class="menu-link">
                 <i class="bx bx-shield-quarter"></i>
@@ -341,7 +329,7 @@
               <ul class="submenu">
                 <li>
                   <a class="submenu-link {% if active_menu == 'policy_list' %}current{% endif %}" href="{% url 'policy:list' %}">
-                    정책 조회(삭제)
+                    정책 조회
                   </a>
                 </li>
                 <li>
@@ -350,14 +338,18 @@
                   </a>
                 </li>
                 <li>
-                  <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy_history:list' %}">
+                  <a class="submenu-link {% if active_menu == 'policy_update_history' %}current{% endif %}" href="{% url 'policy_update_history:list' %}">
+                    정책 수정 내역
+                  </a>
+                </li>
+                <li>
+                  <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy_delete_history:list' %}">
                     정책 삭제 관리
                   </a>
                 </li>
               </ul>
             </li>
 
-            <!-- AI 관리 (드롭다운) -->
             <li class="menu-item {% if active_group == 'ai' %}active open{% endif %}" data-dropdown="true">
               <div class="menu-link">
                 <i class="bx bx-bot"></i>
@@ -378,7 +370,6 @@
               </ul>
             </li>
 
-            <!-- 로그 관리 -->
             <li class="menu-item {% if active_menu == 'logs' %}active{% endif %}">
               <a class="menu-link" href="{% url 'logs:list' %}">
                 <i class="bx bx-receipt"></i>
@@ -390,10 +381,7 @@
         </div>
       </aside>
 
-      <!-- ===== Main ===== -->
       <main class="main">
-
-        {# ✅ 페이지 제목 영역: 기본은 표시됨 #}
         {% block page_header %}
         <div class="page-header">
           <div>
@@ -407,7 +395,6 @@
         </div>
         {% endblock %}
 
-        {# ✅ 본문 카드 #}
         <div class="card-sneat">
           {% block content %}{% endblock %}
         </div>
@@ -420,12 +407,10 @@
       const layoutRoot = document.getElementById("layoutRoot");
       const sidebarToggle = document.getElementById("sidebarToggle");
 
-      // 사이드바 토글(완전 접힘/펼침)
       sidebarToggle.addEventListener("click", function () {
         layoutRoot.classList.toggle("sidebar-collapsed");
       });
 
-      // 드롭다운 메뉴 토글
       const dropdownItems = document.querySelectorAll(".menu-item[data-dropdown='true'] > .menu-link");
       dropdownItems.forEach((btn) => {
         btn.addEventListener("click", function () {

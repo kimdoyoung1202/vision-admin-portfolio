@@ -15,7 +15,6 @@ class Migration(migrations.Migration):
             name='PolicyHistory',
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('policy_id', models.CharField(max_length=30)),
                 ('policy_name', models.CharField(max_length=30)),
                 ('policy_type', models.CharField(max_length=255)),
                 ('content', models.TextField()),
@@ -28,7 +27,7 @@ class Migration(migrations.Migration):
                 ('delete_at', models.DateTimeField()),
             ],
             options={
-                'db_table': 'policy_history',
+                'db_table': 'policy_delete_history',
                 'managed': True,
             },
         ),

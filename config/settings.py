@@ -41,9 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'policy',
-    'policy_history',
+    'policy_delete_history',
     'integrated_detection_logs',
     'ai_analysis_result',
+    'policy_update_history',
     'dashboard',
 ]
 
@@ -87,7 +88,7 @@ DATABASES = {
         'NAME': 'SecurityAdmin',
         'USER': 'ktech',
         'PASSWORD': 'ktech!@#$',
-        'HOST': '192.168.100.25',
+        'HOST': '192.168.1.25',
         'PORT': '3306',
         'OPTIONS':{
             'charset': 'utf8mb4',
@@ -159,7 +160,7 @@ LOGIN_EXEMPT_URLS = [
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
-ENGINE_RELOAD_HOST = "192.168.100.25"   
+ENGINE_RELOAD_HOST = "192.168.1.25"   
 ENGINE_RELOAD_PORT = 5555
 ENGINE_RELOAD_TIMEOUT = 2.0
 

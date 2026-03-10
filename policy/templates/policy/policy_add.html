@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% comment %} 상단 헤더 영역(base.html에서 사용) {% endcomment %}
 {% block page_title %}정책 추가{% endblock %}
 {% block page_subtitle %}정책을 추가합니다{% endblock %}
 
@@ -11,241 +10,283 @@
 
 {% block extra_css %}
 <style>
-    /* 페이지 중앙 정렬 및 최대 폭 제한 */
     .pa-wrap{
         max-width: 900px;
-        margin-left:auto;
-        margin-right:auto;
+        margin-left: auto;
+        margin-right: auto;
     }
+
     .pa-card{
         max-width: 900px;
-        margin-left:auto;
-        margin-right:auto;
+        margin-left: auto;
+        margin-right: auto;
     }
+
     .pa-inner{
         max-width: 760px;
         margin: 0 auto;
     }
 
-    /* 라벨/보조문구 스타일 */
-    .pa-label{ font-weight:700; }
-    .pa-required::after{ content:" *"; color:#ff3e1d; font-weight:900; }
-    .pa-sub{ font-size:12px; color:#6c7a89; }
+    .pa-label{
+        font-weight: 700;
+    }
 
-    /* 입력/셀렉트/버튼 라운드 + 글씨 강조 */
+    .pa-required::after{
+        content: " *";
+        color: #ff3e1d;
+        font-weight: 900;
+    }
+
+    .pa-sub{
+        font-size: 12px;
+        color: #6c7a89;
+    }
+
     .pa-card .form-control,
-    .pa-card .form-select{ border-radius:12px; }
-    .pa-card .btn{ border-radius:12px; font-weight:800; }
-    .pa-type-tabs .nav-link{ font-weight:800; }
+    .pa-card .form-select{
+        border-radius: 12px;
+    }
 
-    /* 정책 적용 여부(라디오 세그먼트 UI) */
+    .pa-card .btn{
+        border-radius: 12px;
+        font-weight: 800;
+    }
+
+    .pa-type-tabs .nav-link{
+        font-weight: 800;
+        cursor: pointer;
+    }
+
     .pa-seg{
-        display:inline-flex;
-        border:1px solid #d9dee3;
-        border-radius:12px;
-        overflow:hidden;
-        background:#fff;
+        display: inline-flex;
+        border: 1px solid #d9dee3;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
     }
-    .pa-seg input{ display:none; }
+
+    .pa-seg input{
+        display: none;
+    }
+
     .pa-seg label{
-        width:84px;
-        text-align:center;
-        padding:10px 0;
-        cursor:pointer;
-        font-weight:800;
-        color:#566a7f;
-        user-select:none;
+        width: 84px;
+        text-align: center;
+        padding: 10px 0;
+        cursor: pointer;
+        font-weight: 800;
+        color: #566a7f;
+        user-select: none;
+        margin: 0;
     }
+
     .pa-seg input:checked + label{
-        background:#696cff;
-        color:#fff;
+        background: #696cff;
+        color: #fff;
     }
 
-    /* 하단 버튼 영역 */
     .pa-actions{
-        display:flex;
-        justify-content:center;
-        gap:12px;
-        margin-top:18px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 18px;
     }
 
-    /* 카드 내부 헤더(현재 템플릿에선 사용하지 않지만, 확장 대비로 남겨둔 스타일) */
     .pa-card-head{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:16px;
-        margin-bottom:14px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
     }
+
     .pa-card-title{
-        margin:0;
-        font-size:20px;
-        font-weight:800;
+        margin: 0;
+        font-size: 20px;
+        font-weight: 800;
     }
+
     .pa-card-desc{
-        margin:4px 0 0 0;
-        font-size:12px;
-        color:#6c7a89;
+        margin: 4px 0 0 0;
+        font-size: 12px;
+        color: #6c7a89;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y pa-wrap">
-
     <div class="card pa-card">
         <div class="card-body">
-        <div class="pa-inner">
+            <div class="pa-inner">
 
-            {% comment %}
-            -----------------------------------------------------------------
-            정책 추가 폼
-            - POST 시 policy_add 뷰로 전달됨(action="": 현재 URL)
-            - ai_id / return_to 는 "AI 분석 결과에서 넘어온 흐름"을 지원하기 위한 hidden 값
-            - form.* 은 뷰에서 에러 발생 시 사용자가 입력한 값을 다시 채우기 위해 내려주는 값
-            -----------------------------------------------------------------
-            {% endcomment %}
-            <form method="post" action="">
-            {% csrf_token %}
-            <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
-            <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
-            {% if errors %}
-            <div class="alert alert-danger mb-3" role="alert">
-                <div class="fw-bold mb-1">입력 내용을 확인하세요.</div>
-                <ul class="mb-0 ps-3">
-                    {% for err in errors %}
-                        <li>{{ err }}</li>
-                    {% endfor %}
-                </ul>
+                <form method="post" action="">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
+                    <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
+
+                    {% if errors %}
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <div class="fw-bold mb-1">입력 내용을 확인하세요.</div>
+                        <ul class="mb-0 ps-3">
+                            {% for err in errors %}
+                                <li>{{ err }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label pa-label pa-required">정책 타입</label>
+
+                        <ul class="nav nav-pills pa-type-tabs mb-2">
+                            <li class="nav-item">
+                                <input
+                                    class="d-none"
+                                    type="radio"
+                                    name="policy_type"
+                                    id="type_domain"
+                                    value="DOMAIN"
+                                    {% if form.policy_type.value == "DOMAIN" or not form %}checked{% endif %}
+                                >
+                                <label
+                                    class="nav-link {% if form.policy_type.value == 'DOMAIN' or not form %}active{% endif %}"
+                                    for="type_domain"
+                                >
+                                    도메인
+                                </label>
+                            </li>
+
+                            <li class="nav-item ms-2">
+                                <input
+                                    class="d-none"
+                                    type="radio"
+                                    name="policy_type"
+                                    id="type_regex"
+                                    value="REGEX"
+                                    {% if form.policy_type.value == "REGEX" %}checked{% endif %}
+                                >
+                                <label
+                                    class="nav-link {% if form.policy_type.value == 'REGEX' %}active{% endif %}"
+                                    for="type_regex"
+                                >
+                                    정규 표현식
+                                </label>
+                            </li>
+                        </ul>
+
+                        <div class="pa-sub">정책 타입에 따라 도메인 또는 정규표현식을 등록합니다.</div>
+                    </div>
+
+                    <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
+                    <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
+
+                    <div class="mb-3">
+                        <label class="form-label pa-label pa-required">정책 URL/표현식</label>
+                        <input
+                            type="text"
+                            id="policy_content"
+                            name="content"
+                            class="form-control"
+                            value="{{ form.content.value|default:initial_domain|default_if_none:'' }}"
+                            placeholder="예) example.com 또는 ^https://example\.com"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label pa-label pa-required">정책 이름</label>
+                        <input
+                            type="text"
+                            name="policy_name"
+                            class="form-control"
+                            value="{{ form.policy_name.value|default_if_none:'' }}"
+                            placeholder="예) 네이버지도 차단"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label pa-label">정책 설명</label>
+                        <input
+                            type="text"
+                            name="description"
+                            class="form-control"
+                            value="{{ form.description.value|default_if_none:'' }}"
+                            placeholder="예) 특정 서비스 접속 차단 정책"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label pa-label pa-required">처리 유형</label>
+                        <select class="form-select" name="handling_type">
+                            <option value="block" {% if form.handling_type.value == "block" or not form %}selected{% endif %}>block</option>
+                            <option value="log" {% if form.handling_type.value == "log" %}selected{% endif %}>log</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label pa-label pa-required">정책 적용 여부</label>
+                        <div class="mt-1">
+                            <div class="pa-seg">
+                                <input
+                                    type="radio"
+                                    name="is_active"
+                                    id="is_active_no"
+                                    value="false"
+                                    {% if form.is_active.value == "false" or not form %}checked{% endif %}
+                                >
+                                <label for="is_active_no">아니오</label>
+
+                                <input
+                                    type="radio"
+                                    name="is_active"
+                                    id="is_active_yes"
+                                    value="true"
+                                    {% if form.is_active.value == "true" %}checked{% endif %}
+                                >
+                                <label for="is_active_yes">예</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pa-actions">
+                        <button class="btn btn-primary px-4" type="submit">추가</button>
+
+                        {% if return_to %}
+                        <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
+                        {% else %}
+                        <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
+                        {% endif %}
+                    </div>
+                </form>
+
             </div>
-            {% endif %} 
-            {% comment %} 0) 정책 타입: 라디오 + nav-pills UI (도메인/정규표현식) {% endcomment %}
-            <div class="mb-3">
-                <label class="form-label pa-label pa-required">정책 타입</label>
-
-                <ul class="nav nav-pills pa-type-tabs mb-2">
-                <li class="nav-item">
-                    <input class="d-none" type="radio" name="policy_type" id="type_domain" value="DOMAIN"
-                        {% if form.policy_type.value == "DOMAIN" or not form %}checked{% endif %}>
-                    <label class="nav-link {% if form.policy_type.value == 'DOMAIN' or not form %}active{% endif %}"
-                        for="type_domain">도메인</label>
-                </li>
-
-                <li class="nav-item ms-2">
-                    <input class="d-none" type="radio" name="policy_type" id="type_regex" value="REGEX"
-                        {% if form.policy_type.value == "REGEX" %}checked{% endif %}>
-                    <label class="nav-link {% if form.policy_type.value == 'REGEX' %}active{% endif %}"
-                        for="type_regex">정규 표현식</label>
-                </li>
-                </ul>
-
-                <div class="pa-sub">정책 타입에 따라 URL/표현식 입력값을 구분해 사용합니다.</div>
-            </div>
-
-            {% comment %}
-            -----------------------------------------------------------------
-            1) 정책 URL/표현식
-            - initial_url/initial_domain은 AI 레코드에서 넘어온 프리필 후보값
-            - JS에서 정책 타입 탭을 바꾸면 input 값을 initial_url 또는 initial_domain으로 "교체"한다
-            -----------------------------------------------------------------
-            {% endcomment %}
-            <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
-            <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
-
-            <div class="mb-3">
-                <label class="form-label pa-label pa-required">정책 URL/표현식</label>
-                <input type="text" id="policy_content" name="content" class="form-control"
-                    value="{{ form.content.value|default:initial_domain|default_if_none:'' }}"
-                    placeholder="예) https://example.com/path">
-            </div>
-
-            {% comment %} 2) 정책 이름 {% endcomment %}
-            <div class="mb-3">
-                <label class="form-label pa-label pa-required">정책 이름</label>
-                <input type="text" name="policy_name" class="form-control"
-                    value="{{ form.policy_name.value|default_if_none:'' }}"
-                    placeholder="예) 네이버지도 차단">
-            </div>
-
-            {% comment %} 3) 정책 설명(선택) {% endcomment %}
-            <div class="mb-3">
-                <label class="form-label pa-label">정책 설명</label>
-                <input type="text" name="description" class="form-control"
-                    value="{{ form.description.value|default_if_none:'' }}"
-                    placeholder="예) 특정 서비스 접속 차단 정책">
-            </div>
-
-            {% comment %} 4) 처리 유형(block/log) {% endcomment %}
-            <div class="mb-3">
-                <label class="form-label pa-label pa-required">처리 유형</label>
-                <select class="form-select" name="handling_type">
-                <option value="block" {% if form.handling_type.value == "block" %}selected{% endif %}>block</option>
-                <option value="log" {% if form.handling_type.value == "log" %}selected{% endif %}>log</option>
-                </select>
-            </div>
-
-            {% comment %} 5) 정책 적용 여부(true/false): 라디오 세그먼트 UI {% endcomment %}
-            <div class="mb-2">
-                <label class="form-label pa-label pa-required">정책 적용 여부</label>
-                <div class="mt-1">
-                <div class="pa-seg">
-                    <input type="radio" name="is_active" id="is_active_no" value="false"
-                        {% if form.is_active.value == "false" or not form %}checked{% endif %}>
-                    <label for="is_active_no">아니오</label>
-
-                    <input type="radio" name="is_active" id="is_active_yes" value="true"
-                        {% if form.is_active.value == "true" %}checked{% endif %}>
-                    <label for="is_active_yes">예</label>
-                </div>
-                </div>
-            </div>
-
-            {% comment %} 하단 버튼: return_to가 있으면 해당 URL로 취소, 없으면 목록으로 {% endcomment %}
-            <div class="pa-actions">
-                <button class="btn btn-primary px-4" type="submit">추가</button>
-
-                {% if return_to %}
-                <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
-                {% else %}
-                <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
-                {% endif %}
-            </div>
-            </form>
-
-        </div>
         </div>
     </div>
+</div>
 
-    </div>
-
-    <script>
-    /*
-    정책 타입 탭(도메인/정규표현식) 클릭 시 동작
-    - 라디오 input 자체는 label[for=...] 클릭으로 체크된다.
-    - UI(active 클래스)는 JS로 토글한다.
-    - 정책 URL/표현식 입력값(content)은 탭에 따라 initial_domain 또는 initial_url로 교체한다.
-    */
-    (function () {
+<script>
+(function () {
     const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
     const input = document.getElementById("policy_content");
 
     const initialUrl = (document.getElementById("initial_url")?.value || "").trim();
     const initialDomain = (document.getElementById("initial_domain")?.value || "").trim();
 
-    labels.forEach(lb => {
-        lb.addEventListener("click", () => {
-        labels.forEach(x => x.classList.remove("active"));
-        lb.classList.add("active");
+    labels.forEach((label) => {
+        label.addEventListener("click", () => {
+            labels.forEach((item) => item.classList.remove("active"));
+            label.classList.add("active");
 
-        const target = lb.getAttribute("for");
+            const target = label.getAttribute("for");
 
-        if (target === "type_regex") {
-            if (initialUrl) input.value = initialUrl;
-        } else if (target === "type_domain") {
-            if (initialDomain) input.value = initialDomain;
-        }
+            if (target === "type_regex") {
+                if (initialUrl) input.value = initialUrl;
+            } else if (target === "type_domain") {
+                if (initialDomain) input.value = initialDomain;
+            }
         });
     });
-    })();
+})();
 </script>
 {% endblock %}

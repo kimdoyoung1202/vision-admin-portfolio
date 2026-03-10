@@ -1,36 +1,79 @@
 {% comment %}
-templates/policy/policy_list_partial.html (또는 _policy_list_partial.html)
+templates/policy/policy_list_partial.html
 
-[이 partial의 역할]
-- 정책 목록 테이블 + 페이징만 렌더링한다.
-- policy_list.html(부모)에서 listArea 영역을 AJAX로 교체할 때 사용한다.
-- 부모 JS는 tr.js-row의 data-* 값을 읽어서 우측 상세 패널을 채운다.
-    (update/delete URL, 정책 상세 텍스트, is_active/handling_type 등)
+- 정책 목록 테이블 + 페이징만 렌더링
+- 부모(policy_list.html)의 JS가 tr.js-row의 data-*를 읽어서 상세 패널 채움
 {% endcomment %}
 
 <style>
-  /* 테이블 행/글자 크기를 줄여 한 화면에 최대한 맞추기 */
     #policyTable th, #policyTable td{
         padding-top: 8px;
         padding-bottom: 8px;
         font-size: .92rem;
     }
-    #policyTable thead th{ font-weight: 900; }
 
-  /* 하단 페이저 높이/여백 */
-    .policy-pager{ margin-top: 6px !important; height: 44px; }
+    #policyTable thead th{
+        font-weight: 900;
+    }
+
+    .policy-pager{
+        margin-top: 10px !important;
+    }
+
+    .policy-pager-top{
+        margin-bottom: 8px;
+    }
+
+    .policy-pager .pagination{
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .policy-pager .page-item{
+        margin: 0;
+    }
+
+    .policy-pager .page-link{
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        color: #6b7280;
+        font-size: .88rem;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: none;
+        transition: all .15s ease;
+    }
+
+    .policy-pager .page-link:hover{
+        color: #696cff;
+        border-color: #cfd3ff;
+        background-color: #f6f7ff;
+    }
+
+    .policy-pager .page-item.active .page-link{
+        background-color: #696cff;
+        border-color: #696cff;
+        color: #fff;
+    }
+
+    .policy-pager .page-item.disabled .page-link{
+        background-color: #f9fafb;
+        border-color: #eceef2;
+        color: #b5bcc8;
+    }
 </style>
 
-{% comment %}
-[테이블 영역]
-- text-nowrap: 셀 줄바꿈을 막는다.
-- cell-truncate / cell-truncate-sm은 부모 템플릿 CSS에 정의된 클래스다.
-{% endcomment %}
 <div id="tableViewport" class="text-nowrap">
     <table class="table table-hover align-middle mb-0" id="policyTable">
         <thead>
         <tr>
-            <th style="width:90px;">정책 ID</th>
             <th style="width:110px;">정책 타입</th>
             <th style="width:220px;">정책 이름</th>
             <th>정책 URL/패턴</th>
@@ -43,85 +86,133 @@ templates/policy/policy_list_partial.html (또는 _policy_list_partial.html)
 
         <tbody>
         {% for p in page_obj %}
-        {% comment %}
-        row 클릭 시, 부모 JS가 아래 data-* 값을 읽는다.
-        - data-update-url / data-delete-url : 상세 하단 form.action으로 사용
-        - data-xxx : 상세 표시용 데이터들
-
-        attribute에 들어가는 값은 따옴표/특수문자/줄바꿈 때문에 깨질 수 있으므로
-        텍스트 값은 escape 처리한다.
-        {% endcomment %}
         <tr class="js-row" style="cursor:pointer;"
-            data-id="{{ p.policy_id }}"
-            data-update-url="{% url 'policy:update' p.policy_id %}"
-            data-delete-url="{% url 'policy:delete' p.policy_id %}"
-
+            data-id="{{ p.id }}"
+            data-update-url="{% url 'policy:update' p.id %}"
+            data-delete-url="{% url 'policy:delete' p.id %}"
+            data-edit-url="{% url 'policy:edit_ajax' p.id %}"
             data-policy-type="{{ p.policy_type|default:'' }}"
             data-policy-name="{{ p.policy_name|default:''|escape }}"
             data-content="{{ p.content|default:''|escape }}"
-
             data-is-active="{% if p.is_active %}true{% else %}false{% endif %}"
             data-handling-type="{{ p.handling_type|default:'' }}"
-
             data-create-by="{{ p.create_by|default:''|escape }}"
             data-create-at="{% if p.create_at %}{{ p.create_at|date:'Y-m-d H:i' }}{% endif %}"
-
-            data-description="{{ p.description|default:''|escape }}"
-        >
-            <td class="fw-semibold">{{ p.policy_id }}</td>
+            data-description="{{ p.description|default:''|escape }}">
             <td>{{ p.policy_type }}</td>
             <td class="cell-truncate-sm">{{ p.policy_name }}</td>
             <td class="cell-truncate">{{ p.content }}</td>
-
             <td class="text-center">
-            {% if p.is_active %}적용{% else %}미적용{% endif %}
+                {% if p.is_active %}적용{% else %}미적용{% endif %}
             </td>
-
             <td class="text-center">{{ p.handling_type|default:"-" }}</td>
             <td>{{ p.create_by|default:"-" }}</td>
-
             <td>
-            {% if p.create_at %}{{ p.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}
+                {% if p.create_at %}{{ p.create_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}
             </td>
         </tr>
-
         {% empty %}
         <tr>
-            <td colspan="8" class="text-center text-muted py-3">조회 결과가 없습니다.</td>
+            <td colspan="7" class="text-center text-muted py-3">조회 결과가 없습니다.</td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="policy-pager">
+    <div class="policy-pager-top d-flex justify-content-between align-items-center">
+        <div class="text-muted">
+            총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+        </div>
+        <div></div>
     </div>
 
-    {% comment %}
-    [페이징 영역]
-    - 부모 JS가 a[data-page] 클릭을 가로채서 AJAX로 loadPage(page) 실행
-    {% endcomment %}
-    <div class="d-flex justify-content-between align-items-center policy-pager">
-    <div class="text-muted">
-        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
-    </div>
-
-    <nav>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="d-flex justify-content-center">
         <ul class="pagination mb-0">
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-            <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
-            </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">이전</span></li>
-        {% endif %}
 
-        <li class="page-item disabled"><span class="page-link">{{ page_obj.number }}</span></li>
-
-        {% if page_obj.has_next %}
+            {% if page_obj.has_previous %}
             <li class="page-item">
-            <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>
+                <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
             </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">다음</span></li>
-        {% endif %}
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">이전</span>
+            </li>
+            {% endif %}
+
+            {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+                {% if total <= 5 %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == current %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% if current <= 3 %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num <= 5 %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% elif current >= total|add:"-2" %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= total|add:"-4" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= current|add:"-2" and num <= current|add:"2" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            {% endwith %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">다음</span>
+            </li>
+            {% endif %}
+
         </ul>
     </nav>
+    {% endif %}
 </div>

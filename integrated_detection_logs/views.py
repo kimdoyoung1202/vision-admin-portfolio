@@ -25,7 +25,7 @@ def _exact_then_contains(qs, field_name: str, value: str):
 
 
 def logs_list(request):
-    qs = IntegratedDetectionLogs.objects.select_related("policy_id").all()
+    qs = IntegratedDetectionLogs.objects.all()
 
     # =========================
     # filters from GET
@@ -67,15 +67,14 @@ def logs_list(request):
         qs = qs.filter(create_at__lte=f_end_dt)
 
     # =========================
-    # 3) 정책 이름 / 정책 ID / 정책 content
-    # dashboard에서 정규표현식 키워드 넘길 수도 있으니
-    # content 검색도 같이 포함
+    # 3) 정책 이름 / 정책 타입 / 정책 content
+    # FK가 아니라 로그 테이블 자체 컬럼 기준 검색
     # =========================
     if f_policy_keyword:
         qs = qs.filter(
-            Q(policy_id__policy_id__icontains=f_policy_keyword) |
-            Q(policy_id__policy_name__icontains=f_policy_keyword) |
-            Q(policy_id__content__icontains=f_policy_keyword)
+            Q(policy_name__icontains=f_policy_keyword) |
+            Q(policy_type__icontains=f_policy_keyword) |
+            Q(content__icontains=f_policy_keyword)
         )
 
     # =========================
@@ -88,7 +87,7 @@ def logs_list(request):
     # 5) 정책 타입
     # =========================
     if f_policy_type in ("DOMAIN", "REGEX"):
-        qs = qs.filter(policy_id__policy_type=f_policy_type)
+        qs = qs.filter(policy_type=f_policy_type)
 
     # =========================
     # 6) 메서드

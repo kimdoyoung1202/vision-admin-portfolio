@@ -4,8 +4,6 @@ class Policy(models.Model):
 
     id = models.AutoField(primary_key=True)
     
-    policy_id = models.CharField(max_length=30, unique=True)
-    
     policy_name = models.CharField(max_length=30)
     
     policy_type = models.CharField(max_length=10)
@@ -21,8 +19,6 @@ class Policy(models.Model):
     create_by = models.CharField(max_length=20)
     
     create_at = models.DateTimeField()
-    
-    is_deleted = models.BooleanField(default=False)
     
     
     class Meta:
