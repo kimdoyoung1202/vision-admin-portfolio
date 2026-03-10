@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.contrib import messages
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.dateparse import parse_date
 
 from policy.utils_engine import send_reload_signal
@@ -133,6 +133,7 @@ def policy_add(request):
     정책 추가 페이지/처리
     - ai_id가 있으면 AiAnalysisResult에서 값 프리필
     - 저장 성공 후 엔진 reload 시도(실패해도 저장은 성공)
+    - 동일 content 중복 등록 방지
     """
     ai_id = request.GET.get("ai_id") or request.POST.get("ai_id")
     return_to = request.GET.get("return_to") or request.POST.get("return_to")
@@ -164,8 +165,10 @@ def policy_add(request):
         if handling_type not in ("block", "log"):
             errors.append("처리 유형이 올바르지 않습니다.")
 
-        if content and Policy.objects.filter(content=content, is_deleted=False).exists():
-            errors.append("이미 동일한 정책(content)이 존재합니다.")
+        # 중복 검사
+        # DB가 content UNIQUE 인 것 같으므로 is_deleted=False 없이 전체 검사하는 쪽이 안전함
+        if content and Policy.objects.filter(content=content).exists():
+            errors.append("동일한 도메인/패턴이 이미 등록되어 있습니다.")
 
         if errors:
             return render(request, "policy/policy_add.html", {
@@ -184,59 +187,76 @@ def policy_add(request):
                 }
             })
 
-        with transaction.atomic():
+        try:
+            with transaction.atomic():
+                now = timezone.now()
+                admin_name = request.user.username if request.user.is_authenticated else "system"
+                new_policy_id = generate_policy_id(policy_type)
 
-            now = timezone.now()
-            admin_name = request.user.username if request.user.is_authenticated else "system"
-            new_policy_id = generate_policy_id(policy_type)
+                data = {
+                    "policy_id": new_policy_id,
+                    "policy_type": policy_type,
+                    "content": content,
+                    "policy_name": policy_name,
+                    "description": description,
+                    "handling_type": handling_type,
+                    "is_active": is_active,
+                }
 
-            data = {
-                "policy_id": new_policy_id,
-                "policy_type": policy_type,
-                "content": content,
-                "policy_name": policy_name,
-                "description": description,
-                "handling_type": handling_type,
-                "is_active": is_active,
-            }
+                if hasattr(Policy, "create_by"):
+                    data["create_by"] = admin_name
+                if hasattr(Policy, "create_at"):
+                    data["create_at"] = now
 
-            if hasattr(Policy, "create_by"):
-                data["create_by"] = request.user.username if request.user.is_authenticated else "system"
-            if hasattr(Policy, "create_at"):
-                data["create_at"] = timezone.now()
+                Policy.objects.create(**data)
 
-            Policy.objects.create(**data)
+                if policy_type == "DOMAIN":
+                    AiAnalysisResult.objects.filter(
+                        domain__iexact=content
+                    ).update(
+                        is_checked=True,
+                        checked_result="ADD",
+                        policy_type="DOMAIN",
+                        applied_at=now,
+                        admin=admin_name,
+                    )
 
-            if policy_type == "DOMAIN":
-                AiAnalysisResult.objects.filter(
-                    domain__iexact=content
-                ).update(
-                    is_checked=True,
-                    checked_result="ADD",
-                    policy_type="DOMAIN",
-                    applied_at=now,
-                    admin=admin_name,
-                )
+                elif policy_type == "REGEX" and ai_id and ai_row:
+                    ai_row.is_checked = True
+                    ai_row.checked_result = "ADD"
+                    ai_row.policy_type = "REGEX"
+                    ai_row.applied_at = now
+                    ai_row.admin = admin_name
+                    ai_row.save(update_fields=[
+                        "is_checked",
+                        "checked_result",
+                        "policy_type",
+                        "applied_at",
+                        "admin",
+                    ])
 
-            # REGEX 정책이면 현재 선택한 행 1건만 처리 (원하면 나중에 확장)
-            elif policy_type == "REGEX" and ai_id and ai_row:
-                ai_row.is_checked = True
-                ai_row.checked_result = "ADD"
-                ai_row.policy_type = "REGEX"
-                ai_row.applied_at = now
-                ai_row.admin = admin_name
-                ai_row.save(update_fields=[
-                    "is_checked",
-                    "checked_result",
-                    "policy_type",
-                    "applied_at",
-                    "admin",
-                ])
+        except IntegrityError:
+            return render(request, "policy/policy_add.html", {
+                "errors": ["동일한 도메인/패턴이 이미 등록되어 있습니다."],
+                "ai_id": ai_id,
+                "return_to": return_to,
+                "initial_content": ai_row.request_url if ai_row else "",
+                "initial_domain": ai_row.domain if ai_row else "",
+                "form": {
+                    "policy_type": {"value": policy_type},
+                    "content": {"value": content},
+                    "policy_name": {"value": policy_name},
+                    "description": {"value": description},
+                    "handling_type": {"value": handling_type},
+                    "is_active": {"value": is_active_raw},
+                }
+            })
+
         try:
             send_reload_signal("reload")
             messages.success(request, "정책이 추가되었습니다. (엔진 반영 완료)")
         except Exception as e:
-            messages.warning(request, f"정책이 추가되었습니다. (엔진 반영 실패: {e})")
+            messages.warning(request, f"정책은 추가되었지만 엔진 반영은 실패했습니다. ({e})")
 
         rt = (return_to or "").strip()
         if rt.lower() in ("none", "null", "undefined"):
@@ -256,7 +276,6 @@ def policy_add(request):
         "initial_content": ai_row.request_url if ai_row else "",
         "initial_domain": ai_row.domain if ai_row else "",
     })
-
 
 def generate_policy_id(policy_type):
     """
