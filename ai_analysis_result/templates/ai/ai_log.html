@@ -398,7 +398,7 @@
     function buildQuery(extra){
         const fd = new FormData(filterForm);
         const params = new URLSearchParams(fd);
-        params.set("per_page", "12");
+        params.set("per_page", "14");
         params.set("partial", "1");
         if(extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
         return params.toString();
@@ -417,8 +417,9 @@
 
         listArea.innerHTML = await res.text();
 
-        const fullQs = buildQuery({ page, ...extra }).replace("&partial=1", "");
-        history.replaceState({}, "", `${window.location.pathname}?${fullQs}`);
+        const fullParams = new URLSearchParams(buildQuery({ page, ...extra }));
+        fullParams.delete("partial");
+        history.replaceState({}, "", `${window.location.pathname}?${fullParams.toString()}`);
     }
 
     function setEnabled(){
@@ -444,23 +445,34 @@
     }
 
     btnAdd.addEventListener("click", () => {
-        checkedResultHidden.value = "ADD";
-        updateCheckedResultUI("ADD");
+        if (checkedResultHidden.value === "ADD") {
+            checkedResultHidden.value = "";
+            updateCheckedResultUI("");
+        } else {
+            checkedResultHidden.value = "ADD";
+            updateCheckedResultUI("ADD");
+        }
         setEnabled();
     });
 
     btnIgnore.addEventListener("click", () => {
-        checkedResultHidden.value = "IGNORE";
-        updateCheckedResultUI("IGNORE");
+        if (checkedResultHidden.value === "IGNORE") {
+            checkedResultHidden.value = "";
+            updateCheckedResultUI("");
+        } else {
+            checkedResultHidden.value = "IGNORE";
+            updateCheckedResultUI("IGNORE");
+        }
         setEnabled();
     });
 
-    isCheckedSelect.addEventListener("change", setEnabled);
-
-    if (checkedResultHidden.value === "ADD" || checkedResultHidden.value === "IGNORE") {
-        updateCheckedResultUI(checkedResultHidden.value);
-    }
-    setEnabled();
+    isCheckedSelect.addEventListener("change", () => {
+        if (isCheckedSelect.value !== "true") {
+            checkedResultHidden.value = "";
+            updateCheckedResultUI("");
+        }
+        setEnabled();
+    });
 
     filterForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -502,7 +514,7 @@
         dDomain.textContent = data.domain || "-";
         dAiResult.textContent = data.aiResult || "-";
         dConfidence.textContent = data.confidence ? `${data.confidence}%` : "-";
-        dHitCount.textContent = data.hitCount || "-";
+        dHitCount.textContent = data.hitCount ? `${data.hitCount}개` : "-";
         dIsChecked.textContent = (data.isChecked === "true") ? "검토됨" : "미검토";
         dCheckedResult.textContent = data.checkedResult || "-";
         dPolicyType.textContent = data.policyType || "-";
@@ -531,7 +543,12 @@
             },
             body: JSON.stringify({}),
         });
-        return await res.json();
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.error || "ignore failed");
+        }
+        return data;
     }
 
     btnIgnoreDetail.addEventListener("click", async () => {
@@ -566,6 +583,11 @@
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
+
+    if (checkedResultHidden.value === "ADD" || checkedResultHidden.value === "IGNORE") {
+        updateCheckedResultUI(checkedResultHidden.value);
+    }
+    setEnabled();
 
     resetDetail();
 })();

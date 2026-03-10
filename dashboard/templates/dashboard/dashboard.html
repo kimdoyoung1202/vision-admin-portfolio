@@ -57,6 +57,7 @@
         justify-content:space-between;
         height:100%;
         min-height:0;
+        cursor:pointer;
     }
 
     .pkt-kpi{
@@ -176,6 +177,7 @@
     .kpi-delta-row{
         display:flex;
         align-items:center;
+        justify-content:space-between;
         gap:6px;
         margin-top:6px;
     }
@@ -190,6 +192,24 @@
         font-size:13px;
         font-weight:900;
         color:#566a7f;
+    }
+
+    .kpi-go{
+        border:none;
+        background:transparent;
+        padding:0;
+        margin:0;
+        font-size:18px;
+        line-height:1;
+        font-weight:900;
+        color:#696cff;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:24px;
+        height:24px;
+        flex:0 0 24px;
     }
 </style>
 
@@ -256,40 +276,49 @@
     <section class="sec kpi">
         <div class="row compact">
             <div class="col-lg-4 h-100">
-                <div class="card-sneat kpi-card">
+                <div class="card-sneat kpi-card js-kpi-link" data-href="{% url 'policy:list' %}">
                     <div class="text-muted fw-bold">policy</div>
                     <div class="kpi-main">
                         <div class="kpi-value" id="kpiPolicy">-</div>
                     </div>
                     <div class="kpi-delta-row">
-                        <span class="kpi-delta-label">전일 대비</span>
-                        <span class="kpi-delta" id="kpiPolicyDelta">-</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="kpi-delta-label">전일 대비</span>
+                            <span class="kpi-delta" id="kpiPolicyDelta">-</span>
+                        </div>
+                        <button type="button" class="kpi-go js-kpi-go" aria-label="정책 조회로 이동">↗</button>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-4 h-100">
-                <div class="card-sneat kpi-card">
+                <div class="card-sneat kpi-card js-kpi-link" data-href="/ai/records/">
                     <div class="text-muted fw-bold">ai_analysis_result</div>
                     <div class="kpi-main">
                         <div class="kpi-value" id="kpiAi">-</div>
                     </div>
                     <div class="kpi-delta-row">
-                        <span class="kpi-delta-label">전일 대비</span>
-                        <span class="kpi-delta" id="kpiAiDelta">-</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="kpi-delta-label">전일 대비</span>
+                            <span class="kpi-delta" id="kpiAiDelta">-</span>
+                        </div>
+                        <button type="button" class="kpi-go js-kpi-go" aria-label="AI 기록관으로 이동">↗</button>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-4 h-100">
-                <div class="card-sneat kpi-card">
+                <div class="card-sneat kpi-card js-kpi-link" data-href="{% url 'logs:list' %}">
                     <div class="text-muted fw-bold">integrated_detection_logs</div>
                     <div class="kpi-main">
                         <div class="kpi-value" id="kpiBlocked">-</div>
                     </div>
                     <div class="kpi-delta-row">
-                        <span class="kpi-delta-label">전일 대비</span>
-                        <span class="kpi-delta" id="kpiBlockedDelta">-</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="kpi-delta-label">전일 대비</span>
+                            <span class="kpi-delta" id="kpiBlockedDelta">-</span>
+                        </div>
+                        <button type="button" class="kpi-go js-kpi-go" aria-label="로그 조회로 이동">↗</button>
                     </div>
                 </div>
             </div>
@@ -363,6 +392,9 @@
     const state = { ts:"day", dom:"day", rx:"day" };
     const TOP_RIGHT_PAD = 18;
 
+    const POLICY_LIST_URL = "{% url 'policy:list' %}";
+    const LOGS_URL = "{% url 'logs:list' %}";
+
     const kpiPolicy = document.getElementById("kpiPolicy");
     const kpiAi = document.getElementById("kpiAi");
     const kpiBlocked = document.getElementById("kpiBlocked");
@@ -391,6 +423,67 @@
         const num = Number(n ?? 0);
         const sign = num > 0 ? "▲" : (num < 0 ? "▼" : "•");
         return `${sign} ${Math.abs(num)}`;
+    }
+
+    function goTo(url){
+        if(!url) return;
+        window.location.href = url;
+    }
+
+    function buildUrl(base, paramsObj){
+        const params = new URLSearchParams();
+        Object.entries(paramsObj || {}).forEach(([key, value]) => {
+            const v = String(value ?? "").trim();
+            if(v !== ""){
+                params.set(key, v);
+            }
+        });
+        const qs = params.toString();
+        return qs ? `${base}?${qs}` : base;
+    }
+
+    function bindKpiLinks(){
+        document.querySelectorAll(".js-kpi-link").forEach(card => {
+            const href = card.dataset.href;
+
+            card.addEventListener("click", function(){
+                goTo(href);
+            });
+
+            const btn = card.querySelector(".js-kpi-go");
+            if(btn){
+                btn.addEventListener("click", function(e){
+                    e.stopPropagation();
+                    goTo(href);
+                });
+            }
+        });
+    }
+
+    function movePolicyByType(policyType){
+        if(!policyType){
+            goTo(POLICY_LIST_URL);
+            return;
+        }
+        goTo(buildUrl(POLICY_LIST_URL, { policy_type: policyType }));
+    }
+
+    function moveLogsByDomain(domain){
+        if(!domain) return;
+        goTo(buildUrl(LOGS_URL, { url_domain: domain }));
+    }
+
+    function moveLogsByRegex(regexValue){
+        if(!regexValue) return;
+        goTo(buildUrl(LOGS_URL, {
+            policy_kw: regexValue,
+            policy_type: "REGEX"
+        }));
+    }
+
+    function moveLogsByIp(ip){
+        if(!ip) return;
+        goTo(buildUrl(LOGS_URL, { client_ip: ip }));
     }
 
     const chartTimeseries = new Chart(document.getElementById("chartTimeseries"), {
@@ -429,6 +522,26 @@
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: "nearest", intersect: false },
+            onClick: function(evt, elements){
+                if(!elements || !elements.length) return;
+
+                const hit = elements[0];
+                const dsIndex = hit.datasetIndex;
+                const dataset = this.data.datasets[dsIndex];
+                const label = dataset?.label || "";
+
+                if(label === "DOMAIN"){
+                    movePolicyByType("DOMAIN");
+                    return;
+                }
+                if(label === "REGEX"){
+                    movePolicyByType("REGEX");
+                    return;
+                }
+                if(label === "TOTAL"){
+                    movePolicyByType("");
+                }
+            },
             plugins: {
                 legend: { position: "top" },
                 tooltip: { enabled: true, mode: "nearest", intersect: false }
@@ -467,14 +580,14 @@
                 },
                 y: {
                     grid: { display: false },
-                    afterFit: (scale) => { scale.width = 170; },
+                    afterFit: (scale) => { scale.width = 190; },
                     ticks: {
                         autoSkip: false,
                         padding: 6,
                         callback: function(value){
                             const label = this.getLabelForValue(value);
                             if (!label) return "";
-                            return label.length > 22 ? label.slice(0, 22) + "…" : label;
+                            return label.length > 18 ? label.slice(0, 18) + "..." : label;
                         }
                     }
                 }
@@ -509,14 +622,14 @@
                 },
                 y: {
                     grid: { display: false },
-                    afterFit: (scale) => { scale.width = 170; },
+                    afterFit: (scale) => { scale.width = 190; },
                     ticks: {
                         autoSkip: false,
                         padding: 6,
                         callback: function(value){
                             const label = this.getLabelForValue(value);
                             if (!label) return "";
-                            return label.length > 26 ? label.slice(0, 26) + "…" : label;
+                            return label.length > 16 ? label.slice(0, 16) + "..." : label;
                         }
                     }
                 }
@@ -543,7 +656,17 @@
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+                x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } },
+                y: {
+                    ticks: {
+                        autoSkip: false,
+                        callback: function(value){
+                            const label = this.getLabelForValue(value);
+                            if (!label) return "";
+                            return label.length > 18 ? label.slice(0, 18) + "..." : label;
+                        }
+                    }
+                }
             }
         }
     });
@@ -562,6 +685,49 @@
             plugins: { legend: { display: false } }
         }
     });
+
+    function bindYAxisLabelClick(chart, moveFn){
+        const canvas = chart.canvas;
+
+        canvas.addEventListener("click", function(e){
+            const points = chart.getElementsAtEventForMode(
+                e,
+                "nearest",
+                { intersect: true },
+                true
+            );
+
+            if (points && points.length) {
+                const idx = points[0].index;
+                const label = chart.data.labels[idx];
+                if (label) moveFn(label);
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const yScale = chart.scales.y;
+            if (!yScale) return;
+
+            if (x >= chart.chartArea.left) return;
+
+            let hitIndex = -1;
+            for (let i = 0; i < chart.data.labels.length; i++) {
+                const py = yScale.getPixelForValue(i);
+                if (Math.abs(y - py) <= 12) {
+                    hitIndex = i;
+                    break;
+                }
+            }
+
+            if (hitIndex > -1) {
+                const label = chart.data.labels[hitIndex];
+                if (label) moveFn(label);
+            }
+        });
+    }
 
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=total`);
@@ -661,6 +827,10 @@
     }
 
     bindGranButtons();
+    bindKpiLinks();
+    bindYAxisLabelClick(chartTopDomains, moveLogsByDomain);
+    bindYAxisLabelClick(chartTopRegex, moveLogsByRegex);
+    bindYAxisLabelClick(chartTopIps, moveLogsByIp);
     refreshAll();
     setInterval(refreshAll, REFRESH_MS);
 })();

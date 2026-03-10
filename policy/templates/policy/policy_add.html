@@ -109,7 +109,16 @@
             {% csrf_token %}
             <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
             <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
-
+            {% if errors %}
+            <div class="alert alert-danger mb-3" role="alert">
+                <div class="fw-bold mb-1">입력 내용을 확인하세요.</div>
+                <ul class="mb-0 ps-3">
+                    {% for err in errors %}
+                        <li>{{ err }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %} 
             {% comment %} 0) 정책 타입: 라디오 + nav-pills UI (도메인/정규표현식) {% endcomment %}
             <div class="mb-3">
                 <label class="form-label pa-label pa-required">정책 타입</label>

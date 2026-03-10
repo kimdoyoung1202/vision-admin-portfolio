@@ -279,10 +279,10 @@
         </div>
 
     </div>
-    </div>
+</div>
 
-    <script>
-    (function(){
+<script>
+(function(){
     const form = document.getElementById("logsFilterForm");
     const partialEl = document.getElementById("logsPartial");
 
@@ -302,7 +302,12 @@
     const dCreateAt = document.getElementById("dCreateAt");
 
     function clearActive(){
-        document.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
+        partialEl.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
+    }
+
+    function closeDetail(){
+        detailCol.classList.add("d-none");
+        clearActive();
     }
 
     function openDetail(row){
@@ -318,7 +323,7 @@
         dPolicyName.textContent = row.dataset.policyName || "-";
         dPolicyType.textContent = row.dataset.policyType || "-";
 
-        /* ✅ 핵심: 정책 "설명"이 아니라 policy.content 표시 */
+        /* 정책 설명이 아니라 policy.content */
         dPolicyDesc.textContent = row.dataset.policyContent || "-";
 
         dDstPort.textContent = row.dataset.dstPort || "-";
@@ -327,50 +332,59 @@
     }
 
     function bindRowClicks(){
-        const rows = document.querySelectorAll(".js-row");
-        rows.forEach(r => r.addEventListener("click", () => openDetail(r)));
+        const rows = partialEl.querySelectorAll(".js-row");
+        rows.forEach(r => {
+            r.addEventListener("click", () => openDetail(r));
+        });
     }
 
     function bindClose(){
-        detailCloseBtn.addEventListener("click", () => {
-        detailCol.classList.add("d-none");
-        clearActive();
-        });
+        detailCloseBtn.addEventListener("click", closeDetail);
     }
 
     function bindPagerClicks(){
         const links = partialEl.querySelectorAll("a.js-page");
         links.forEach(a => {
-        a.addEventListener("click", (e) => {
-            e.preventDefault();
-            const url = a.getAttribute("href");
-            if(url) loadPartial(url);
+            a.addEventListener("click", (e) => {
+                e.preventDefault();
+                const url = a.getAttribute("href");
+                if(url){
+                    loadPartial(url);
+                }
+            });
         });
-        });
+    }
+
+    function updateHistory(url){
+        window.history.replaceState({}, "", url);
     }
 
     async function loadPartial(url){
         try{
-        detailCol.classList.add("d-none");
-        clearActive();
+            closeDetail();
 
-        const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-        if(!res.ok) throw new Error("partial fetch failed");
+            const res = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            if(!res.ok) throw new Error("partial fetch failed");
 
-        partialEl.innerHTML = await res.text();
+            partialEl.innerHTML = await res.text();
 
-        bindRowClicks();
-        bindPagerClicks();
+            bindRowClicks();
+            bindPagerClicks();
+            updateHistory(url);
         }catch(err){
-        console.error(err);
-        alert("조회 중 오류가 발생했습니다. 콘솔 로그를 확인하세요.");
+            console.error(err);
+            alert("조회 중 오류가 발생했습니다. 콘솔 로그를 확인하세요.");
         }
     }
 
     form.addEventListener("submit", (e) => {
         e.preventDefault();
+
         const params = new URLSearchParams(new FormData(form));
         params.set("page", "1");
+
         const url = `${window.location.pathname}?${params.toString()}`;
         loadPartial(url);
     });
@@ -378,6 +392,6 @@
     bindRowClicks();
     bindPagerClicks();
     bindClose();
-    })();
+})();
 </script>
 {% endblock %}

@@ -87,7 +87,7 @@ DATABASES = {
         'NAME': 'SecurityAdmin',
         'USER': 'ktech',
         'PASSWORD': 'ktech!@#$',
-        'HOST': '192.168.1.43',
+        'HOST': '192.168.100.25',
         'PORT': '3306',
         'OPTIONS':{
             'charset': 'utf8mb4',
@@ -159,7 +159,7 @@ LOGIN_EXEMPT_URLS = [
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
-ENGINE_RELOAD_HOST = "192.168.1.43"   
+ENGINE_RELOAD_HOST = "192.168.100.25"   
 ENGINE_RELOAD_PORT = 5555
 ENGINE_RELOAD_TIMEOUT = 2.0
 

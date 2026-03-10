@@ -5,7 +5,7 @@ from urllib.error import URLError, HTTPError
 
 from django.conf import settings
 from django.views import View
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.utils import timezone
@@ -129,11 +129,11 @@ class AiRecordsView(View):
         sort = (request.GET.get("sort") or "latest").strip()
 
         # 페이지당 건수 제한
-        per_page = request.GET.get("per_page") or "13"
+        per_page = request.GET.get("per_page") or "14"
         try:
             per_page = int(per_page)
         except ValueError:
-            per_page = 13
+            per_page = 14
         per_page = max(5, min(per_page, 100))
 
         # 2) 기본 QuerySet 구성
@@ -142,6 +142,13 @@ class AiRecordsView(View):
         # 정상 레코드만 기본 리스트로 보여주기
         # 오류는 confidence_score = -1로 들어오도록 설계되어 있으므로 제외한다.
         qs = qs.filter(confidence_score__gte=0)
+
+        if checked_result == "IGNORE":
+            qs = qs.filter(checked_result="IGNORE")
+        elif checked_result == "ADD":
+            qs = qs.filter(checked_result="ADD")
+        else:
+            qs = qs.exclude(checked_result="IGNORE")
 
         # 검색어(q): request_url 또는 domain에 포함되면 매치
         if q:
@@ -158,8 +165,8 @@ class AiRecordsView(View):
             qs = qs.filter(is_checked=(is_checked == "true"))
 
         # checked_result / policy_type / admin 필터
-        if checked_result:
-            qs = qs.filter(checked_result=checked_result)
+        # 무시는 이미 숨김 처리했으므로 ADD 위주로만 필터
+        
         if policy_type:
             qs = qs.filter(policy_type=policy_type)
         if admin:
@@ -191,7 +198,6 @@ class AiRecordsView(View):
         page_obj = paginator.get_page(page_number)
 
         # 5) 템플릿 컨텍스트
-        # 템플릿에서 중복 건수 표기는 dup_count가 아니라 hit_count로 바뀌어야 한다.
         filters = {
             "q": q,
             "ai_judgment": ai_judgment,
@@ -282,13 +288,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 1) 요청수(오늘)
-        #
-        # 의미:
-        # 오늘 ai_analysis_result로 들어온 전체 요청 수
-        # 정상 + 오류 포함
-        #
-        # 구조상 한 URL 1행 + hit_count 누적 저장 방식이므로
-        # row count가 아니라 hit_count 합계를 사용한다.
         # ---------------------------------------------------------
         total_today = (
             AiAnalysisResult.objects
@@ -298,11 +297,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 2) 처리량 KPI
-        #
-        # 화면 KPI의 "처리량"은 실시간 RPM이 아니라
-        # 오늘 누적 처리량으로 사용한다.
-        #
-        # 정상 건만 대상으로 집계한다.
         # ---------------------------------------------------------
         throughput_today = (
             AiAnalysisResult.objects
@@ -316,9 +310,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 3) 정확도
-        #
-        # 기존 로직 유지
-        # 검토된 레코드 중 ADD / IGNORE 를 처리완료로 본다.
         # ---------------------------------------------------------
         reviewed = AiAnalysisResult.objects.filter(is_checked=True)
         reviewed_count = reviewed.count()
@@ -327,9 +318,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 4) 응답속도 KPI
-        #
-        # FastAPI가 내려주는 최근 응답속도 평균값을 사용한다.
-        # 평균이 없으면 0 처리
         # ---------------------------------------------------------
         avg_latency_ms = lat_avg_fastapi if (engine_ok and lat_avg_fastapi is not None) else 0
 
@@ -337,10 +325,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 5) 차트 데이터 구성
-        #
-        # 우선순위
-        # - FastAPI가 series_60s / series_24h 를 주면 그대로 사용
-        # - 없으면 DB 기반 throughput만 만들고 latency는 평균값으로 채운다
         # ---------------------------------------------------------
         if engine_ok and isinstance(series_60s, dict):
             rt_labels = series_60s.get("labels") or []
@@ -411,9 +395,6 @@ class AiStatusApiView(View):
 
         # ---------------------------------------------------------
         # 6) 최근 오류
-        #
-        # confidence_score = -1 인 항목을 최근순으로 노출
-        # 요청수(total_today)에는 포함되지만 처리량 KPI에는 포함하지 않는다.
         # ---------------------------------------------------------
         recent_errors_qs = (
             AiAnalysisResult.objects
@@ -490,3 +471,32 @@ class AiRecheckErrorsView(View):
             return JsonResponse({"ok": True})
         except Exception as e:
             return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+
+# ============================================================
+# 관리자 "무시" 버튼
+# - 선택한 AI 레코드를 검토 완료 + IGNORE 처리
+# - 목록에서는 IGNORE 항목을 숨긴다.
+# ============================================================
+@method_decorator(csrf_protect, name="dispatch")
+class AiIgnoreView(View):
+    def post(self, request, pk):
+        row = get_object_or_404(AiAnalysisResult, pk=pk)
+
+        row.is_checked = True
+        row.checked_result = "IGNORE"
+        row.admin = request.user.username if request.user.is_authenticated else "system"
+
+        # 무시는 정책 추가가 아니므로 정책 관련 값 비움
+        row.policy_type = ""
+        row.applied_at = None
+
+        row.save(update_fields=[
+            "is_checked",
+            "checked_result",
+            "admin",
+            "policy_type",
+            "applied_at",
+        ])
+
+        return JsonResponse({"ok": True}, json_dumps_params={"ensure_ascii": False})
