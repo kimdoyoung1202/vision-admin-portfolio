@@ -8,6 +8,48 @@
         margin-bottom:8px;
     }
 
+    .ai-sort-group{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:4px;
+        border:1px solid #e7ebf3;
+        border-radius:12px;
+        background:linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+        box-shadow:0 4px 14px rgba(67, 89, 113, 0.05);
+    }
+
+    .ai-sort-btn{
+        height:32px;
+        padding:0 14px;
+        border-radius:9px;
+        border:1px solid transparent;
+        background:transparent;
+        color:#6b7280;
+        font-size:.84rem;
+        font-weight:800;
+        line-height:1;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        text-decoration:none;
+        transition:all .16s ease;
+        white-space:nowrap;
+    }
+
+    .ai-sort-btn:hover{
+        color:#5f63f2;
+        background:#f4f6ff;
+        border-color:#d9defc;
+    }
+
+    .ai-sort-btn.is-active{
+        background:linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        color:#fff;
+        border-color:#696cff;
+        box-shadow:0 8px 18px rgba(105,108,255,.18);
+    }
+
     #aiTable th,
     #aiTable td{
         padding-top:8px;
@@ -84,12 +126,19 @@
 </style>
 
 <div class="ai-table-topbar" id="topbarArea">
-
-    <div class="d-flex gap-2">
-        <a class="btn btn-outline-success btn-sm" href="#" data-sort="confidence">
+    <div class="ai-sort-group">
+        <a
+            class="ai-sort-btn {% if filters.sort == 'confidence' %}is-active{% endif %}"
+            href="#"
+            data-sort="confidence"
+        >
             유해확률순
         </a>
-        <a class="btn btn-outline-secondary btn-sm" href="#" data-sort="latest">
+        <a
+            class="ai-sort-btn {% if filters.sort == 'latest' or not filters.sort %}is-active{% endif %}"
+            href="#"
+            data-sort="latest"
+        >
             최신순
         </a>
     </div>

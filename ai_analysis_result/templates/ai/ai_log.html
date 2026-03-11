@@ -1000,7 +1000,7 @@
     function buildQuery(extra){
         const fd = new FormData(filterForm);
         const params = new URLSearchParams(fd);
-        params.set("per_page", "14");
+        params.set("per_page", "12");
         params.set("partial", "1");
         if(extra) Object.entries(extra).forEach(([k,v]) => params.set(k, v));
         return params.toString();

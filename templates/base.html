@@ -26,7 +26,7 @@
       --primary: #696cff;
       --primary-2: #5f61e6;
       --sidebar-bg: #ffffff;
-      --border: #e7e7ff;
+      --border: #e7eaf3;
       --shadow: 0 6px 18px rgba(67, 89, 113, 0.12);
 
       --header-h: 64px;
@@ -36,6 +36,7 @@
 
     *{ box-sizing: border-box; }
     html, body{ height: 100%; }
+
     body{
       margin: 0;
       font-family: "Public Sans", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif;
@@ -69,6 +70,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      transition: width 220ms ease;
+      flex-shrink: 0;
     }
 
     .hamburger-btn{
@@ -83,19 +86,13 @@
       justify-content: center;
       cursor: pointer;
     }
-    .hamburger-btn:hover{ background: rgba(255,255,255,0.12); }
-
-    .topbar-brand{
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      font-size: 14px;
-      opacity: 0.95;
-      user-select: none;
-      white-space: nowrap;
+    .hamburger-btn:hover{
+      background: rgba(255,255,255,0.12);
     }
 
     .topbar-center{
       flex: 1;
+      min-width: 0;
       text-align: center;
       font-weight: 700;
       font-size: 22px;
@@ -104,22 +101,57 @@
       color:#fff;
       text-decoration:none;
     }
-    .topbar-center:hover{ opacity:.92; }
+    .topbar-center:hover{
+      opacity: .92;
+    }
 
     .topbar-right{
+      min-width: 260px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: flex-end;
+      gap: 2px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
-    .topbar-right a{
+
+    .topbar-text{
       color: #fff;
       text-decoration: none;
       font-weight: 600;
       padding: 8px 10px;
       border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 180px;
+      opacity: .96;
     }
-    .topbar-right a:hover{ background: rgba(255,255,255,0.12); }
+
+    .topbar-text .bx{
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+
+    .topbar-text-label{
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .topbar-text:hover{
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .topbar-divider{
+      width: 1px;
+      height: 16px;
+      margin: 0 4px;
+      background: rgba(255,255,255,0.28);
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
 
     .body{
       flex: 1;
@@ -149,12 +181,12 @@
     }
 
     .menu-section{
-      margin: 6px 6px 14px;
+      margin: 6px 8px 14px;
       font-size: 11px;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.7px;
+      letter-spacing: .7px;
       user-select: none;
     }
 
@@ -181,11 +213,12 @@
       font-weight: 600;
       cursor: pointer;
       user-select: none;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
     }
 
     .menu-link:hover{
-      background: rgba(105, 108, 255, 0.08);
-      border-color: rgba(105, 108, 255, 0.18);
+      background: rgba(105, 108, 255, 0.06);
+      border-color: rgba(105, 108, 255, 0.14);
       color: #2f3a45;
     }
 
@@ -194,6 +227,7 @@
       color: var(--primary);
       width: 20px;
       text-align: center;
+      flex-shrink: 0;
     }
 
     .menu-link .caret{
@@ -204,8 +238,9 @@
     }
 
     .menu-item.active > .menu-link{
-      background: rgba(105, 108, 255, 0.12);
-      border-color: rgba(105, 108, 255, 0.25);
+      background: rgba(105, 108, 255, 0.10);
+      border-color: rgba(105, 108, 255, 0.18);
+      color: #2f3a45;
     }
 
     .submenu{
@@ -215,8 +250,13 @@
       display: none;
     }
 
-    .menu-item.open > .submenu{ display: block; }
-    .menu-item.open > .menu-link .caret{ transform: rotate(90deg); }
+    .menu-item.open > .submenu{
+      display: block;
+    }
+
+    .menu-item.open > .menu-link .caret{
+      transform: rotate(90deg);
+    }
 
     .submenu .submenu-link{
       display: flex;
@@ -228,16 +268,18 @@
       text-decoration: none;
       font-weight: 600;
       border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease;
     }
 
     .submenu .submenu-link:hover{
-      background: rgba(105, 108, 255, 0.08);
-      border-color: rgba(105, 108, 255, 0.18);
+      background: rgba(105, 108, 255, 0.06);
+      border-color: rgba(105, 108, 255, 0.14);
     }
 
     .submenu .submenu-link.current{
-      background: rgba(105, 108, 255, 0.14);
-      border-color: rgba(105, 108, 255, 0.25);
+      background: rgba(105, 108, 255, 0.10);
+      border-color: rgba(105, 108, 255, 0.18);
+      color: #2f3a45;
     }
 
     .main{
@@ -284,6 +326,26 @@
     .page-title:empty{ display:none; }
     .page-subtitle:empty{ display:none; }
 
+    @media (max-width: 991.98px){
+      .topbar-right{
+        min-width: auto;
+      }
+
+      .topbar-text{
+        max-width: 130px;
+      }
+    }
+
+    @media (max-width: 767.98px){
+      .topbar-center{
+        font-size: 18px;
+      }
+
+      .topbar-text-label{
+        max-width: 64px;
+      }
+    }
+
     {% block extra_css %}{% endblock %}
   </style>
 </head>
@@ -300,8 +362,16 @@
       <a class="topbar-center" id="mainname" href="{% url 'dashboard:home' %}">VISION</a>
 
       <nav class="topbar-right">
-        <a href="{% url 'logout' %}">
-          <i class="bx bx-log-out"></i> 로그아웃
+        <span class="topbar-text" title="{{ request.user.username|default:'admin' }}">
+          <i class="bx bx-user"></i>
+          <span class="topbar-text-label">{{ request.user.username|default:"admin" }}</span>
+        </span>
+
+        <span class="topbar-divider"></span>
+
+        <a class="topbar-text" href="{% url 'logout' %}">
+          <i class="bx bx-log-out"></i>
+          <span class="topbar-text-label">로그아웃</span>
         </a>
       </nav>
     </header>
@@ -407,9 +477,11 @@
       const layoutRoot = document.getElementById("layoutRoot");
       const sidebarToggle = document.getElementById("sidebarToggle");
 
-      sidebarToggle.addEventListener("click", function () {
-        layoutRoot.classList.toggle("sidebar-collapsed");
-      });
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener("click", function () {
+          layoutRoot.classList.toggle("sidebar-collapsed");
+        });
+      }
 
       const dropdownItems = document.querySelectorAll(".menu-item[data-dropdown='true'] > .menu-link");
       dropdownItems.forEach((btn) => {

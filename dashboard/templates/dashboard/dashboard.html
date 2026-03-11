@@ -15,7 +15,14 @@
         overflow:hidden !important;
     }
 
-    :root { --topbar-h: 64px; }
+    :root {
+        --topbar-h: 64px;
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-border: #e7ebf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
+    }
 
     .dash-page{
         height: calc(100vh - var(--topbar-h) - 20px);
@@ -211,6 +218,48 @@
         height:24px;
         flex:0 0 24px;
     }
+
+    /* ===== 기간 버튼 디자인 변경 ===== */
+    .dash-gran{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:3px;
+        border:1px solid #dfe4f1;
+        border-radius: 999px;
+        background:#f8f9fd;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+
+    .dash-gran .btn{
+        min-width:52px;
+        height:30px;
+        padding:0 .75rem;
+        border:none !important;
+        border-radius:999px !important;
+        background:transparent !important;
+        color:#6b7788 !important;
+        font-size:12px !important;
+        font-weight:800 !important;
+        line-height:30px !important;
+        box-shadow:none !important;
+        transition:all .16s ease;
+    }
+
+    .dash-gran .btn:hover{
+        background:#eef2ff !important;
+        color:#4f5fd7 !important;
+    }
+
+    .dash-gran .btn.active{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%) !important;
+        color:#fff !important;
+        box-shadow: 0 6px 14px rgba(105,108,255,.18) !important;
+    }
+
+    .dash-gran .btn:focus{
+        box-shadow:none !important;
+    }
 </style>
 
 <div class="dash-page">
@@ -222,10 +271,10 @@
                     <div class="d-flex align-items-center justify-content-between mb-1">
                         <div class="fw-bold">시간대별 URL 차단 로그 카운트</div>
                         <div class="d-flex align-items-center gap-2">
-                            <div class="btn-group btn-group-sm" role="group" data-ctl="ts">
-                                <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                                <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                                <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                            <div class="btn-group btn-group-sm dash-gran" role="group" data-ctl="ts">
+                                <button type="button" class="btn active" data-gran="day">일별</button>
+                                <button type="button" class="btn" data-gran="week">주별</button>
+                                <button type="button" class="btn" data-gran="month">월별</button>
                             </div>
                         </div>
                     </div>
@@ -243,10 +292,10 @@
                 <div class="card-sneat">
                     <div class="d-flex align-items-center justify-content-between mb-1">
                         <div class="fw-bold">도메인 탐지로그 (Top10)</div>
-                        <div class="btn-group btn-group-sm" role="group" data-ctl="dom">
-                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        <div class="btn-group btn-group-sm dash-gran" role="group" data-ctl="dom">
+                            <button type="button" class="btn active" data-gran="day">일별</button>
+                            <button type="button" class="btn" data-gran="week">주별</button>
+                            <button type="button" class="btn" data-gran="month">월별</button>
                         </div>
                     </div>
                     <div class="chart-box">
@@ -259,10 +308,10 @@
                 <div class="card-sneat">
                     <div class="d-flex align-items-center justify-content-between mb-1">
                         <div class="fw-bold">정규표현식 탐지로그 (Top10)</div>
-                        <div class="btn-group btn-group-sm" role="group" data-ctl="rx">
-                            <button type="button" class="btn btn-outline-primary active" data-gran="day">일별</button>
-                            <button type="button" class="btn btn-outline-primary" data-gran="week">주별</button>
-                            <button type="button" class="btn btn-outline-primary" data-gran="month">월별</button>
+                        <div class="btn-group btn-group-sm dash-gran" role="group" data-ctl="rx">
+                            <button type="button" class="btn active" data-gran="day">일별</button>
+                            <button type="button" class="btn" data-gran="week">주별</button>
+                            <button type="button" class="btn" data-gran="month">월별</button>
                         </div>
                     </div>
                     <div class="chart-box">
