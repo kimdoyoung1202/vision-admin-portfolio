@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from email.utils import formataddr
 
 User = get_user_model()
 
@@ -24,7 +25,7 @@ def send_otp_email(to_email, otp_code):
 
     msg = MIMEText(body, _charset="utf-8")
     msg["Subject"] = subject
-    msg["From"] = gmail_id
+    msg["From"] = formataddr(("VISION", gmail_id))   # 여기만 변경
     msg["To"] = to_email
 
     server = None
