@@ -7,20 +7,20 @@
 {% block extra_css %}
 <style>
     :root{
+        --topbarH: 64px;
+        --gap: 10px;
+
         --vision-primary: #696cff;
         --vision-primary-dark: #5f63f2;
-        --vision-primary-soft: rgba(105,108,255,.12);
-        --vision-border: #e7eaf3;
+        --vision-border: #e7ebf3;
         --vision-muted: #8592a3;
         --vision-text: #566a7f;
 
-        --pageH: calc(100vh - 64px);
-        --filterH: 132px;
-        --pagerH: 46px;
-        --theadH: 42px;
-        --rowH: 38px;
-        --rows: 8;
+        --pageH: calc(100vh - var(--topbarH));
     }
+
+    html, body{ height:100%; }
+    body{ overflow:hidden !important; }
 
     .history-page{
         height: var(--pageH);
@@ -33,152 +33,43 @@
         flex: 1;
         min-height: 0;
         overflow: hidden;
-        padding: 8px 14px !important;
+        padding: 10px 18px !important;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: var(--gap);
     }
 
-    .history-fluid .card{
-        margin: 0 !important;
+    .card{
+        border: 1px solid #e7ebf3;
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
         border-radius: 16px;
-        border: 1px solid var(--vision-border);
-        box-shadow: 0 2px 10px rgba(67,89,113,.05);
+        margin: 0 !important;
     }
 
     .filter-card .card-body{
-        padding: 10px 12px;
-    }
-
-    .list-card .card-body{
-        padding: 8px 10px;
-        height: 100%;
-    }
-
-    .filter-form{
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .filter-row{
-        display: grid;
-        gap: 8px;
-        align-items: end;
-    }
-
-    .filter-row-top{
-        grid-template-columns: 1fr 1fr .8fr 1.45fr .75fr .75fr auto;
-    }
-
-    .filter-row-bottom{
-        grid-template-columns: 1fr 1.45fr auto;
-    }
-
-    .filter-item{
-        min-width: 0;
-    }
-
-    .filter-card .form-label{
-        margin-bottom: 4px;
-        font-weight: 800;
-        font-size: .76rem;
-        line-height: 1.1;
-        color: var(--vision-text);
-    }
-
-    .filter-card .form-control,
-    .filter-card .form-select{
-        padding: .28rem .62rem;
-        border-radius: 10px;
-        height: 33px;
-        font-size: .85rem;
-        border-color: #d9deea;
-        box-shadow: none !important;
-    }
-
-    .filter-card .form-control:focus,
-    .filter-card .form-select:focus{
-        border-color: var(--vision-primary);
-        box-shadow: 0 0 0 .18rem rgba(105,108,255,.14) !important;
-    }
-
-    .date-range{
-        display: grid;
-        grid-template-columns: 1fr 18px 1fr;
-        gap: 6px;
-        align-items: center;
-    }
-
-    .date-sep{
-        text-align: center;
-        color: var(--vision-muted);
-        font-weight: 700;
-        font-size: .84rem;
-    }
-
-    .filter-actions{
-        display: flex;
-        align-items: end;
-        justify-content: flex-end;
-        gap: 8px;
-        white-space: nowrap;
-    }
-
-    .filter-actions .btn{
-        min-width: 78px;
-        height: 33px;
-        padding: 0 1rem;
-        border-radius: 10px;
-        font-weight: 800;
-        font-size: .84rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
-
-    .btn-search{
-        background: linear-gradient(135deg, #696cff 0%, #5f63f2 100%);
-        border: 1px solid #696cff;
-        color: #fff !important;
-        box-shadow: 0 6px 14px rgba(105,108,255,.24);
-    }
-
-    .btn-search:hover,
-    .btn-search:focus{
-        background: linear-gradient(135deg, #5f63f2 0%, #5458ea 100%);
-        border-color: #5f63f2;
-        color: #fff !important;
-        transform: translateY(-1px);
-    }
-
-    .btn-reset{
-        background: #fff;
-        border: 1px solid #cfd6e4;
-        color: #566a7f !important;
-    }
-
-    .btn-reset:hover{
-        background: #f7f8fc;
-        border-color: #c6cede;
+        padding: 14px 14px 12px;
     }
 
     .workspace{
         flex: 1;
         min-height: 0;
         overflow: hidden;
+        display: flex;
     }
 
     .workspace-card{
         height: 100%;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        border-radius: 16px;
     }
 
     .workspace-card .card-body{
         flex: 1;
         min-height: 0;
+        overflow: hidden;
+        padding: 10px 12px;
         display: flex;
         flex-direction: column;
     }
@@ -189,6 +80,280 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+    }
+
+    .filter-card .nav{
+        margin-bottom: 14px !important;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-card .nav-pills .nav-link{
+        padding: .45rem .95rem;
+        border-radius: 11px;
+        font-weight: 800;
+        font-size: .88rem;
+        color: #5f6b7a;
+        background: #f5f6fb;
+        border: 1px solid #e0e5f0;
+        transition: all .15s ease;
+    }
+
+    .filter-card .nav-pills .nav-link:hover{
+        color: #696cff;
+        background: #eff1ff;
+        border-color: #ccd4ff;
+    }
+
+    .filter-card .nav-pills .nav-link.active{
+        color: #fff;
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border-color: #696cff;
+        box-shadow: 0 8px 16px rgba(105, 108, 255, .18);
+    }
+
+    .filter-grid{
+        display: grid;
+        grid-template-columns: 1.2fr .9fr 1.7fr 1fr 1fr 1fr 2.3fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .fg-item{
+        min-width: 0;
+    }
+
+    .filter-card .form-label{
+        margin-bottom: 5px;
+        font-weight: 800;
+        font-size: .80rem;
+        line-height: 1.1;
+        color: #566a7f;
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select{
+        height: 38px;
+        padding: .38rem .72rem;
+        border-radius: 10px;
+        border: 1px solid #d8e0ec;
+        background: #fff;
+        font-size: .88rem;
+        min-width: 0;
+        width: 100%;
+        font-weight: 700;
+        box-shadow: none !important;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14) !important;
+    }
+
+    .date-range-wrap{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .range-sep{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #8a97a8;
+        font-weight: 800;
+        font-size: .9rem;
+        line-height: 1;
+    }
+
+    .dt-wrap{
+        position: relative;
+        min-width: 0;
+    }
+
+    .dt-display{
+        cursor: pointer;
+        padding-right: 38px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+    }
+
+    .dt-display[readonly]{
+        color: #566a7f;
+    }
+
+    .dt-wrap::after{
+        content: "🗓";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        opacity: .72;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .dt-panel{
+        position: fixed;
+        width: 280px;
+        background: #fff;
+        border: 1px solid #e6eaf2;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(67, 89, 113, 0.18);
+        padding: 12px;
+        z-index: 2000;
+        display: none;
+    }
+
+    .dt-panel.show{
+        display: block;
+    }
+
+    .dt-panel-head{
+        font-size: .9rem;
+        font-weight: 800;
+        color: #566a7f;
+        margin-bottom: 10px;
+    }
+
+    .dt-panel .dt-date{
+        width: 100%;
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .72rem;
+        font-size: .88rem;
+        outline: none;
+    }
+
+    .dt-panel .dt-date:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-time-row{
+        display: grid;
+        grid-template-columns: 1fr 20px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .dt-time-row select{
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .6rem;
+        font-size: .88rem;
+        background: #fff;
+        outline: none;
+    }
+
+    .dt-time-row select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-colon{
+        text-align: center;
+        font-weight: 800;
+        color: #8592a3;
+    }
+
+    .dt-panel-actions{
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .dt-panel-actions-left,
+    .dt-panel-actions-right{
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-dt{
+        height: 34px;
+        padding: 0 .8rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
+        background: #fff;
+        color: #5f6b7a;
+        font-weight: 800;
+        font-size: .82rem;
+    }
+
+    .btn-dt:hover{
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .btn-dt-apply{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+    }
+
+    .btn-dt-apply:hover{
+        color: #fff;
+    }
+
+    .filter-actions-col{
+        min-width: 166px;
+        display: flex;
+        align-items: end;
+        justify-content: flex-end;
+    }
+
+    .filter-actions{
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        flex-wrap: nowrap;
+    }
+
+    .filter-actions .btn{
+        height: 38px;
+        padding: .45rem .95rem;
+        border-radius: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        min-width: 76px;
+    }
+
+    .btn-filter-search{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+    }
+
+    .btn-filter-search:hover{
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105, 108, 255, .24);
+    }
+
+    .btn-filter-reset{
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a !important;
+    }
+
+    .btn-filter-reset:hover{
+        background: #eef2ff;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5;
     }
 
     .history-modal .modal-dialog{
@@ -312,35 +477,70 @@
         background: #fff;
     }
 
-    @media (max-width: 1500px){
-        .filter-row-top{
-            grid-template-columns: 1fr 1fr .8fr 1.2fr .75fr .75fr auto;
+    @media (max-width: 1599.98px){
+        .filter-grid{
+            grid-template-columns: 1.15fr .85fr 1.5fr 1fr 1fr 1fr 2.05fr auto;
         }
     }
 
-    @media (max-width: 1280px){
-        .filter-row-top{
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+    @media (max-width: 1399.98px){
+        .filter-grid{
+            grid-template-columns: 1fr 1fr 1.35fr 1fr 1fr 1fr 1.8fr auto;
+            gap: 10px;
         }
 
-        .filter-row-bottom{
-            grid-template-columns: 1fr 1fr auto;
+        .date-range-wrap{
+            gap: 6px;
+            grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
         }
     }
 
-    @media (max-width: 992px){
-        .filter-row-top,
-        .filter-row-bottom{
+    @media (max-width: 1199.98px){
+        .filter-grid{
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .filter-actions-col{
+            min-width: 0;
+            justify-content: flex-start;
+        }
+
         .filter-actions{
-            grid-column: 1 / -1;
-            justify-content: stretch;
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 767.98px){
+        .filter-card .nav-pills .nav-link{
+            width: 100%;
+            text-align: center;
+        }
+
+        .filter-grid{
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions{
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .filter-actions .btn{
-            flex: 1;
+            width: 100%;
+        }
+
+        .date-range-wrap{
+            grid-template-columns: 1fr;
+        }
+
+        .range-sep{
+            display: none;
+        }
+
+        .dt-panel{
+            width: calc(100vw - 32px);
+            left: 16px !important;
+            right: 16px !important;
         }
     }
 </style>
@@ -352,34 +552,42 @@
 
         <div class="card filter-card">
             <div class="card-body">
-                <form method="get" class="filter-form" id="filterForm">
 
-                    <div class="filter-row filter-row-top">
-                        <div class="filter-item">
-                            <label class="form-label">정책 타입</label>
-                            <select class="form-select" name="policy_type">
-                                <option value="" {% if filters.policy_type == "" %}selected{% endif %}>전체</option>
-                                <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>DOMAIN</option>
-                                <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>REGEX</option>
-                            </select>
-                        </div>
+                <ul class="nav nav-pills mb-2" id="typeTabs">
+                    <li class="nav-item">
+                        <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
+                           href="{% url 'policy_update_history:list' %}?policy_type=">전체</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if filters.policy_type == 'DOMAIN' %}active{% endif %} js-tab"
+                           href="{% url 'policy_update_history:list' %}?policy_type=DOMAIN">DOMAIN</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if filters.policy_type == 'REGEX' %}active{% endif %} js-tab"
+                           href="{% url 'policy_update_history:list' %}?policy_type=REGEX">REGEX</a>
+                    </li>
+                </ul>
 
-                        <div class="filter-item">
+                <form method="get" id="filterForm">
+                    <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
+
+                    <div class="filter-grid">
+                        <div class="fg-item">
                             <label class="form-label">정책 이름</label>
                             <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력">
                         </div>
 
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">정책 ID</label>
                             <input class="form-control" name="policy_id" value="{{ filters.policy_id }}" placeholder="입력">
                         </div>
 
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">URL</label>
                             <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력">
                         </div>
 
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">처리 유형</label>
                             <select class="form-select" name="handling_type">
                                 <option value="" {% if filters.handling_type == "" %}selected{% endif %}>전체</option>
@@ -388,7 +596,7 @@
                             </select>
                         </div>
 
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">적용 여부</label>
                             <select class="form-select" name="is_active">
                                 <option value="" {% if filters.is_active == "" %}selected{% endif %}>전체</option>
@@ -397,36 +605,41 @@
                             </select>
                         </div>
 
-                        <div class="filter-actions">
-                            <button class="btn btn-search" type="submit">검색</button>
-                            <a class="btn btn-reset" href="{% url 'policy_update_history:list' %}">초기화</a>
-                        </div>
-                    </div>
-
-                    <div class="filter-row filter-row-bottom">
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">수정자 ID</label>
                             <input class="form-control" name="update_by" value="{{ filters.update_by }}" placeholder="입력">
                         </div>
 
-                        <div class="filter-item">
+                        <div class="fg-item">
                             <label class="form-label">수정시간</label>
-                            <div class="date-range">
-                                <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
-                                <div class="date-sep">~</div>
-                                <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+                            <div class="date-range-wrap">
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="start_date" id="startDateValue" value="{{ filters.start_date }}">
+                                    <input type="text" id="startDateDisplay" class="form-control dt-display" placeholder="시작 일시 선택" readonly>
+                                </div>
+
+                                <span class="range-sep">~</span>
+
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="end_date" id="endDateValue" value="{{ filters.end_date }}">
+                                    <input type="text" id="endDateDisplay" class="form-control dt-display" placeholder="종료 일시 선택" readonly>
+                                </div>
                             </div>
                         </div>
 
-                        <div></div>
+                        <div class="filter-actions-col">
+                            <div class="filter-actions">
+                                <button class="btn btn-filter-search" type="submit">검색</button>
+                                <a class="btn btn-filter-reset" href="{% url 'policy_update_history:list' %}">초기화</a>
+                            </div>
+                        </div>
                     </div>
-
                 </form>
             </div>
         </div>
 
-        <div class="row g-2 workspace">
-            <div class="col-12">
+        <div class="workspace">
+            <div class="col-12 h-100">
                 <div class="card list-card workspace-card">
                     <div class="card-body">
                         <div id="listArea">
@@ -437,6 +650,29 @@
             </div>
         </div>
 
+    </div>
+</div>
+
+<div class="dt-panel" id="datetimePanel">
+    <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
+
+    <input type="date" class="dt-date" id="dtDate">
+
+    <div class="dt-time-row">
+        <select id="dtHour"></select>
+        <div class="dt-colon">:</div>
+        <select id="dtMinute"></select>
+    </div>
+
+    <div class="dt-panel-actions">
+        <div class="dt-panel-actions-left">
+            <button type="button" class="btn-dt" id="dtNowBtn">지금</button>
+            <button type="button" class="btn-dt" id="dtClearBtn">초기화</button>
+        </div>
+        <div class="dt-panel-actions-right">
+            <button type="button" class="btn-dt" id="dtCancelBtn">취소</button>
+            <button type="button" class="btn-dt btn-dt-apply" id="dtApplyBtn">적용</button>
+        </div>
     </div>
 </div>
 
@@ -514,14 +750,6 @@
 
     let historyModal = null;
 
-    function initModal(){
-        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
-            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
-            return null;
-        }
-        return bootstrap.Modal.getOrCreateInstance(historyModalEl);
-    }
-
     const mPolicyId = document.getElementById("mPolicyId");
     const mPolicyType = document.getElementById("mPolicyType");
     const mPolicyName = document.getElementById("mPolicyName");
@@ -534,6 +762,127 @@
 
     const compareRows = document.getElementById("compareRows");
     const compareEmpty = document.getElementById("compareEmpty");
+
+    const datetimePanel = document.getElementById("datetimePanel");
+    const dtPanelTitle = document.getElementById("dtPanelTitle");
+    const dtDate = document.getElementById("dtDate");
+    const dtHour = document.getElementById("dtHour");
+    const dtMinute = document.getElementById("dtMinute");
+    const dtNowBtn = document.getElementById("dtNowBtn");
+    const dtClearBtn = document.getElementById("dtClearBtn");
+    const dtCancelBtn = document.getElementById("dtCancelBtn");
+    const dtApplyBtn = document.getElementById("dtApplyBtn");
+
+    const startDateValue = document.getElementById("startDateValue");
+    const startDateDisplay = document.getElementById("startDateDisplay");
+    const endDateValue = document.getElementById("endDateValue");
+    const endDateDisplay = document.getElementById("endDateDisplay");
+
+    let activePicker = null;
+
+    function initModal(){
+        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
+            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(historyModalEl);
+    }
+
+    function pad(n){
+        return String(n).padStart(2, "0");
+    }
+
+    function formatDisplay(value){
+        if(!value) return "";
+        return value.replace("T", " ");
+    }
+
+    function parseValue(value){
+        if(!value || value.indexOf("T") === -1){
+            return { date: "", hour: "00", minute: "00" };
+        }
+        const parts = value.split("T");
+        const date = parts[0] || "";
+        const time = parts[1] || "00:00";
+        const t = time.split(":");
+        return {
+            date: date,
+            hour: pad(t[0] || "00"),
+            minute: pad(t[1] || "00"),
+        };
+    }
+
+    function buildValue(date, hour, minute){
+        if(!date) return "";
+        return `${date}T${pad(hour)}:${pad(minute)}`;
+    }
+
+    function fillTimeOptions(){
+        for(let h = 0; h < 24; h++){
+            const opt = document.createElement("option");
+            opt.value = pad(h);
+            opt.textContent = pad(h) + "시";
+            dtHour.appendChild(opt);
+        }
+
+        for(let m = 0; m < 60; m += 1){
+            const opt = document.createElement("option");
+            opt.value = pad(m);
+            opt.textContent = pad(m) + "분";
+            dtMinute.appendChild(opt);
+        }
+    }
+
+    function syncDisplay(){
+        startDateDisplay.value = formatDisplay(startDateValue.value);
+        endDateDisplay.value = formatDisplay(endDateValue.value);
+    }
+
+    function openPicker(type, anchorEl){
+        activePicker = type;
+        dtPanelTitle.textContent = type === "start" ? "시작 일시 선택" : "종료 일시 선택";
+
+        const rawValue = type === "start" ? startDateValue.value : endDateValue.value;
+        const parsed = parseValue(rawValue);
+
+        dtDate.value = parsed.date;
+        dtHour.value = parsed.hour;
+        dtMinute.value = parsed.minute;
+
+        const rect = anchorEl.getBoundingClientRect();
+        const panelWidth = 280;
+        const left = Math.min(
+            Math.max(16, rect.left + window.scrollX),
+            window.scrollX + window.innerWidth - panelWidth - 16
+        );
+
+        let top = rect.bottom + window.scrollY + 8;
+        const panelHeight = 210;
+        if(top + panelHeight > window.scrollY + window.innerHeight - 12){
+            top = rect.top + window.scrollY - panelHeight - 8;
+        }
+
+        datetimePanel.style.left = left + "px";
+        datetimePanel.style.top = Math.max(12, top) + "px";
+        datetimePanel.classList.add("show");
+    }
+
+    function closePicker(){
+        datetimePanel.classList.remove("show");
+        activePicker = null;
+    }
+
+    function applyPickerValue(value){
+        if(!activePicker) return;
+
+        if(activePicker === "start"){
+            startDateValue.value = value;
+        }else{
+            endDateValue.value = value;
+        }
+        syncDisplay();
+        closePicker();
+    }
 
     function buildParams(extra){
         const fd = new FormData(filterForm);
@@ -645,10 +994,91 @@
             historyModal.hide();
         }
 
+        bindPagerClicks();
+        bindTabs();
+
         params.delete("partial");
         const fullUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.replaceState({}, "", fullUrl);
     }
+
+    function bindPagerClicks(){
+        listArea.querySelectorAll("a[data-page]").forEach(a => {
+            a.addEventListener("click", (e) => {
+                e.preventDefault();
+                loadPage(a.dataset.page).catch(console.error);
+            });
+        });
+    }
+
+    function bindTabs(){
+        document.querySelectorAll("a.js-tab").forEach(a => {
+            a.addEventListener("click", (e) => {
+                e.preventDefault();
+
+                document.querySelectorAll("a.js-tab").forEach(x => x.classList.remove("active"));
+                a.classList.add("active");
+
+                const url = new URL(a.href, window.location.origin);
+                const pt = url.searchParams.get("policy_type") ?? "";
+                filterForm.querySelector('input[name="policy_type"]').value = pt;
+
+                loadPage(1).catch(console.error);
+            });
+        });
+    }
+
+    fillTimeOptions();
+    syncDisplay();
+
+    startDateDisplay.addEventListener("click", function () {
+        openPicker("start", startDateDisplay);
+    });
+
+    endDateDisplay.addEventListener("click", function () {
+        openPicker("end", endDateDisplay);
+    });
+
+    dtNowBtn.addEventListener("click", function () {
+        const now = new Date();
+        dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        dtHour.value = pad(now.getHours());
+        dtMinute.value = pad(now.getMinutes());
+    });
+
+    dtClearBtn.addEventListener("click", function () {
+        applyPickerValue("");
+    });
+
+    dtCancelBtn.addEventListener("click", function () {
+        closePicker();
+    });
+
+    dtApplyBtn.addEventListener("click", function () {
+        const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
+        applyPickerValue(value);
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!datetimePanel.classList.contains("show")) return;
+
+        const clickedInsidePanel = datetimePanel.contains(e.target);
+        const clickedDisplay =
+            e.target === startDateDisplay ||
+            e.target === endDateDisplay;
+
+        if (!clickedInsidePanel && !clickedDisplay) {
+            closePicker();
+        }
+    });
+
+    window.addEventListener("resize", function () {
+        closePicker();
+    });
+
+    window.addEventListener("scroll", function () {
+        closePicker();
+    }, true);
 
     filterForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -656,13 +1086,6 @@
     });
 
     listArea.addEventListener("click", (e) => {
-        const pageLink = e.target.closest("a[data-page]");
-        if (pageLink){
-            e.preventDefault();
-            loadPage(pageLink.dataset.page).catch(console.error);
-            return;
-        }
-
         const row = e.target.closest("tr.js-row");
         if (!row) return;
 
@@ -684,6 +1107,8 @@
         clearActive();
     });
 
+    bindPagerClicks();
+    bindTabs();
     resetModal();
     historyModal = initModal();
 })();

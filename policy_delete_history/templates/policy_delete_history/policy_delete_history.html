@@ -6,7 +6,7 @@
 {% block page_title %}정책 삭제 기록 관리{% endblock %}
 {% block page_subtitle %}삭제된 정책 조회 및 복구{% endblock %}
 {% block page_actions %}
-    <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">정책 관리로</a>
+    <a class="btn btn-policy-go" href="{% url 'policy:list' %}">정책 조회로</a>
 {% endblock %}
 
 {% block extra_css %}
@@ -20,7 +20,11 @@
         --pagerH: 44px;
         --rows: 12;
 
-        --detailW: 420px;
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-border: #e7ebf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
     }
 
     html, body{ height: 100%; }
@@ -43,17 +47,16 @@
         gap: var(--gap);
     }
 
-    .filter-card .card-body{ padding: 10px 12px 8px; }
-    .filter-card .nav{ margin-bottom: 8px !important; }
-    .filter-card .form-label{ font-weight:900; font-size:.82rem; margin-bottom:4px; }
-    .filter-card .form-control,
-    .filter-card .form-select{
-        height: 34px;
-        padding: .32rem .6rem;
-        border-radius: 10px;
-        font-weight: 700;
+    .card{
+        border: 1px solid #e7ebf3;
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
+        border-radius: 16px;
+        margin: 0 !important;
     }
-    .filter-card .btn{ height:34px; padding:.42rem 1rem; border-radius:10px; font-weight:900; }
+
+    .filter-card .card-body{
+        padding: 14px 14px 12px;
+    }
 
     .workspace{
         flex:1;
@@ -70,19 +73,12 @@
         overflow:hidden;
     }
 
-    #detailCol{
-        flex: 0 0 var(--detailW);
-        min-width: var(--detailW);
-        height:100%;
-        overflow:hidden;
-    }
-
     .workspace-card{
         height:100%;
         display:flex;
         flex-direction:column;
         overflow:hidden;
-        border-radius: 12px;
+        border-radius: 16px;
     }
 
     .workspace-card .card-body{
@@ -104,147 +100,425 @@
         z-index: 5;
     }
 
-    .table-viewport{
-        flex:0 0 auto;
-        height: calc(var(--theadH) + (var(--rows) * var(--rowH)));
-        overflow:hidden;
-        border-radius: 10px;
-    }
-
-    table#phTable thead tr{ height: var(--theadH); }
-    table#phTable tbody tr{ height: var(--rowH); }
-    table#phTable th, table#phTable td{
-        vertical-align: middle;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        font-size: .90rem;
-    }
-
-    .table-responsive{ overflow-x:auto; overflow-y:hidden; }
-
-    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    .clickable-row{ cursor:pointer; }
-    .table-active{ background: rgba(105,108,255,.08) !important; }
-
-    .pager{
-        flex:0 0 auto;
-        height: var(--pagerH);
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        margin-top: 8px;
-    }
-    .pagination{ margin-bottom:0 !important; }
-
-    .pill{
-        display:inline-block;
-        padding:3px 10px;
-        border-radius:8px;
-        font-weight:800;
-        font-size:11px;
-        letter-spacing:.3px;
-        border:1px solid transparent;
-    }
-    .pill-active{ background: rgba(40,199,111,.12); color:#28c76f; border-color: rgba(40,199,111,.25); }
-    .pill-inactive{ background: rgba(133,146,163,.12); color:#8592a3; border-color: rgba(133,146,163,.25); }
-    .pill-block{ background: rgba(255,62,29,.10); color:#ff3e1d; border-color: rgba(255,62,29,.25); }
-    .pill-log{ background: rgba(3,195,236,.10); color:#03c3ec; border-color: rgba(3,195,236,.25); }
-    .td-center{ text-align:center; }
-
-    .detail-top{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(67,89,113,.12);
-        flex:0 0 auto;
-    }
-    .detail-title{
-        font-weight: 900;
-        font-size: 1.05rem;
-    }
-
-    .detail-hint{
-        margin: 10px 0 8px;
-        color:#6c757d;
-        font-weight:700;
-        font-size:.85rem;
-        flex:0 0 auto;
-    }
-
-    .detail-body{
-        flex:1;
-        min-height:0;
-        overflow:hidden;
-        display:flex;
-        flex-direction:column;
-    }
-
-    .detail-grid{
-        flex:0 0 auto;
-        width:100%;
-        border-top: 1px solid rgba(67,89,113,.12);
-        border-bottom: 1px solid rgba(67,89,113,.12);
-    }
-
-    .detail-row{
-        display:grid;
-        grid-template-columns: 120px 1fr;
-        gap: 10px;
-        padding: 10px 0;
-        border-top: 1px solid rgba(67,89,113,.10);
-    }
-    .detail-row:first-child{ border-top: none; }
-
-    .detail-k{
-        color:#6c757d;
-        font-weight:900;
-        font-size:.86rem;
-        padding-left: 2px;
-    }
-
-    .detail-v{
-        font-weight:900;
-        font-size:.92rem;
-        line-height:1.25;
-        word-break: break-word;
-        overflow-wrap:anywhere;
-    }
-
-    .detail-desc-label{
-        margin-top: 12px;
-        color:#6c757d;
-        font-weight:900;
-        font-size:.86rem;
-        flex:0 0 auto;
-    }
-
-    .detail-desc-box{
-        margin-top: 6px;
-        border: 1px solid rgba(67,89,113,.18);
-        border-radius: 10px;
-        padding: 10px 12px;
-        background: #fff;
+    .btn-policy-go{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
         font-weight: 800;
-        line-height: 1.35;
+        border-radius: 10px;
+        padding: .52rem 1rem;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .20);
+    }
+    .btn-policy-go:hover{
+        color:#fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105, 108, 255, .26);
+    }
 
-        flex: 1 1 auto;
-        min-height: 0;
+    .filter-card .nav{
+        margin-bottom: 14px !important;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-card .nav-pills .nav-link{
+        padding: .45rem .95rem;
+        border-radius: 11px;
+        font-weight: 800;
+        font-size: .88rem;
+        color: #5f6b7a;
+        background: #f5f6fb;
+        border: 1px solid #e0e5f0;
+        transition: all .15s ease;
+    }
+
+    .filter-card .nav-pills .nav-link:hover{
+        color: #696cff;
+        background: #eff1ff;
+        border-color: #ccd4ff;
+    }
+
+    .filter-card .nav-pills .nav-link.active{
+        color: #fff;
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border-color: #696cff;
+        box-shadow: 0 8px 16px rgba(105, 108, 255, .18);
+    }
+
+    .filter-grid{
+        display: grid;
+        grid-template-columns: 1.2fr 1.65fr 1fr 1fr 1fr 2.35fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .fg-item{
+        min-width: 0;
+    }
+
+    .filter-card .form-label{
+        margin-bottom: 5px;
+        font-weight: 800;
+        font-size: .80rem;
+        line-height: 1.1;
+        color: #566a7f;
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select{
+        height: 38px;
+        padding: .38rem .72rem;
+        border-radius: 10px;
+        border: 1px solid #d8e0ec;
+        background: #fff;
+        font-size: .88rem;
+        min-width: 0;
+        width: 100%;
+        font-weight: 700;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .date-range-wrap{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .range-sep{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #8a97a8;
+        font-weight: 800;
+        font-size: .9rem;
+        line-height: 1;
+    }
+
+    .dt-wrap{
+        position: relative;
+        min-width: 0;
+    }
+
+    .dt-display{
+        cursor: pointer;
+        padding-right: 38px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+    }
+
+    .dt-display[readonly]{
+        color: #566a7f;
+    }
+
+    .dt-wrap::after{
+        content: "🗓";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        opacity: .72;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .dt-panel{
+        position: fixed;
+        width: 280px;
+        background: #fff;
+        border: 1px solid #e6eaf2;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(67, 89, 113, 0.18);
+        padding: 12px;
+        z-index: 2000;
+        display: none;
+    }
+
+    .dt-panel.show{
+        display: block;
+    }
+
+    .dt-panel-head{
+        font-size: .9rem;
+        font-weight: 800;
+        color: #566a7f;
+        margin-bottom: 10px;
+    }
+
+    .dt-panel .dt-date{
+        width: 100%;
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .72rem;
+        font-size: .88rem;
+        outline: none;
+    }
+
+    .dt-panel .dt-date:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-time-row{
+        display: grid;
+        grid-template-columns: 1fr 20px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .dt-time-row select{
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .6rem;
+        font-size: .88rem;
+        background: #fff;
+        outline: none;
+    }
+
+    .dt-time-row select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-colon{
+        text-align: center;
+        font-weight: 800;
+        color: #8592a3;
+    }
+
+    .dt-panel-actions{
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .dt-panel-actions-left,
+    .dt-panel-actions-right{
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-dt{
+        height: 34px;
+        padding: 0 .8rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
+        background: #fff;
+        color: #5f6b7a;
+        font-weight: 800;
+        font-size: .82rem;
+    }
+
+    .btn-dt:hover{
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .btn-dt-apply{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+    }
+
+    .btn-dt-apply:hover{
+        color: #fff;
+    }
+
+    .filter-actions-col{
+        min-width: 166px;
+        display: flex;
+        align-items: end;
+        justify-content: flex-end;
+    }
+
+    .filter-actions{
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        flex-wrap: nowrap;
+    }
+
+    .filter-actions .btn{
+        height: 38px;
+        padding: .45rem .95rem;
+        border-radius: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        min-width: 76px;
+    }
+
+    .btn-filter-search{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+    }
+
+    .btn-filter-search:hover{
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105, 108, 255, .24);
+    }
+
+    .btn-filter-reset{
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a;
+    }
+
+    .btn-filter-reset:hover{
+        background: #eef2ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .history-modal .modal-dialog{
+        max-width: 920px;
+    }
+
+    .history-modal .modal-content{
+        border: none;
+        border-radius: 18px;
+        overflow: hidden;
+    }
+
+    .history-modal .modal-header{
+        padding: 14px 18px;
+        border-bottom: 1px solid #ebeef3;
+    }
+
+    .history-modal .modal-body{
+        padding: 14px 18px 16px;
+        max-height: calc(100vh - 180px);
         overflow: auto;
     }
 
-    .detail-actions{
-        flex:0 0 auto;
-        padding-top: 12px;
-        display:flex;
-        gap: 10px;
+    .modal-subtext{
+        font-size: .90rem;
+        color: #8592a3;
     }
-    .detail-actions .btn{
-        height: 44px;
+
+    .policy-id-text{
+        font-weight: 800;
+        color: #566a7f;
+    }
+
+    .meta-table{
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    .meta-table th{
+        width: 115px;
+        color: #8592a3;
+        font-weight: 800;
+        background: #fcfcfd;
+    }
+
+    .meta-table td,
+    .meta-table th{
+        padding: 9px 11px !important;
+        vertical-align: middle;
+        font-size: .90rem;
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    .modal-actions{
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        margin-top: 14px;
+    }
+
+    .modal-actions .btn{
+        min-width: 110px;
+        height: 42px;
         border-radius: 12px;
         font-weight: 900;
+    }
+
+    @media (max-width: 1599.98px){
+        .filter-grid{
+            grid-template-columns: 1.1fr 1.5fr 1fr 1fr 1fr 2.1fr auto;
+        }
+    }
+
+    @media (max-width: 1399.98px){
+        .filter-grid{
+            grid-template-columns: 1fr 1.35fr 1fr 1fr 1fr 2fr auto;
+            gap: 10px;
+        }
+
+        .date-range-wrap{
+            gap: 6px;
+            grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 1199.98px){
+        .filter-grid{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filter-actions-col{
+            min-width: 0;
+            justify-content: flex-start;
+        }
+
+        .filter-actions{
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 767.98px){
+        .filter-card .nav-pills .nav-link{
+            width: 100%;
+            text-align: center;
+        }
+
+        .filter-grid{
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions{
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-actions .btn{
+            width: 100%;
+        }
+
+        .date-range-wrap{
+            grid-template-columns: 1fr;
+        }
+
+        .range-sep{
+            display: none;
+        }
+
+        .dt-panel{
+            width: calc(100vw - 32px);
+            left: 16px !important;
+            right: 16px !important;
+        }
     }
 </style>
 {% endblock %}
@@ -271,55 +545,67 @@
                     </li>
                 </ul>
 
-                <form method="get" class="row g-2 align-items-end" id="historyFilterForm">
+                <form method="get" id="historyFilterForm">
                     <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
                     <input type="hidden" name="per_page" value="12">
 
-                    <div class="col-3">
-                        <label class="form-label">정책 이름</label>
-                        <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
-                    </div>
-
-                    <div class="col-4">
-                        <label class="form-label">정책 URL/표현식</label>
-                        <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
-                    </div>
-
-                    <div class="col-2">
-                        <label class="form-label">정책 적용 여부</label>
-                        <select class="form-select" name="is_active">
-                            <option value="" {% if filters.is_active == "" %}selected{% endif %}>선택</option>
-                            <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
-                            <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
-                        </select>
-                    </div>
-
-                    <div class="col-3">
-                        <label class="form-label">처리 유형</label>
-                        <select class="form-select" name="handling_type">
-                            <option value="" {% if filters.handling_type == "" %}selected{% endif %}>선택</option>
-                            <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
-                            <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
-                        </select>
-                    </div>
-
-                    <div class="col-3">
-                        <label class="form-label">정책 삭제자 id</label>
-                        <input class="form-control" name="delete_by" value="{{ filters.delete_by }}" placeholder="입력 :">
-                    </div>
-
-                    <div class="col-4">
-                        <label class="form-label">삭제시간</label>
-                        <div class="d-flex gap-2">
-                            <input class="form-control" type="date" name="start_date" value="{{ filters.start_date }}">
-                            <div class="d-flex align-items-center text-muted">~</div>
-                            <input class="form-control" type="date" name="end_date" value="{{ filters.end_date }}">
+                    <div class="filter-grid">
+                        <div class="fg-item">
+                            <label class="form-label">정책 이름</label>
+                            <input class="form-control" name="policy_name" value="{{ filters.policy_name }}" placeholder="입력 :">
                         </div>
-                    </div>
 
-                    <div class="col-2 d-flex gap-2 align-items-end">
-                        <button class="btn btn-primary w-100" type="submit">검색</button>
-                        <a class="btn btn-outline-secondary w-100" href="{% url 'policy_delete_history:list' %}">초기화</a>
+                        <div class="fg-item">
+                            <label class="form-label">정책 URL/표현식</label>
+                            <input class="form-control" name="content" value="{{ filters.content }}" placeholder="입력 :">
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">정책 적용 여부</label>
+                            <select class="form-select" name="is_active">
+                                <option value="" {% if filters.is_active == "" %}selected{% endif %}>선택</option>
+                                <option value="true" {% if filters.is_active == "true" %}selected{% endif %}>적용</option>
+                                <option value="false" {% if filters.is_active == "false" %}selected{% endif %}>미적용</option>
+                            </select>
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">처리 유형</label>
+                            <select class="form-select" name="handling_type">
+                                <option value="" {% if filters.handling_type == "" %}selected{% endif %}>선택</option>
+                                <option value="block" {% if filters.handling_type == "block" %}selected{% endif %}>block</option>
+                                <option value="log" {% if filters.handling_type == "log" %}selected{% endif %}>log</option>
+                            </select>
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">정책 삭제자 id</label>
+                            <input class="form-control" name="delete_by" value="{{ filters.delete_by }}" placeholder="입력 :">
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">삭제시간</label>
+                            <div class="date-range-wrap">
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="start_date" id="startDateValue" value="{{ filters.start_date }}">
+                                    <input type="text" id="startDateDisplay" class="form-control dt-display" placeholder="시작 일시 선택" readonly>
+                                </div>
+
+                                <span class="range-sep">~</span>
+
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="end_date" id="endDateValue" value="{{ filters.end_date }}">
+                                    <input type="text" id="endDateDisplay" class="form-control dt-display" placeholder="종료 일시 선택" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-actions-col">
+                            <div class="filter-actions">
+                                <button class="btn btn-filter-search" type="submit">검색</button>
+                                <a class="btn btn-filter-reset" href="{% url 'policy_delete_history:list' %}">초기화</a>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -335,63 +621,87 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div id="detailCol" class="d-none">
-                <div class="card workspace-card">
-                    <div class="card-body">
+    </div>
+</div>
 
-                        <div class="detail-top">
-                            <div class="detail-title">상세페이지</div>
-                        </div>
+<div class="dt-panel" id="datetimePanel">
+    <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
 
-                        <div class="detail-hint">선택한 삭제 정책 1건의 상세정보가 표시됩니다</div>
+    <input type="date" class="dt-date" id="dtDate">
 
-                        <div class="detail-body">
-                            <div class="detail-grid">
-                                <div class="detail-row">
-                                    <div class="detail-k">정책 타입</div>
-                                    <div class="detail-v" id="dPolicyType">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">정책 이름</div>
-                                    <div class="detail-v" id="dPolicyName">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">URL/패턴</div>
-                                    <div class="detail-v" id="dContent">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">처리 유형</div>
-                                    <div class="detail-v" id="dHandlingType">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">정책 적용 여부</div>
-                                    <div class="detail-v" id="dIsActive">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">정책 삭제자</div>
-                                    <div class="detail-v" id="dDeleteBy">-</div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-k">삭제 시간</div>
-                                    <div class="detail-v" id="dDeleteAt">-</div>
-                                </div>
-                            </div>
+    <div class="dt-time-row">
+        <select id="dtHour"></select>
+        <div class="dt-colon">:</div>
+        <select id="dtMinute"></select>
+    </div>
 
-                            <div class="detail-desc-label">정책 설명</div>
-                            <div class="detail-desc-box" id="dPolicyDesc">-</div>
+    <div class="dt-panel-actions">
+        <div class="dt-panel-actions-left">
+            <button type="button" class="btn-dt" id="dtNowBtn">지금</button>
+            <button type="button" class="btn-dt" id="dtClearBtn">초기화</button>
+        </div>
+        <div class="dt-panel-actions-right">
+            <button type="button" class="btn-dt" id="dtCancelBtn">취소</button>
+            <button type="button" class="btn-dt btn-dt-apply" id="dtApplyBtn">적용</button>
+        </div>
+    </div>
+</div>
 
-                            <div class="detail-actions">
-                                <button class="btn btn-primary flex-grow-1" type="button" id="btnRestore" disabled>복구</button>
-                                <button class="btn btn-outline-secondary" type="button" id="btnDetailClose">닫기</button>
-                            </div>
-                        </div>
-
+<div class="modal fade history-modal" id="deleteDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold mb-1">삭제 정책 상세</h5>
+                    <div class="modal-subtext">
+                        <span class="policy-id-text" id="mHistoryId">-</span>
                     </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <table class="table table-sm table-bordered align-middle meta-table">
+                        <tbody>
+                            <tr>
+                                <th>정책 타입</th>
+                                <td id="mPolicyType">-</td>
+                                <th>정책 이름</th>
+                                <td id="mPolicyName">-</td>
+                            </tr>
+                            <tr>
+                                <th>URL/패턴</th>
+                                <td id="mContent" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>처리 유형</th>
+                                <td id="mHandlingType">-</td>
+                                <th>적용 여부</th>
+                                <td id="mIsActive">-</td>
+                            </tr>
+                            <tr>
+                                <th>정책 설명</th>
+                                <td id="mDescription" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>삭제자 ID</th>
+                                <td id="mDeleteBy">-</td>
+                                <th>삭제시간</th>
+                                <td id="mDeleteAt">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-filter-search" type="button" id="modalRestoreBtn" disabled>복구</button>
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">닫기</button>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -399,22 +709,142 @@
 (function(){
     const form = document.getElementById("historyFilterForm");
     const partialWrap = document.getElementById("historyPartial");
+    const deleteDetailModalEl = document.getElementById("deleteDetailModal");
 
-    const detailCol = document.getElementById("detailCol");
-    const btnDetailClose = document.getElementById("btnDetailClose");
+    let deleteDetailModal = null;
+    let restoreAction = null;
 
-    const dPolicyType = document.getElementById("dPolicyType");
-    const dPolicyName = document.getElementById("dPolicyName");
-    const dContent = document.getElementById("dContent");
-    const dHandlingType = document.getElementById("dHandlingType");
-    const dIsActive = document.getElementById("dIsActive");
-    const dDeleteBy = document.getElementById("dDeleteBy");
-    const dDeleteAt = document.getElementById("dDeleteAt");
-    const dPolicyDesc = document.getElementById("dPolicyDesc");
+    const mHistoryId = document.getElementById("mHistoryId");
+    const mPolicyType = document.getElementById("mPolicyType");
+    const mPolicyName = document.getElementById("mPolicyName");
+    const mContent = document.getElementById("mContent");
+    const mHandlingType = document.getElementById("mHandlingType");
+    const mIsActive = document.getElementById("mIsActive");
+    const mDescription = document.getElementById("mDescription");
+    const mDeleteBy = document.getElementById("mDeleteBy");
+    const mDeleteAt = document.getElementById("mDeleteAt");
+    const modalRestoreBtn = document.getElementById("modalRestoreBtn");
 
-    const btnRestore = document.getElementById("btnRestore");
+    const datetimePanel = document.getElementById("datetimePanel");
+    const dtPanelTitle = document.getElementById("dtPanelTitle");
+    const dtDate = document.getElementById("dtDate");
+    const dtHour = document.getElementById("dtHour");
+    const dtMinute = document.getElementById("dtMinute");
+    const dtNowBtn = document.getElementById("dtNowBtn");
+    const dtClearBtn = document.getElementById("dtClearBtn");
+    const dtCancelBtn = document.getElementById("dtCancelBtn");
+    const dtApplyBtn = document.getElementById("dtApplyBtn");
 
-    let __restoreAction = null;
+    const startDateValue = document.getElementById("startDateValue");
+    const startDateDisplay = document.getElementById("startDateDisplay");
+    const endDateValue = document.getElementById("endDateValue");
+    const endDateDisplay = document.getElementById("endDateDisplay");
+
+    let activePicker = null;
+
+    function initModal(){
+        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
+            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(deleteDetailModalEl);
+    }
+
+    function pad(n){
+        return String(n).padStart(2, "0");
+    }
+
+    function formatDisplay(value){
+        if(!value) return "";
+        return value.replace("T", " ");
+    }
+
+    function parseValue(value){
+        if(!value || value.indexOf("T") === -1){
+            return { date: "", hour: "00", minute: "00" };
+        }
+        const parts = value.split("T");
+        const date = parts[0] || "";
+        const time = parts[1] || "00:00";
+        const t = time.split(":");
+        return {
+            date: date,
+            hour: pad(t[0] || "00"),
+            minute: pad(t[1] || "00"),
+        };
+    }
+
+    function buildValue(date, hour, minute){
+        if(!date) return "";
+        return `${date}T${pad(hour)}:${pad(minute)}`;
+    }
+
+    function fillTimeOptions(){
+        for(let h = 0; h < 24; h++){
+            const opt = document.createElement("option");
+            opt.value = pad(h);
+            opt.textContent = pad(h) + "시";
+            dtHour.appendChild(opt);
+        }
+
+        for(let m = 0; m < 60; m += 1){
+            const opt = document.createElement("option");
+            opt.value = pad(m);
+            opt.textContent = pad(m) + "분";
+            dtMinute.appendChild(opt);
+        }
+    }
+
+    function syncDisplay(){
+        startDateDisplay.value = formatDisplay(startDateValue.value);
+        endDateDisplay.value = formatDisplay(endDateValue.value);
+    }
+
+    function openPicker(type, anchorEl){
+        activePicker = type;
+        dtPanelTitle.textContent = type === "start" ? "시작 일시 선택" : "종료 일시 선택";
+
+        const rawValue = type === "start" ? startDateValue.value : endDateValue.value;
+        const parsed = parseValue(rawValue);
+
+        dtDate.value = parsed.date;
+        dtHour.value = parsed.hour;
+        dtMinute.value = parsed.minute;
+
+        const rect = anchorEl.getBoundingClientRect();
+        const panelWidth = 280;
+        const left = Math.min(
+            Math.max(16, rect.left + window.scrollX),
+            window.scrollX + window.innerWidth - panelWidth - 16
+        );
+
+        let top = rect.bottom + window.scrollY + 8;
+        const panelHeight = 210;
+        if(top + panelHeight > window.scrollY + window.innerHeight - 12){
+            top = rect.top + window.scrollY - panelHeight - 8;
+        }
+
+        datetimePanel.style.left = left + "px";
+        datetimePanel.style.top = Math.max(12, top) + "px";
+        datetimePanel.classList.add("show");
+    }
+
+    function closePicker(){
+        datetimePanel.classList.remove("show");
+        activePicker = null;
+    }
+
+    function applyPickerValue(value){
+        if(!activePicker) return;
+
+        if(activePicker === "start"){
+            startDateValue.value = value;
+        }else{
+            endDateValue.value = value;
+        }
+        syncDisplay();
+        closePicker();
+    }
 
     function getCookie(name){
         const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
@@ -426,33 +856,64 @@
         return (el && el.value) ? el.value : getCookie("csrftoken");
     }
 
-    function resetDetail(){
-        dPolicyType.textContent = "-";
-        dPolicyName.textContent = "-";
-        dContent.textContent = "-";
-        dHandlingType.textContent = "-";
-        dIsActive.textContent = "-";
-        dDeleteBy.textContent = "-";
-        dDeleteAt.textContent = "-";
-        dPolicyDesc.textContent = "-";
-        __restoreAction = null;
-        btnRestore.disabled = true;
+    function textOrDash(v){
+        if (v === undefined || v === null || String(v).trim() === "") return "-";
+        return v;
     }
 
-    function openDetail(){
-        detailCol.classList.remove("d-none");
+    function clearActive(){
+        partialWrap.querySelectorAll(".js-row.table-active").forEach(r => r.classList.remove("table-active"));
     }
 
-    function closeDetail(){
-        detailCol.classList.add("d-none");
-        partialWrap.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
-        resetDetail();
+    function resetModal(){
+        mHistoryId.textContent = "-";
+        mPolicyType.textContent = "-";
+        mPolicyName.textContent = "-";
+        mContent.textContent = "-";
+        mHandlingType.textContent = "-";
+        mIsActive.textContent = "-";
+        mDescription.textContent = "-";
+        mDeleteBy.textContent = "-";
+        mDeleteAt.textContent = "-";
+        restoreAction = null;
+        modalRestoreBtn.disabled = true;
+    }
+
+    function fillModal(d){
+        mHistoryId.textContent = d.historyId ? `삭제 기록 ID : ${d.historyId}` : "-";
+        mPolicyType.textContent = textOrDash(d.policyType);
+        mPolicyName.textContent = textOrDash(d.policyName);
+        mContent.textContent = textOrDash(d.content);
+        mHandlingType.textContent = textOrDash(d.handlingType);
+        mIsActive.textContent = d.isActive === "true" ? "적용" : "미적용";
+        mDescription.textContent = textOrDash(d.policyDesc);
+        mDeleteBy.textContent = textOrDash(d.deleteBy);
+        mDeleteAt.textContent = textOrDash(d.deleteAt);
+
+        restoreAction = d.restoreAction || null;
+        modalRestoreBtn.disabled = !restoreAction;
+    }
+
+    function buildParams(extra){
+        const fd = new FormData(form);
+        const params = new URLSearchParams(fd);
+        params.set("partial", "1");
+
+        if (extra){
+            Object.entries(extra).forEach(([k, v]) => params.set(k, v));
+        }
+        return params;
     }
 
     async function loadPartial(url){
         try{
             partialWrap.classList.add("dim-loading");
-            closeDetail();
+            clearActive();
+            resetModal();
+
+            if(deleteDetailModal){
+                deleteDetailModal.hide();
+            }
 
             const res = await fetch(url, {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
@@ -460,11 +921,9 @@
             if(!res.ok) throw new Error("partial fetch failed");
 
             partialWrap.innerHTML = await res.text();
-
             bindPagerClicks();
             bindTabs();
             bindRowClicks();
-
         }catch(e){
             console.error(e);
             alert("조회 중 오류가 발생했습니다. 콘솔을 확인하세요.");
@@ -474,11 +933,17 @@
     }
 
     function bindPagerClicks(){
-        partialWrap.querySelectorAll("a.js-page").forEach(a => {
+        partialWrap.querySelectorAll("a.js-page, a[data-page]").forEach(a => {
             a.addEventListener("click", (e) => {
                 e.preventDefault();
                 const url = a.getAttribute("href");
-                if(url) loadPartial(url);
+                const page = a.dataset.page;
+                if(url){
+                    loadPartial(url);
+                }else if(page){
+                    const params = buildParams({ page: page });
+                    loadPartial(`${window.location.pathname}?${params.toString()}`);
+                }
             });
         });
     }
@@ -498,6 +963,7 @@
                 const params = new URLSearchParams(new FormData(form));
                 params.set("page", "1");
                 params.set("per_page", "12");
+                params.set("partial", "1");
                 loadPartial(`${window.location.pathname}?${params.toString()}`);
             });
         });
@@ -506,35 +972,81 @@
     function bindRowClicks(){
         partialWrap.querySelectorAll("tr.js-row").forEach(row => {
             row.addEventListener("click", () => {
-                partialWrap.querySelectorAll("tr.js-row.table-active").forEach(r => r.classList.remove("table-active"));
+                clearActive();
                 row.classList.add("table-active");
+                fillModal(row.dataset);
 
-                const d = row.dataset;
-                openDetail();
+                if (!deleteDetailModal){
+                    deleteDetailModal = initModal();
+                }
 
-                dPolicyType.textContent = d.policyType || "-";
-                dPolicyName.textContent = d.policyName || "-";
-                dContent.textContent = d.content || "-";
-                dHandlingType.textContent = d.handlingType || "-";
-                dIsActive.textContent = (d.isActive === "true") ? "적용" : "미적용";
-                dDeleteBy.textContent = d.deleteBy || "-";
-                dDeleteAt.textContent = d.deleteAt || "-";
-                dPolicyDesc.textContent = (d.policyDesc && d.policyDesc.trim()) ? d.policyDesc : "-";
-
-                __restoreAction = d.restoreAction || null;
-                btnRestore.disabled = !__restoreAction;
+                if (deleteDetailModal){
+                    deleteDetailModal.show();
+                }
             });
         });
     }
 
-    btnRestore.addEventListener("click", async () => {
-        if(!__restoreAction) return;
+    fillTimeOptions();
+    syncDisplay();
+
+    startDateDisplay.addEventListener("click", function () {
+        openPicker("start", startDateDisplay);
+    });
+
+    endDateDisplay.addEventListener("click", function () {
+        openPicker("end", endDateDisplay);
+    });
+
+    dtNowBtn.addEventListener("click", function () {
+        const now = new Date();
+        dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        dtHour.value = pad(now.getHours());
+        dtMinute.value = pad(now.getMinutes());
+    });
+
+    dtClearBtn.addEventListener("click", function () {
+        applyPickerValue("");
+    });
+
+    dtCancelBtn.addEventListener("click", function () {
+        closePicker();
+    });
+
+    dtApplyBtn.addEventListener("click", function () {
+        const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
+        applyPickerValue(value);
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!datetimePanel.classList.contains("show")) return;
+
+        const clickedInsidePanel = datetimePanel.contains(e.target);
+        const clickedDisplay =
+            e.target === startDateDisplay ||
+            e.target === endDateDisplay;
+
+        if (!clickedInsidePanel && !clickedDisplay) {
+            closePicker();
+        }
+    });
+
+    window.addEventListener("resize", function () {
+        closePicker();
+    });
+
+    window.addEventListener("scroll", function () {
+        closePicker();
+    }, true);
+
+    modalRestoreBtn.addEventListener("click", async () => {
+        if(!restoreAction) return;
         if(!confirm("정말 복구하시겠습니까?")) return;
 
         try{
             partialWrap.classList.add("dim-loading");
 
-            const res = await fetch(__restoreAction, {
+            const res = await fetch(restoreAction, {
                 method: "POST",
                 headers: {
                     "X-Requested-With": "XMLHttpRequest",
@@ -551,10 +1063,10 @@
             }
 
             const params = new URLSearchParams(new FormData(form));
+            params.set("page", "1");
             params.set("per_page", "12");
-            const url = `${window.location.pathname}?${params.toString()}`;
-            await loadPartial(url);
-
+            params.set("partial", "1");
+            await loadPartial(`${window.location.pathname}?${params.toString()}`);
         }catch(err){
             console.error(err);
             alert("복구 중 오류가 발생했습니다. 콘솔을 확인하세요.");
@@ -568,15 +1080,19 @@
         const params = new URLSearchParams(new FormData(form));
         params.set("page", "1");
         params.set("per_page", "12");
+        params.set("partial", "1");
         loadPartial(`${window.location.pathname}?${params.toString()}`);
     });
 
-    btnDetailClose.addEventListener("click", closeDetail);
+    deleteDetailModalEl.addEventListener("hidden.bs.modal", () => {
+        clearActive();
+    });
 
     bindPagerClicks();
     bindTabs();
     bindRowClicks();
-    resetDetail();
+    resetModal();
+    deleteDetailModal = initModal();
 })();
 </script>
 {% endblock %}

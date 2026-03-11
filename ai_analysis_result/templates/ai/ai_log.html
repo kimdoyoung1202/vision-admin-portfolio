@@ -9,74 +9,381 @@
     :root{
         --topbarH: 64px;
         --gap: 10px;
+
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-border: #e7ebf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
+
+        --pageH: calc(100vh - var(--topbarH));
         --headerRowH: 40px;
         --pagerH: 48px;
         --theadH: 42px;
         --rowH: 38px;
     }
 
+    html, body{ height:100%; }
+    body{ overflow:hidden !important; }
+
     .ai-rec-page{
-        height: calc(100vh - var(--topbarH));
+        height: var(--pageH);
         overflow: hidden;
         display:flex;
         flex-direction:column;
     }
+
     .ai-rec-wrap{
         flex:1;
+        min-height:0;
         overflow:hidden;
-        padding: 8px 18px !important;
+        padding: 10px 18px !important;
         display:flex;
         flex-direction:column;
         gap: var(--gap);
     }
-    .ai-rec-wrap.container-p-y{
-        padding-top: 8px !important;
-        padding-bottom: 8px !important;
+
+    .card{
+        border: 1px solid #e7ebf3;
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
+        border-radius: 16px;
+        margin: 0 !important;
     }
 
-    .filter-card .card-body{ padding: 10px 12px 8px; }
-    .filter-grid .form-label{
-        font-weight:900;
-        font-size:.82rem;
-        margin-bottom:4px;
-        line-height:1.1;
+    .filter-card .card-body{
+        padding: 14px 14px 12px;
     }
-    .filter-grid .form-control,
-    .filter-grid .form-select{
-        height: 34px;
-        min-height: 34px;
-        padding: .32rem .6rem;
+
+    .filter-grid{
+        display:flex;
+        flex-direction:column;
+        gap: 12px;
+    }
+
+    .filter-row{
+        display:grid;
+        gap: 12px;
+        align-items:end;
+    }
+
+    .filter-row-top{
+        grid-template-columns: 1.8fr .75fr 1.7fr .72fr;
+    }
+
+    .filter-row-mid{
+        grid-template-columns: 1.05fr .8fr 1.55fr .7fr auto;
+    }
+
+    .filter-row-bottom{
+        grid-template-columns: .78fr 1.55fr .72fr;
+    }
+
+    .fg-item{ min-width:0; }
+
+    .filter-card .form-label{
+        margin-bottom: 5px;
+        font-weight: 800;
+        font-size: .80rem;
+        line-height: 1.1;
+        color: #566a7f;
+    }
+
+    .filter-card .form-control,
+    .filter-card .form-select{
+        height: 38px;
+        padding: .38rem .72rem;
         border-radius: 10px;
+        border: 1px solid #d8e0ec;
+        background: #fff;
+        font-size: .88rem;
+        min-width: 0;
+        width: 100%;
         font-weight: 700;
-    }
-    .btn.btn-sm{ border-radius:10px; font-weight:800; }
-    .filter-grid .btn{
-        height:34px;
-        padding:.42rem 1rem;
-        font-weight:900;
-        border-radius:10px;
+        box-shadow: none !important;
     }
 
-    .date-range{ width:100%; }
-    .date-range input{ width:100%; min-width:0 !important; }
-    .input-tight{ width:100%; min-width:0; }
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14) !important;
+    }
 
-    .workspace{ flex:1; min-height:0; overflow:hidden; }
-    #tableCol, #detailCol{ height:100%; min-height:0; }
+    .date-range-wrap{
+        display:grid;
+        grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+        align-items:center;
+        gap:8px;
+        width:100%;
+        min-width:0;
+    }
+
+    .range-sep{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        color:#8a97a8;
+        font-weight:800;
+        font-size:.9rem;
+        line-height:1;
+    }
+
+    .dt-wrap{
+        position: relative;
+        min-width: 0;
+    }
+
+    .dt-display{
+        cursor: pointer;
+        padding-right: 38px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+    }
+
+    .dt-display[readonly]{
+        color: #566a7f;
+    }
+
+    .dt-wrap::after{
+        content: "🗓";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        opacity: .72;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .dt-panel{
+        position: fixed;
+        width: 280px;
+        background: #fff;
+        border: 1px solid #e6eaf2;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(67, 89, 113, 0.18);
+        padding: 12px;
+        z-index: 2000;
+        display: none;
+    }
+
+    .dt-panel.show{ display:block; }
+
+    .dt-panel-head{
+        font-size: .9rem;
+        font-weight: 800;
+        color: #566a7f;
+        margin-bottom: 10px;
+    }
+
+    .dt-panel .dt-date{
+        width: 100%;
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .72rem;
+        font-size: .88rem;
+        outline: none;
+    }
+
+    .dt-panel .dt-date:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-time-row{
+        display: grid;
+        grid-template-columns: 1fr 20px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .dt-time-row select{
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .6rem;
+        font-size: .88rem;
+        background: #fff;
+        outline: none;
+    }
+
+    .dt-time-row select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-colon{
+        text-align:center;
+        font-weight:800;
+        color:#8592a3;
+    }
+
+    .dt-panel-actions{
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:12px;
+    }
+
+    .dt-panel-actions-left,
+    .dt-panel-actions-right{
+        display:flex;
+        gap:8px;
+    }
+
+    .btn-dt{
+        height: 34px;
+        padding: 0 .8rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
+        background: #fff;
+        color: #5f6b7a;
+        font-weight: 800;
+        font-size: .82rem;
+    }
+
+    .btn-dt:hover{
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .btn-dt-apply{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+    }
+
+    .btn-dt-apply:hover{ color:#fff; }
+
+    .review-result-wrap{
+        display:flex;
+        gap:8px;
+        min-width:0;
+    }
+
+    .review-result-wrap .btn{
+        flex:1 1 0;
+        min-width:0;
+    }
+
+    .filter-card .btn{
+        height: 38px;
+        padding: .45rem .95rem;
+        border-radius: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .btn-filter-pick{
+        border: 1px solid #d6dcea !important;
+        background: #fff !important;
+        color: #5f6b7a !important;
+    }
+
+    .btn-filter-pick:hover{
+        background: #f5f7ff !important;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5 !important;
+    }
+
+    .btn-filter-active{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%) !important;
+        border-color: #696cff !important;
+        color: #fff !important;
+        box-shadow: 0 8px 18px rgba(105,108,255,.16);
+    }
+
+    .filter-actions-col{
+        min-width: 176px;
+        display:flex;
+        align-items:end;
+        justify-content:flex-end;
+    }
+
+    .filter-actions{
+        display:flex;
+        gap:8px;
+        justify-content:flex-end;
+        align-items:center;
+        width:100%;
+        flex-wrap:nowrap;
+    }
+
+    .filter-actions .btn{
+        min-width: 80px;
+        flex:0 0 auto;
+    }
+
+    .btn-filter-search{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+    }
+
+    .btn-filter-search:hover{
+        color:#fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105,108,255,.24);
+    }
+
+    .btn-filter-reset{
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a !important;
+    }
+
+    .btn-filter-reset:hover{
+        background: #eef2ff;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5;
+    }
+
+    .filter-card .form-control:disabled,
+    .filter-card .form-select:disabled{
+        background:#f4f6fb !important;
+        color:#98a3b3 !important;
+        border-color:#e1e6f0 !important;
+        cursor:not-allowed;
+    }
+
+    .workspace{
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+    }
+
+    #tableCol, #detailCol{
+        height:100%;
+        min-height:0;
+    }
 
     .workspace-card{
         height:100%;
         display:flex;
         flex-direction:column;
         overflow:hidden;
+        border-radius:16px;
     }
+
     .workspace-card .card-body{
         flex:1;
         min-height:0;
         display:flex;
         flex-direction:column;
         overflow:hidden;
-        padding: 10px 12px;
+        padding:10px 12px;
+    }
+
+    #listArea{
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
     }
 
     .table-topbar{
@@ -92,20 +399,35 @@
         flex:0 0 auto;
         height: calc(var(--theadH) + (12 * var(--rowH)));
         overflow:hidden;
-        border-radius: 10px;
+        border-radius:10px;
     }
+
     table#aiTable thead tr{ height: var(--theadH); }
     table#aiTable tbody tr{ height: var(--rowH); }
-    table#aiTable th, table#aiTable td{
+
+    table#aiTable th,
+    table#aiTable td{
         padding-top: 6px;
         padding-bottom: 6px;
         font-size: .90rem;
         vertical-align: middle;
     }
-    table#aiTable thead th{ font-weight: 900; }
 
-    .cell-truncate{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cell-truncate-sm{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    table#aiTable thead th{ font-weight:900; }
+
+    .cell-truncate{
+        max-width:360px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .cell-truncate-sm{
+        max-width:220px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
 
     .pager{
         flex:0 0 auto;
@@ -115,20 +437,22 @@
         justify-content:space-between;
         margin-top:6px;
     }
+
     .pagination{ margin-bottom:0 !important; }
 
     .detail-scroll{
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        flex:1;
+        min-height:0;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
     }
+
     .detail-table-wrap{
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden !important;
+        flex:1;
+        min-height:0;
+        overflow-y:auto;
+        overflow-x:hidden !important;
     }
 
     #detailCol .table-sm th,
@@ -138,6 +462,7 @@
         line-height: 1.25;
         vertical-align: top;
     }
+
     #detailCol .table-sm th{
         width: 120px !important;
         min-width: 120px !important;
@@ -146,19 +471,21 @@
         font-weight: 900;
         color: #6c757d;
     }
+
     #detailCol .table-sm td{
         white-space: normal !important;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
+
     #dRequestUrl{
         word-break: break-all;
         overflow-wrap: anywhere;
     }
 
-    .domain-cell { position: relative; }
+    .domain-cell{ position: relative; }
 
-    .dup-badge {
+    .dup-badge{
         margin-left: 6px;
         padding: 2px 8px;
         font-size: 0.75rem;
@@ -170,15 +497,70 @@
         transform: translateY(2px);
         transition: all 0.18s ease;
     }
-    tr:hover .dup-badge {
+
+    tr:hover .dup-badge{
         opacity: 1;
         transform: translateY(0);
     }
 
-    .btn-filter-active{
-        background-color: #696cff !important;
-        color: #fff !important;
-        border-color: #696cff !important;
+    @media (max-width: 1399.98px){
+        .filter-row-top{
+            grid-template-columns: 1.65fr .75fr 1.55fr .72fr;
+        }
+        .filter-row-mid{
+            grid-template-columns: 1fr .78fr 1.4fr .7fr auto;
+        }
+        .filter-row-bottom{
+            grid-template-columns: .75fr 1.4fr .7fr;
+        }
+    }
+
+    @media (max-width: 1199.98px){
+        .filter-row-top,
+        .filter-row-mid,
+        .filter-row-bottom{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filter-actions-col{
+            min-width:0;
+            justify-content:flex-start;
+        }
+
+        .filter-actions{
+            justify-content:flex-start;
+        }
+    }
+
+    @media (max-width: 767.98px){
+        .filter-row-top,
+        .filter-row-mid,
+        .filter-row-bottom{
+            grid-template-columns: 1fr;
+        }
+
+        .date-range-wrap{
+            grid-template-columns: 1fr;
+        }
+
+        .range-sep{ display:none; }
+
+        .review-result-wrap,
+        .filter-actions{
+            flex-direction:column;
+            align-items:stretch;
+        }
+
+        .review-result-wrap .btn,
+        .filter-actions .btn{
+            width:100%;
+        }
+
+        .dt-panel{
+            width: calc(100vw - 32px);
+            left: 16px !important;
+            right: 16px !important;
+        }
     }
 </style>
 {% endblock %}
@@ -189,73 +571,95 @@
 
         <div class="card filter-card">
             <div class="card-body">
-                <form method="get" class="row g-2 align-items-end filter-grid" id="filterForm">
-                    <div class="col-4">
-                        <label class="form-label">URL/도메인</label>
-                        <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력 :">
-                    </div>
+                <form method="get" id="filterForm">
+                    <div class="filter-grid">
 
-                    <div class="col-2">
-                        <label class="form-label">판단 결과</label>
-                        <select class="form-select" name="ai_judgment">
-                            <option value="" {% if filters.ai_judgment == "" %}selected{% endif %}>선택</option>
-                            <option value="Harmful" {% if filters.ai_judgment == "Harmful" %}selected{% endif %}>Harmful</option>
-                            <option value="Not harm" {% if filters.ai_judgment == "Not harm" %}selected{% endif %}>Not harm</option>
-                        </select>
-                    </div>
+                        <div class="filter-row filter-row-top">
+                            <div class="fg-item">
+                                <label class="form-label">URL/도메인</label>
+                                <input class="form-control" name="q" value="{{ filters.q }}" placeholder="입력">
+                            </div>
 
-                    <div class="col-4">
-                        <label class="form-label">로그 시간</label>
-                        <div class="d-flex gap-2 date-range">
-                            <input class="form-control" type="date" name="log_start" value="{{ filters.log_start }}">
-                            <div class="d-flex align-items-center text-muted">~</div>
-                            <input class="form-control" type="date" name="log_end" value="{{ filters.log_end }}">
+                            <div class="fg-item">
+                                <label class="form-label">판단 결과</label>
+                                <select class="form-select" name="ai_judgment">
+                                    <option value="" {% if filters.ai_judgment == "" %}selected{% endif %}>선택</option>
+                                    <option value="Harmful" {% if filters.ai_judgment == "Harmful" %}selected{% endif %}>Harmful</option>
+                                    <option value="Not harm" {% if filters.ai_judgment == "Not harm" %}selected{% endif %}>Not harm</option>
+                                </select>
+                            </div>
+
+                            <div class="fg-item">
+                                <label class="form-label">로그 시간</label>
+                                <div class="date-range-wrap">
+                                    <div class="dt-wrap">
+                                        <input type="hidden" name="log_start" id="logStartValue" value="{{ filters.log_start }}">
+                                        <input type="text" id="logStartDisplay" class="form-control dt-display" placeholder="시작 일시 선택" readonly>
+                                    </div>
+                                    <span class="range-sep">~</span>
+                                    <div class="dt-wrap">
+                                        <input type="hidden" name="log_end" id="logEndValue" value="{{ filters.log_end }}">
+                                        <input type="text" id="logEndDisplay" class="form-control dt-display" placeholder="종료 일시 선택" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fg-item">
+                                <label class="form-label">관리자 검토 여부</label>
+                                <select class="form-select" name="is_checked" id="isCheckedSelect">
+                                    <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
+                                    <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col-2">
-                        <label class="form-label">관리자 검토 여부</label>
-                        <select class="form-select input-tight" name="is_checked" id="isCheckedSelect">
-                            <option value="false" {% if filters.is_checked == "false" or filters.is_checked == "" %}selected{% endif %}>미검토</option>
-                            <option value="true" {% if filters.is_checked == "true" %}selected{% endif %}>검토됨</option>
-                        </select>
-                    </div>
+                        <div class="filter-row filter-row-mid">
+                            <div class="fg-item">
+                                <label class="form-label">관리자 검토 결과</label>
+                                <div class="review-result-wrap">
+                                    <button type="button" class="btn btn-filter-pick" id="btnAdd">추가</button>
+                                    <button type="button" class="btn btn-filter-pick" id="btnIgnore">무시</button>
+                                </div>
+                                <input type="hidden" name="checked_result" id="checkedResultHidden" value="{{ filters.checked_result }}">
+                            </div>
 
-                    <div class="col-2">
-                        <label class="form-label">관리자 검토 결과</label>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-success w-50" id="btnAdd">추가</button>
-                            <button type="button" class="btn btn-outline-secondary w-50" id="btnIgnore">무시</button>
+                            <div class="fg-item">
+                                <label class="form-label">정책 타입</label>
+                                <select class="form-select" name="policy_type" id="policyTypeSelect">
+                                    <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
+                                    <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
+                                    <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
+                                </select>
+                            </div>
+
+                            <div class="fg-item">
+                                <label class="form-label">정책 추가 시간</label>
+                                <div class="date-range-wrap">
+                                    <div class="dt-wrap">
+                                        <input type="hidden" name="applied_start" id="appliedStartValue" value="{{ filters.applied_start }}">
+                                        <input type="text" id="appliedStartDisplay" class="form-control dt-display" placeholder="시작 일시 선택" readonly>
+                                    </div>
+                                    <span class="range-sep">~</span>
+                                    <div class="dt-wrap">
+                                        <input type="hidden" name="applied_end" id="appliedEndValue" value="{{ filters.applied_end }}">
+                                        <input type="text" id="appliedEndDisplay" class="form-control dt-display" placeholder="종료 일시 선택" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fg-item">
+                                <label class="form-label">작성자</label>
+                                <input class="form-control" name="admin" value="{{ filters.admin }}" placeholder="입력" id="adminInput">
+                            </div>
+
+                            <div class="filter-actions-col">
+                                <div class="filter-actions">
+                                    <button class="btn btn-filter-search" type="submit">조회</button>
+                                    <a class="btn btn-filter-reset" href="{% url 'ai:records' %}">초기화</a>
+                                </div>
+                            </div>
                         </div>
-                        <input type="hidden" name="checked_result" id="checkedResultHidden" value="{{ filters.checked_result }}">
-                    </div>
 
-                    <div class="col-2">
-                        <label class="form-label">정책 타입</label>
-                        <select class="form-select input-tight" name="policy_type" id="policyTypeSelect">
-                            <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
-                            <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
-                            <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
-                        </select>
-                    </div>
-
-                    <div class="col-3">
-                        <label class="form-label">정책 추가 시간</label>
-                        <div class="d-flex gap-2 date-range">
-                            <input class="form-control" type="date" name="applied_start" value="{{ filters.applied_start }}" id="appliedStart">
-                            <div class="d-flex align-items-center text-muted">~</div>
-                            <input class="form-control" type="date" name="applied_end" value="{{ filters.applied_end }}" id="appliedEnd">
-                        </div>
-                    </div>
-
-                    <div class="col-2">
-                        <label class="form-label">작성자</label>
-                        <input class="form-control input-tight" name="admin" value="{{ filters.admin }}" placeholder="입력 :" id="adminInput">
-                    </div>
-
-                    <div class="col-3 d-flex gap-2 align-items-end">
-                        <button class="btn btn-primary w-50" type="submit">조회</button>
-                        <a class="btn btn-outline-secondary w-50" href="{% url 'ai:records' %}">초기화</a>
                     </div>
 
                     <input type="hidden" name="sort" id="sortHidden" value="{{ filters.sort }}">
@@ -322,6 +726,29 @@
     </div>
 </div>
 
+<div class="dt-panel" id="datetimePanel">
+    <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
+
+    <input type="date" class="dt-date" id="dtDate">
+
+    <div class="dt-time-row">
+        <select id="dtHour"></select>
+        <div class="dt-colon">:</div>
+        <select id="dtMinute"></select>
+    </div>
+
+    <div class="dt-panel-actions">
+        <div class="dt-panel-actions-left">
+            <button type="button" class="btn-dt" id="dtNowBtn">지금</button>
+            <button type="button" class="btn-dt" id="dtClearBtn">초기화</button>
+        </div>
+        <div class="dt-panel-actions-right">
+            <button type="button" class="btn-dt" id="dtCancelBtn">취소</button>
+            <button type="button" class="btn-dt btn-dt-apply" id="dtApplyBtn">적용</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function(){
     const filterForm = document.getElementById("filterForm");
@@ -353,9 +780,184 @@
     const checkedResultHidden = document.getElementById("checkedResultHidden");
 
     const policyTypeSelect = document.getElementById("policyTypeSelect");
-    const appliedStart = document.getElementById("appliedStart");
-    const appliedEnd = document.getElementById("appliedEnd");
     const adminInput = document.getElementById("adminInput");
+
+    const logStartValue = document.getElementById("logStartValue");
+    const logStartDisplay = document.getElementById("logStartDisplay");
+    const logEndValue = document.getElementById("logEndValue");
+    const logEndDisplay = document.getElementById("logEndDisplay");
+
+    const appliedStartValue = document.getElementById("appliedStartValue");
+    const appliedStartDisplay = document.getElementById("appliedStartDisplay");
+    const appliedEndValue = document.getElementById("appliedEndValue");
+    const appliedEndDisplay = document.getElementById("appliedEndDisplay");
+
+    const datetimePanel = document.getElementById("datetimePanel");
+    const dtPanelTitle = document.getElementById("dtPanelTitle");
+    const dtDate = document.getElementById("dtDate");
+    const dtHour = document.getElementById("dtHour");
+    const dtMinute = document.getElementById("dtMinute");
+    const dtNowBtn = document.getElementById("dtNowBtn");
+    const dtClearBtn = document.getElementById("dtClearBtn");
+    const dtCancelBtn = document.getElementById("dtCancelBtn");
+    const dtApplyBtn = document.getElementById("dtApplyBtn");
+
+    let activePicker = null;
+
+    function pad(n){
+        return String(n).padStart(2, "0");
+    }
+
+    function normalizeDateTimeValue(value){
+        if(!value) return "";
+        return value.length === 16 ? value : value.slice(0, 16);
+    }
+
+    function formatDisplay(value){
+        if(!value) return "";
+        return normalizeDateTimeValue(value).replace("T", " ");
+    }
+
+    function parseValue(value){
+        const normalized = normalizeDateTimeValue(value);
+        if(!normalized || normalized.indexOf("T") === -1){
+            return { date: "", hour: "00", minute: "00" };
+        }
+
+        const [date, time] = normalized.split("T");
+        const [hour = "00", minute = "00"] = (time || "").split(":");
+        return {
+            date: date || "",
+            hour: pad(hour),
+            minute: pad(minute),
+        };
+    }
+
+    function buildValue(date, hour, minute){
+        if(!date) return "";
+        return `${date}T${pad(hour)}:${pad(minute)}`;
+    }
+
+    function fillTimeOptions(){
+        for(let h = 0; h < 24; h++){
+            const opt = document.createElement("option");
+            opt.value = pad(h);
+            opt.textContent = pad(h) + "시";
+            dtHour.appendChild(opt);
+        }
+
+        for(let m = 0; m < 60; m += 1){
+            const opt = document.createElement("option");
+            opt.value = pad(m);
+            opt.textContent = pad(m) + "분";
+            dtMinute.appendChild(opt);
+        }
+    }
+
+    function syncDisplay(){
+        logStartDisplay.value = formatDisplay(logStartValue.value);
+        logEndDisplay.value = formatDisplay(logEndValue.value);
+        appliedStartDisplay.value = formatDisplay(appliedStartValue.value);
+        appliedEndDisplay.value = formatDisplay(appliedEndValue.value);
+    }
+
+    function getPickerMeta(type){
+        const map = {
+            log_start: {
+                title: "로그 시작 일시 선택",
+                valueEl: logStartValue,
+                displayEl: logStartDisplay,
+            },
+            log_end: {
+                title: "로그 종료 일시 선택",
+                valueEl: logEndValue,
+                displayEl: logEndDisplay,
+            },
+            applied_start: {
+                title: "정책 추가 시작 일시 선택",
+                valueEl: appliedStartValue,
+                displayEl: appliedStartDisplay,
+            },
+            applied_end: {
+                title: "정책 추가 종료 일시 선택",
+                valueEl: appliedEndValue,
+                displayEl: appliedEndDisplay,
+            }
+        };
+        return map[type] || null;
+    }
+
+    function openPicker(type, anchorEl){
+        const meta = getPickerMeta(type);
+        if(!meta) return;
+
+        activePicker = type;
+        dtPanelTitle.textContent = meta.title;
+
+        const parsed = parseValue(meta.valueEl.value);
+        dtDate.value = parsed.date;
+        dtHour.value = parsed.hour;
+        dtMinute.value = parsed.minute;
+
+        const rect = anchorEl.getBoundingClientRect();
+        const panelWidth = 280;
+        const left = Math.min(
+            Math.max(16, rect.left + window.scrollX),
+            window.scrollX + window.innerWidth - panelWidth - 16
+        );
+
+        let top = rect.bottom + window.scrollY + 8;
+        const panelHeight = 210;
+        if(top + panelHeight > window.scrollY + window.innerHeight - 12){
+            top = rect.top + window.scrollY - panelHeight - 8;
+        }
+
+        datetimePanel.style.left = left + "px";
+        datetimePanel.style.top = Math.max(12, top) + "px";
+        datetimePanel.classList.add("show");
+    }
+
+    function closePicker(){
+        datetimePanel.classList.remove("show");
+        activePicker = null;
+    }
+
+    function applyPickerValue(value){
+        if(!activePicker) return;
+        const meta = getPickerMeta(activePicker);
+        if(!meta) return;
+
+        meta.valueEl.value = value;
+        syncDisplay();
+        closePicker();
+    }
+
+    function updateCheckedResultUI(type){
+        btnAdd.classList.remove("btn-filter-active");
+        btnIgnore.classList.remove("btn-filter-active");
+
+        if(type === "ADD") btnAdd.classList.add("btn-filter-active");
+        if(type === "IGNORE") btnIgnore.classList.add("btn-filter-active");
+    }
+
+    function setEnabled(){
+        const reviewed = (isCheckedSelect.value === "true");
+        const checkedResult = checkedResultHidden.value;
+        const isAdd = reviewed && checkedResult === "ADD";
+
+        btnAdd.disabled = !reviewed;
+        btnIgnore.disabled = !reviewed;
+
+        if(!reviewed){
+            checkedResultHidden.value = "";
+            updateCheckedResultUI("");
+        }
+
+        policyTypeSelect.disabled = !isAdd;
+        appliedStartDisplay.disabled = !isAdd;
+        appliedEndDisplay.disabled = !isAdd;
+        adminInput.disabled = !isAdd;
+    }
 
     function openDetail(){
         detailCol.classList.remove("d-none");
@@ -422,33 +1024,18 @@
         history.replaceState({}, "", `${window.location.pathname}?${fullParams.toString()}`);
     }
 
-    function setEnabled(){
-        const reviewed = (isCheckedSelect.value === "true");
-
-        btnAdd.disabled = !reviewed;
-        btnIgnore.disabled = !reviewed;
-
-        if (adminInput) adminInput.disabled = !reviewed;
-
-        const policyEnabled = (reviewed && checkedResultHidden.value === "ADD");
-        policyTypeSelect.disabled = !policyEnabled;
-        appliedStart.disabled = !policyEnabled;
-        appliedEnd.disabled = !policyEnabled;
-    }
-
-    function updateCheckedResultUI(type){
-        btnAdd.classList.remove("btn-filter-active");
-        btnIgnore.classList.remove("btn-filter-active");
-
-        if(type === "ADD") btnAdd.classList.add("btn-filter-active");
-        if(type === "IGNORE") btnIgnore.classList.add("btn-filter-active");
-    }
+    filterForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        loadPage(1).catch(console.error);
+    });
 
     btnAdd.addEventListener("click", () => {
-        if (checkedResultHidden.value === "ADD") {
+        if(btnAdd.disabled) return;
+
+        if(checkedResultHidden.value === "ADD"){
             checkedResultHidden.value = "";
             updateCheckedResultUI("");
-        } else {
+        }else{
             checkedResultHidden.value = "ADD";
             updateCheckedResultUI("ADD");
         }
@@ -456,10 +1043,12 @@
     });
 
     btnIgnore.addEventListener("click", () => {
-        if (checkedResultHidden.value === "IGNORE") {
+        if(btnIgnore.disabled) return;
+
+        if(checkedResultHidden.value === "IGNORE"){
             checkedResultHidden.value = "";
             updateCheckedResultUI("");
-        } else {
+        }else{
             checkedResultHidden.value = "IGNORE";
             updateCheckedResultUI("IGNORE");
         }
@@ -467,17 +1056,68 @@
     });
 
     isCheckedSelect.addEventListener("change", () => {
-        if (isCheckedSelect.value !== "true") {
+        if(isCheckedSelect.value !== "true"){
             checkedResultHidden.value = "";
             updateCheckedResultUI("");
         }
         setEnabled();
     });
 
-    filterForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        loadPage(1).catch(console.error);
+    logStartDisplay.addEventListener("click", () => {
+        openPicker("log_start", logStartDisplay);
     });
+
+    logEndDisplay.addEventListener("click", () => {
+        openPicker("log_end", logEndDisplay);
+    });
+
+    appliedStartDisplay.addEventListener("click", () => {
+        if(appliedStartDisplay.disabled) return;
+        openPicker("applied_start", appliedStartDisplay);
+    });
+
+    appliedEndDisplay.addEventListener("click", () => {
+        if(appliedEndDisplay.disabled) return;
+        openPicker("applied_end", appliedEndDisplay);
+    });
+
+    dtNowBtn.addEventListener("click", () => {
+        const now = new Date();
+        dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        dtHour.value = pad(now.getHours());
+        dtMinute.value = pad(now.getMinutes());
+    });
+
+    dtClearBtn.addEventListener("click", () => {
+        applyPickerValue("");
+    });
+
+    dtCancelBtn.addEventListener("click", () => {
+        closePicker();
+    });
+
+    dtApplyBtn.addEventListener("click", () => {
+        const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
+        applyPickerValue(value);
+    });
+
+    document.addEventListener("click", (e) => {
+        if(!datetimePanel.classList.contains("show")) return;
+
+        const clickedInsidePanel = datetimePanel.contains(e.target);
+        const clickedDisplay =
+            e.target === logStartDisplay ||
+            e.target === logEndDisplay ||
+            e.target === appliedStartDisplay ||
+            e.target === appliedEndDisplay;
+
+        if(!clickedInsidePanel && !clickedDisplay){
+            closePicker();
+        }
+    });
+
+    window.addEventListener("resize", () => closePicker());
+    window.addEventListener("scroll", () => closePicker(), true);
 
     listArea.addEventListener("click", (e) => {
         const pageLink = e.target.closest("a[data-page]");
@@ -584,11 +1224,14 @@
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
 
+    fillTimeOptions();
+    syncDisplay();
+
     if (checkedResultHidden.value === "ADD" || checkedResultHidden.value === "IGNORE") {
         updateCheckedResultUI(checkedResultHidden.value);
     }
-    setEnabled();
 
+    setEnabled();
     resetDetail();
 })();
 </script>

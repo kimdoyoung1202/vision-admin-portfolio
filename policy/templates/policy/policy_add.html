@@ -1,115 +1,369 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block page_title %}정책 추가{% endblock %}
-{% block page_subtitle %}정책을 추가합니다{% endblock %}
-
-{% block page_actions %}
-    <a class="btn btn-outline-secondary" href="{% url 'policy:list' %}">목록으로</a>
-{% endblock %}
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block extra_css %}
 <style>
+    :root{
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-primary-soft: rgba(105,108,255,.12);
+        --vision-border: #e7ebf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
+        --vision-danger: #ff3e1d;
+    }
+
     .pa-wrap{
-        max-width: 900px;
+        max-width: 1120px;
         margin-left: auto;
         margin-right: auto;
     }
 
     .pa-card{
-        max-width: 900px;
+        max-width: 1120px;
         margin-left: auto;
         margin-right: auto;
+        border: 1px solid var(--vision-border);
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .pa-card .card-body{
+        padding: 30px 32px 28px;
     }
 
     .pa-inner{
-        max-width: 760px;
+        max-width: 830px;
         margin: 0 auto;
     }
 
+    .btn-policy-go{
+        height: 38px;
+        padding: .45rem .95rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a !important;
+        font-weight: 800;
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+
+    .btn-policy-go:hover{
+        background: #eef2ff;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5;
+    }
+
+    .pa-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:18px;
+        margin-bottom: 22px;
+    }
+
+    .pa-head-title{
+        margin:0;
+        font-size: 1.34rem;
+        font-weight: 900;
+        color: #2f3a4a;
+        line-height: 1.2;
+    }
+
+    .pa-head-desc{
+        margin:6px 0 0 0;
+        font-size:.86rem;
+        color: var(--vision-muted);
+        line-height:1.5;
+    }
+
+    .pa-section{
+        display:flex;
+        flex-direction:column;
+        gap: 19px;
+    }
+
+    .pa-field{
+        min-width:0;
+    }
+
     .pa-label{
-        font-weight: 700;
+        display:block;
+        margin-bottom: 7px;
+        font-weight: 800;
+        font-size: .85rem;
+        color: var(--vision-text);
+        line-height: 1.15;
     }
 
     .pa-required::after{
-        content: " *";
+        content:" *";
         color: #ff3e1d;
         font-weight: 900;
+        font-size: .95em;
     }
 
     .pa-sub{
-        font-size: 12px;
-        color: #6c7a89;
+        margin-top: 7px;
+        font-size: .79rem;
+        color: var(--vision-muted);
+        line-height: 1.48;
     }
 
     .pa-card .form-control,
     .pa-card .form-select{
-        border-radius: 12px;
+        height: 43px;
+        padding: .46rem .84rem;
+        border-radius: 10px;
+        border: 1px solid #d8e0ec;
+        background: #fff;
+        font-size: .93rem;
+        font-weight: 700;
+        color: #566a7f;
+        box-shadow: none !important;
     }
 
-    .pa-card .btn{
-        border-radius: 12px;
-        font-weight: 800;
+    .pa-card .form-control:focus,
+    .pa-card .form-select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14) !important;
+    }
+
+    .pa-type-tabs{
+        display:flex;
+        gap: 8px;
+        flex-wrap:wrap;
+        margin: 0;
+        padding: 0;
+        list-style:none;
+    }
+
+    .pa-type-tabs .nav-item{
+        margin:0 !important;
+    }
+
+    .pa-type-tabs input{
+        display:none;
     }
 
     .pa-type-tabs .nav-link{
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    .pa-seg{
-        display: inline-flex;
-        border: 1px solid #d9dee3;
-        border-radius: 12px;
-        overflow: hidden;
+        min-width: 122px;
+        height: 40px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding: 0 1rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
         background: #fff;
-    }
-
-    .pa-seg input{
-        display: none;
-    }
-
-    .pa-seg label{
-        width: 84px;
-        text-align: center;
-        padding: 10px 0;
-        cursor: pointer;
+        color: #5f6b7a;
         font-weight: 800;
-        color: #566a7f;
-        user-select: none;
-        margin: 0;
+        cursor: pointer;
+        user-select:none;
+        transition: all .15s ease;
+        font-size: .9rem;
     }
 
-    .pa-seg input:checked + label{
-        background: #696cff;
+    .pa-type-tabs .nav-link:hover{
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .pa-type-tabs .nav-link.active{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border-color: #696cff;
         color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.16);
+    }
+
+    .pa-pill-group{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top: 2px;
+    }
+
+    .pa-pill{
+        position:relative;
+    }
+
+    .pa-pill input{
+        display:none;
+    }
+
+    .pa-pill label{
+        min-width: 82px;
+        height: 35px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding: 0 1rem;
+        border-radius: 999px;
+        border: 1px solid #d6dcea;
+        background: #fff;
+        color: #5f6b7a;
+        font-size: .82rem;
+        font-weight: 800;
+        cursor:pointer;
+        transition: all .15s ease;
+        margin:0;
+    }
+
+    .pa-pill label:hover{
+        background:#f5f7ff;
+        color:#4f5fd7;
+        border-color:#c9d2f5;
+    }
+
+    .pa-pill input:checked + label{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border-color:#696cff;
+        color:#fff;
+        box-shadow: 0 8px 16px rgba(105,108,255,.14);
     }
 
     .pa-actions{
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-top: 18px;
+        display:flex;
+        justify-content:center;
+        gap: 10px;
+        margin-top: 12px;
+        padding-top: 4px;
     }
 
-    .pa-card-head{
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 14px;
-    }
-
-    .pa-card-title{
-        margin: 0;
-        font-size: 20px;
+    .pa-btn{
+        min-width: 112px;
+        height: 40px;
+        padding: .45rem 1rem;
+        border-radius: 10px;
         font-weight: 800;
+        white-space: nowrap;
+        font-size: .92rem;
     }
 
-    .pa-card-desc{
-        margin: 4px 0 0 0;
-        font-size: 12px;
-        color: #6c7a89;
+    .pa-btn-submit{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+    }
+
+    .pa-btn-submit:hover{
+        color:#fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105,108,255,.24);
+    }
+
+    .pa-btn-cancel{
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a !important;
+    }
+
+    .pa-btn-cancel:hover{
+        background: #eef2ff;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5;
+    }
+
+    .pa-error-modal .modal-content{
+        border: 1px solid rgba(255, 62, 29, .14);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(67, 89, 113, 0.16);
+    }
+
+    .pa-error-modal .modal-header{
+        border-bottom: 1px solid #f1d7d0;
+        background: #fff7f5;
+        padding: 14px 18px;
+    }
+
+    .pa-error-modal .modal-title{
+        font-size: 1rem;
+        font-weight: 900;
+        color: #7d3024;
+    }
+
+    .pa-error-modal .modal-body{
+        padding: 16px 18px 10px;
+        color: #5b6675;
+    }
+
+    .pa-error-modal .modal-body ul{
+        margin-bottom: 0;
+        padding-left: 18px;
+    }
+
+    .pa-error-modal .modal-body li{
+        margin-bottom: 6px;
+        line-height: 1.45;
+        font-weight: 700;
+    }
+
+    .pa-error-modal .modal-footer{
+        border-top: none;
+        padding: 10px 18px 16px;
+    }
+
+    .pa-error-modal .btn-close{
+        box-shadow: none !important;
+    }
+
+    .pa-error-confirm{
+        min-width: 90px;
+        height: 38px;
+        border-radius: 10px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+    }
+
+    .pa-error-confirm:hover{
+        color:#fff;
+    }
+
+    @media (max-width: 767.98px){
+        .pa-card .card-body{
+            padding: 20px 15px 18px;
+        }
+
+        .pa-head{
+            flex-direction:column;
+            align-items:stretch;
+            margin-bottom: 18px;
+        }
+
+        .pa-section{
+            gap: 16px;
+        }
+
+        .pa-actions{
+            flex-direction:column;
+            align-items:stretch;
+        }
+
+        .pa-btn,
+        .btn-policy-go{
+            width:100%;
+        }
+
+        .pa-type-tabs .nav-link{
+            min-width: 0;
+            width: 100%;
+        }
+
+        .pa-type-tabs .nav-item{
+            flex:1 1 0;
+        }
     }
 </style>
 {% endblock %}
@@ -126,137 +380,162 @@
                     <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
                     <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
 
-                    {% if errors %}
-                    <div class="alert alert-danger mb-3" role="alert">
-                        <div class="fw-bold mb-1">입력 내용을 확인하세요.</div>
-                        <ul class="mb-0 ps-3">
-                            {% for err in errors %}
-                                <li>{{ err }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <div class="mb-3">
-                        <label class="form-label pa-label pa-required">정책 타입</label>
-
-                        <ul class="nav nav-pills pa-type-tabs mb-2">
-                            <li class="nav-item">
-                                <input
-                                    class="d-none"
-                                    type="radio"
-                                    name="policy_type"
-                                    id="type_domain"
-                                    value="DOMAIN"
-                                    {% if form.policy_type.value == "DOMAIN" or not form %}checked{% endif %}
-                                >
-                                <label
-                                    class="nav-link {% if form.policy_type.value == 'DOMAIN' or not form %}active{% endif %}"
-                                    for="type_domain"
-                                >
-                                    도메인
-                                </label>
-                            </li>
-
-                            <li class="nav-item ms-2">
-                                <input
-                                    class="d-none"
-                                    type="radio"
-                                    name="policy_type"
-                                    id="type_regex"
-                                    value="REGEX"
-                                    {% if form.policy_type.value == "REGEX" %}checked{% endif %}
-                                >
-                                <label
-                                    class="nav-link {% if form.policy_type.value == 'REGEX' %}active{% endif %}"
-                                    for="type_regex"
-                                >
-                                    정규 표현식
-                                </label>
-                            </li>
-                        </ul>
-
-                        <div class="pa-sub">정책 타입에 따라 도메인 또는 정규표현식을 등록합니다.</div>
-                    </div>
-
                     <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
                     <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
 
-                    <div class="mb-3">
-                        <label class="form-label pa-label pa-required">정책 URL/표현식</label>
-                        <input
-                            type="text"
-                            id="policy_content"
-                            name="content"
-                            class="form-control"
-                            value="{{ form.content.value|default:initial_domain|default_if_none:'' }}"
-                            placeholder="예) example.com 또는 ^https://example\.com"
-                        >
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label pa-label pa-required">정책 이름</label>
-                        <input
-                            type="text"
-                            name="policy_name"
-                            class="form-control"
-                            value="{{ form.policy_name.value|default_if_none:'' }}"
-                            placeholder="예) 네이버지도 차단"
-                        >
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label pa-label">정책 설명</label>
-                        <input
-                            type="text"
-                            name="description"
-                            class="form-control"
-                            value="{{ form.description.value|default_if_none:'' }}"
-                            placeholder="예) 특정 서비스 접속 차단 정책"
-                        >
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label pa-label pa-required">처리 유형</label>
-                        <select class="form-select" name="handling_type">
-                            <option value="block" {% if form.handling_type.value == "block" or not form %}selected{% endif %}>block</option>
-                            <option value="log" {% if form.handling_type.value == "log" %}selected{% endif %}>log</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label pa-label pa-required">정책 적용 여부</label>
-                        <div class="mt-1">
-                            <div class="pa-seg">
-                                <input
-                                    type="radio"
-                                    name="is_active"
-                                    id="is_active_no"
-                                    value="false"
-                                    {% if form.is_active.value == "false" or not form %}checked{% endif %}
-                                >
-                                <label for="is_active_no">아니오</label>
-
-                                <input
-                                    type="radio"
-                                    name="is_active"
-                                    id="is_active_yes"
-                                    value="true"
-                                    {% if form.is_active.value == "true" %}checked{% endif %}
-                                >
-                                <label for="is_active_yes">예</label>
-                            </div>
+                    <div class="pa-head">
+                        <div>
+                            <h5 class="pa-head-title">정책 등록</h5>
+                            <p class="pa-head-desc">
+                                정책 타입, 정책 내용, 처리 유형, 적용 여부를 입력해 새 정책을 등록합니다.
+                            </p>
                         </div>
+
+                        <a class="btn btn-policy-go" href="{% url 'policy:list' %}">정책조회</a>
                     </div>
 
-                    <div class="pa-actions">
-                        <button class="btn btn-primary px-4" type="submit">추가</button>
+                    <div class="pa-section">
 
-                        {% if return_to %}
-                        <a class="btn btn-outline-secondary px-4" href="{{ return_to }}">취소</a>
-                        {% else %}
-                        <a class="btn btn-outline-secondary px-4" href="{% url 'policy:list' %}">취소</a>
-                        {% endif %}
+                        <div class="pa-field">
+                            <label class="pa-label pa-required">정책 타입</label>
+
+                            <ul class="pa-type-tabs">
+                                <li class="nav-item">
+                                    <input
+                                        type="radio"
+                                        name="policy_type"
+                                        id="type_domain"
+                                        value="DOMAIN"
+                                        {% if form.policy_type.value == "DOMAIN" or not form %}checked{% endif %}
+                                    >
+                                    <label
+                                        class="nav-link {% if form.policy_type.value == 'DOMAIN' or not form %}active{% endif %}"
+                                        for="type_domain"
+                                    >
+                                        도메인
+                                    </label>
+                                </li>
+
+                                <li class="nav-item">
+                                    <input
+                                        type="radio"
+                                        name="policy_type"
+                                        id="type_regex"
+                                        value="REGEX"
+                                        {% if form.policy_type.value == "REGEX" %}checked{% endif %}
+                                    >
+                                    <label
+                                        class="nav-link {% if form.policy_type.value == 'REGEX' %}active{% endif %}"
+                                        for="type_regex"
+                                    >
+                                        정규 표현식
+                                    </label>
+                                </li>
+                            </ul>
+
+                            <div class="pa-sub">정책 타입에 따라 도메인 또는 정규표현식을 등록합니다.</div>
+                        </div>
+
+                        <div class="pa-field">
+                            <label class="pa-label pa-required">정책 URL/표현식</label>
+                            <input
+                                type="text"
+                                id="policy_content"
+                                name="content"
+                                class="form-control"
+                                value="{{ form.content.value|default:initial_domain|default_if_none:'' }}"
+                                placeholder="예) example.com 또는 ^https://example\.com"
+                            >
+                        </div>
+
+                        <div class="pa-field">
+                            <label class="pa-label pa-required">정책 이름</label>
+                            <input
+                                type="text"
+                                name="policy_name"
+                                class="form-control"
+                                value="{{ form.policy_name.value|default_if_none:'' }}"
+                                placeholder="예) 네이버지도 차단"
+                            >
+                        </div>
+
+                        <div class="pa-field">
+                            <label class="pa-label">정책 설명</label>
+                            <input
+                                type="text"
+                                name="description"
+                                class="form-control"
+                                value="{{ form.description.value|default_if_none:'' }}"
+                                placeholder="예) 특정 서비스 접속 차단 정책"
+                            >
+                        </div>
+
+                        <div class="pa-field">
+                            <label class="pa-label pa-required">처리 유형</label>
+                            <div class="pa-pill-group">
+                                <div class="pa-pill">
+                                    <input
+                                        type="radio"
+                                        name="handling_type"
+                                        id="handling_block"
+                                        value="block"
+                                        {% if form.handling_type.value == "block" or not form %}checked{% endif %}
+                                    >
+                                    <label for="handling_block">block</label>
+                                </div>
+
+                                <div class="pa-pill">
+                                    <input
+                                        type="radio"
+                                        name="handling_type"
+                                        id="handling_log"
+                                        value="log"
+                                        {% if form.handling_type.value == "log" %}checked{% endif %}
+                                    >
+                                    <label for="handling_log">log</label>
+                                </div>
+                            </div>
+                            <div class="pa-sub">탐지 시 차단할지, 로그만 남길지 선택합니다.</div>
+                        </div>
+
+                        <div class="pa-field">
+                            <label class="pa-label pa-required">정책 적용 여부</label>
+                            <div class="pa-pill-group">
+                                <div class="pa-pill">
+                                    <input
+                                        type="radio"
+                                        name="is_active"
+                                        id="is_active_yes"
+                                        value="true"
+                                        {% if form.is_active.value == "true" %}checked{% endif %}
+                                    >
+                                    <label for="is_active_yes">적용</label>
+                                </div>
+
+                                <div class="pa-pill">
+                                    <input
+                                        type="radio"
+                                        name="is_active"
+                                        id="is_active_no"
+                                        value="false"
+                                        {% if form.is_active.value == "false" or not form %}checked{% endif %}
+                                    >
+                                    <label for="is_active_no">미적용</label>
+                                </div>
+                            </div>
+                            <div class="pa-sub">등록 직후 정책을 바로 적용할지 선택합니다.</div>
+                        </div>
+
+                        <div class="pa-actions">
+                            <button class="btn pa-btn pa-btn-submit" type="submit">추가</button>
+
+                            {% if return_to %}
+                            <a class="btn pa-btn pa-btn-cancel" href="{{ return_to }}">취소</a>
+                            {% else %}
+                            <a class="btn pa-btn pa-btn-cancel" href="{% url 'policy:list' %}">취소</a>
+                            {% endif %}
+                        </div>
+
                     </div>
                 </form>
 
@@ -265,8 +544,31 @@
     </div>
 </div>
 
+{% if errors %}
+<div class="modal fade pa-error-modal" id="policyErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">입력 내용을 확인하세요</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    {% for err in errors %}
+                        <li>{{ err }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn pa-error-confirm" data-bs-dismiss="modal">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script>
-(function () {
+document.addEventListener("DOMContentLoaded", function () {
     const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
     const input = document.getElementById("policy_content");
 
@@ -287,6 +589,38 @@
             }
         });
     });
-})();
+
+    {% if errors %}
+    const modalEl = document.getElementById("policyErrorModal");
+    if (modalEl) {
+        if (window.bootstrap && bootstrap.Modal) {
+            const errorModal = new bootstrap.Modal(modalEl);
+            errorModal.show();
+        } else {
+            modalEl.classList.add("show");
+            modalEl.style.display = "block";
+            modalEl.removeAttribute("aria-hidden");
+            modalEl.setAttribute("aria-modal", "true");
+
+            const backdrop = document.createElement("div");
+            backdrop.className = "modal-backdrop fade show";
+            backdrop.id = "policyErrorBackdrop";
+            document.body.appendChild(backdrop);
+
+            document.body.classList.add("modal-open");
+
+            modalEl.querySelectorAll("[data-bs-dismiss='modal']").forEach((btn) => {
+                btn.addEventListener("click", function () {
+                    modalEl.classList.remove("show");
+                    modalEl.style.display = "none";
+                    modalEl.setAttribute("aria-hidden", "true");
+                    document.body.classList.remove("modal-open");
+                    document.getElementById("policyErrorBackdrop")?.remove();
+                });
+            });
+        }
+    }
+    {% endif %}
+});
 </script>
 {% endblock %}

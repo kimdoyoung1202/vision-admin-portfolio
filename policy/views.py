@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.contrib import messages
 from django.db import IntegrityError, transaction
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_datetime
 from django.http import JsonResponse
 
 from policy.utils_engine import send_reload_signal
@@ -38,6 +38,7 @@ def policy_list(request):
     정책 목록 + 필터링 + 페이지네이션
     - partial=1 이면 테이블 영역만 렌더링 (AJAX 갱신용)
     - dashboard에서 policy_type=DOMAIN / REGEX 로 진입 가능
+    - start_date / end_date 는 datetime-local 형식(예: 2026-03-11T14:30) 지원
     """
     qs = Policy.objects.all().order_by("-create_at", "-id")
 
@@ -77,13 +78,20 @@ def policy_list(request):
     elif is_active == "false":
         qs = qs.filter(is_active=False)
 
-    sd = parse_date(start_date) if start_date else None
-    ed = parse_date(end_date) if end_date else None
+    start_dt = parse_datetime(start_date) if start_date else None
+    end_dt = parse_datetime(end_date) if end_date else None
 
-    if sd:
-        qs = qs.filter(create_at__date__gte=sd)
-    if ed:
-        qs = qs.filter(create_at__date__lte=ed)
+    if start_dt and timezone.is_naive(start_dt):
+        start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
+
+    if end_dt and timezone.is_naive(end_dt):
+        end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
+
+    if start_dt:
+        qs = qs.filter(create_at__gte=start_dt)
+
+    if end_dt:
+        qs = qs.filter(create_at__lte=end_dt)
 
     paginator = Paginator(qs, 12)
     page_number = request.GET.get("page") or 1

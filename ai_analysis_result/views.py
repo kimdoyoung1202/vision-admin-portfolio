@@ -129,11 +129,11 @@ class AiRecordsView(View):
         sort = (request.GET.get("sort") or "latest").strip()
 
         # 페이지당 건수 제한
-        per_page = request.GET.get("per_page") or "14"
+        per_page = request.GET.get("per_page") or "13"
         try:
             per_page = int(per_page)
         except ValueError:
-            per_page = 14
+            per_page = 13
         per_page = max(5, min(per_page, 100))
 
         # 2) 기본 QuerySet 구성

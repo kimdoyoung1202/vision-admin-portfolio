@@ -46,7 +46,10 @@
 
     .history-pager{
         margin-top: 10px !important;
-        min-height: 40px;
+    }
+
+    .history-pager-top{
+        margin-bottom: 8px;
     }
 
     .cell-truncate{
@@ -72,6 +75,7 @@
     }
 
     .history-pager .pagination{
+        justify-content: center;
         gap: 4px;
     }
 
@@ -90,7 +94,7 @@
         border: 1px solid #e5e7eb;
         background-color: #fff;
         color: #6b7280;
-        font-size: .84rem;
+        font-size: .88rem;
         font-weight: 700;
         line-height: 1;
         box-shadow: none;
@@ -189,48 +193,99 @@
     </table>
 </div>
 
-<div class="d-flex align-items-center history-pager">
-    <div class="text-muted table-note" style="min-width:220px;">
-        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+<div class="history-pager">
+    <div class="history-pager-top d-flex justify-content-between align-items-center">
+        <div class="text-muted table-note">
+            총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+        </div>
+        <div></div>
     </div>
 
-    <div class="flex-grow-1 d-flex justify-content-center">
-        <nav aria-label="수정이력 페이지 이동">
-            <ul class="pagination mb-0">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">이전</span>
-                </li>
-                {% endif %}
+    <nav class="d-flex justify-content-center" aria-label="수정이력 페이지 이동">
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">이전</span>
+            </li>
+            {% endif %}
 
-                {% for p in page_numbers %}
-                    {% if p == page_obj.number %}
+            {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+                {% if total <= 1 %}
                     <li class="page-item active">
-                        <span class="page-link">{{ p }}</span>
+                        <span class="page-link">1</span>
                     </li>
-                    {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="#" data-page="{{ p }}">{{ p }}</a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>
-                </li>
+                {% elif total <= 5 %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == current %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
                 {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link">다음</span>
-                </li>
+                    {% if current <= 3 %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num <= 5 %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% elif current >= total|add:"-2" %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= total|add:"-4" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= current|add:"-2" and num <= current|add:"2" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="#" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
                 {% endif %}
-            </ul>
-        </nav>
-    </div>
+            {% endwith %}
 
-    <div style="min-width:220px;"></div>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">다음</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>

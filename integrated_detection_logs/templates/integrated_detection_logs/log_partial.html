@@ -1,5 +1,81 @@
 <!-- integrated_detection_logs/log_partial.html -->
 
+<style>
+    #logsTable th,
+    #logsTable td{
+        padding-top: 8px;
+        padding-bottom: 8px;
+        font-size: .92rem;
+        vertical-align: middle;
+    }
+
+    #logsTable thead th{
+        font-weight: 900;
+    }
+
+    .logs-pager{
+        margin-top: 10px !important;
+        width: 100%;
+    }
+
+    .logs-pager-top{
+        margin-bottom: 8px;
+    }
+
+    .logs-pager nav{
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .logs-pager .pagination{
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .logs-pager .page-item{
+        margin: 0;
+    }
+
+    .logs-pager .page-link{
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+        border: 1px solid #e5e7eb;
+        background-color: #fff;
+        color: #6b7280;
+        font-size: .88rem;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: none;
+        transition: all .15s ease;
+        text-decoration: none;
+    }
+
+    .logs-pager .page-link:hover{
+        color: #696cff;
+        border-color: #cfd3ff;
+        background-color: #f6f7ff;
+    }
+
+    .logs-pager .page-item.active .page-link{
+        background-color: #696cff;
+        border-color: #696cff;
+        color: #fff;
+    }
+
+    .logs-pager .page-item.disabled .page-link{
+        background-color: #f9fafb;
+        border-color: #eceef2;
+        color: #b5bcc8;
+        pointer-events: none;
+    }
+</style>
+
 <div class="table-responsive text-nowrap">
     <table class="table table-hover align-middle mb-0" id="logsTable">
         <thead>
@@ -49,17 +125,20 @@
     </table>
 </div>
 
-<div class="pager-bar">
-    <div class="text-muted">
-        총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+<div class="logs-pager">
+    <div class="logs-pager-top d-flex justify-content-between align-items-center">
+        <div class="text-muted">
+            총 {{ page_obj.paginator.count }}건 · {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 페이지
+        </div>
+        <div></div>
     </div>
 
-    <nav>
+    <nav aria-label="로그 페이지 이동">
         <ul class="pagination mb-0">
             {% if page_obj.has_previous %}
             <li class="page-item">
                 <a class="page-link js-page"
-                    href="?page={{ page_obj.previous_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                   href="?page={{ page_obj.previous_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
                     이전
                 </a>
             </li>
@@ -69,14 +148,86 @@
             </li>
             {% endif %}
 
-            <li class="page-item disabled">
-                <span class="page-link">{{ page_obj.number }}</span>
-            </li>
+            {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+                {% if total <= 1 %}
+                    <li class="page-item active">
+                        <span class="page-link">1</span>
+                    </li>
+                {% elif total <= 5 %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == current %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link js-page"
+                               href="?page={{ num }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% if current <= 3 %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num <= 5 %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link js-page"
+                                       href="?page={{ num }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% elif current >= total|add:"-2" %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= total|add:"-4" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link js-page"
+                                       href="?page={{ num }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num >= current|add:"-2" and num <= current|add:"2" %}
+                                {% if num == current %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link js-page"
+                                       href="?page={{ num }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            {% endwith %}
 
             {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link js-page"
-                    href="?page={{ page_obj.next_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
+                   href="?page={{ page_obj.next_page_number }}&url_domain={{ filters.url_domain }}&policy_kw={{ filters.policy_kw }}&client_ip={{ filters.client_ip }}&policy_type={{ filters.policy_type }}&method={{ filters.method }}&query_string={{ filters.query_string }}&start_dt={{ filters.start_dt }}&end_dt={{ filters.end_dt }}">
                     다음
                 </a>
             </li>

@@ -6,12 +6,39 @@
 
 {% block extra_css %}
 <style>
-    .logs-page{
+    :root{
         --topbarH: 64px;
         --gap: 10px;
-        height: calc(100vh - var(--topbarH));
+
+        --vision-primary: #696cff;
+        --vision-primary-dark: #5f63f2;
+        --vision-border: #e7ebf3;
+        --vision-muted: #8592a3;
+        --vision-text: #566a7f;
+
+        --pageH: calc(100vh - var(--topbarH));
+
+        --theadH: 44px;
+        --rowH: 42px;
+        --pagerH: 44px;
+        --tablePadding: 12px;
+    }
+
+    html, body{
+        height: 100%;
+    }
+
+    body{
+        overflow: hidden !important;
+    }
+
+    .logs-page{
+        height: var(--pageH);
         overflow: hidden;
         padding: 10px 16px !important;
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap);
     }
 
     .logs-page.container-p-y,
@@ -20,55 +47,333 @@
         padding-bottom: 10px !important;
     }
 
-    .logs-page .card{ margin-bottom: var(--gap) !important; }
-
-    .filter-card .card-body{ padding: 10px 12px 8px; }
-    .filter-card .form-label{
-        margin-bottom: 6px;
-        font-weight: 800;
-        font-size: .82rem;
+    .card{
+        border: 1px solid #e7ebf3;
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
+        border-radius: 16px;
+        margin: 0 !important;
     }
+
+    /* =========================
+       필터 카드
+    ========================= */
+    .filter-card .card-body{
+        padding: 14px 14px 12px;
+    }
+
+    .filter-grid{
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filter-row{
+        display: grid;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .filter-row-top{
+        grid-template-columns: 1.1fr 1.1fr 1.55fr;
+    }
+
+    .filter-row-bottom{
+        grid-template-columns: .9fr .78fr .78fr 1.45fr auto;
+    }
+
+    .fg-item{
+        min-width: 0;
+    }
+
+    .filter-card .form-label{
+        margin-bottom: 5px;
+        font-weight: 800;
+        font-size: .80rem;
+        line-height: 1.1;
+        color: #566a7f;
+    }
+
     .filter-card .form-control,
     .filter-card .form-select{
         height: 38px;
-        padding: .42rem .7rem;
+        padding: .38rem .72rem;
         border-radius: 10px;
+        border: 1px solid #d8e0ec;
+        background: #fff;
+        font-size: .88rem;
+        min-width: 0;
+        width: 100%;
+        font-weight: 700;
+        box-shadow: none !important;
+    }
+
+    .filter-card .form-control:focus,
+    .filter-card .form-select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14) !important;
     }
 
     .radio-line{
         height: 38px;
         display:flex;
         align-items:center;
-        gap: 12px;
+        gap: 14px;
         flex-wrap: nowrap;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: 0 12px;
+        background: #fff;
     }
-    .radio-line{ display:flex; gap:8px; }
-    .radio-line .form-check{ margin:0; }
-    .radio-line input{ margin-top:0; }
-    input[type="datetime-local"]{ max-width:220px; }
 
+    .radio-line .form-check{
+        margin:0;
+        display:flex;
+        align-items:center;
+        gap:6px;
+    }
+
+    .radio-line .form-check-input{
+        margin-top:0;
+        cursor:pointer;
+    }
+
+    .radio-line .form-check-label{
+        font-size: .86rem;
+        font-weight: 700;
+        color: #566a7f;
+        cursor:pointer;
+        white-space: nowrap;
+    }
+
+    .date-range-wrap{
+        display:grid;
+        grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+        align-items:center;
+        gap:8px;
+        width:100%;
+        min-width:0;
+    }
+
+    .range-sep{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        color:#8a97a8;
+        font-weight:800;
+        font-size:.9rem;
+        line-height:1;
+    }
+
+    .dt-wrap{
+        position: relative;
+        min-width: 0;
+    }
+
+    .dt-display{
+        cursor: pointer;
+        padding-right: 38px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%) !important;
+    }
+
+    .dt-display[readonly]{
+        color: #566a7f;
+    }
+
+    .dt-wrap::after{
+        content: "🗓";
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        opacity: .72;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .dt-panel{
+        position: fixed;
+        width: 280px;
+        background: #fff;
+        border: 1px solid #e6eaf2;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(67, 89, 113, 0.18);
+        padding: 12px;
+        z-index: 2000;
+        display: none;
+    }
+
+    .dt-panel.show{
+        display:block;
+    }
+
+    .dt-panel-head{
+        font-size: .9rem;
+        font-weight: 800;
+        color: #566a7f;
+        margin-bottom: 10px;
+    }
+
+    .dt-panel .dt-date{
+        width: 100%;
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .72rem;
+        font-size: .88rem;
+        outline: none;
+    }
+
+    .dt-panel .dt-date:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-time-row{
+        display: grid;
+        grid-template-columns: 1fr 20px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .dt-time-row select{
+        height: 38px;
+        border: 1px solid #d8e0ec;
+        border-radius: 10px;
+        padding: .38rem .6rem;
+        font-size: .88rem;
+        background: #fff;
+        outline: none;
+    }
+
+    .dt-time-row select:focus{
+        border-color: #7d8bff;
+        box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+    }
+
+    .dt-colon{
+        text-align:center;
+        font-weight:800;
+        color:#8592a3;
+    }
+
+    .dt-panel-actions{
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:12px;
+    }
+
+    .dt-panel-actions-left,
+    .dt-panel-actions-right{
+        display:flex;
+        gap:8px;
+    }
+
+    .btn-dt{
+        height: 34px;
+        padding: 0 .8rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea;
+        background: #fff;
+        color: #5f6b7a;
+        font-weight: 800;
+        font-size: .82rem;
+    }
+
+    .btn-dt:hover{
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
+    }
+
+    .btn-dt-apply{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+    }
+
+    .btn-dt-apply:hover{
+        color:#fff;
+    }
+
+    .filter-actions-col{
+        min-width: 176px;
+        display:flex;
+        align-items:end;
+        justify-content:flex-end;
+    }
+
+    .filter-actions{
+        display:flex;
+        gap:8px;
+        justify-content:flex-end;
+        align-items:center;
+        width:100%;
+        flex-wrap:nowrap;
+    }
+
+    .filter-card .btn{
+        height: 38px;
+        padding: .45rem .95rem;
+        border-radius: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .filter-actions .btn{
+        min-width: 80px;
+        flex:0 0 auto;
+    }
+
+    .btn-filter-search{
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        border: none;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+    }
+
+    .btn-filter-search:hover{
+        color:#fff;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105,108,255,.24);
+    }
+
+    .btn-filter-reset{
+        border: 1px solid #d6dcea;
+        background: #f8f9fd;
+        color: #5f6b7a !important;
+    }
+
+    .btn-filter-reset:hover{
+        background: #eef2ff;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5;
+    }
+
+    /* =========================
+       워크스페이스
+    ========================= */
     .workspace{
-        height: calc(100% - 148px);
+        flex: 1;
+        min-height: 0;
         display: flex;
         gap: var(--gap);
         overflow: hidden;
     }
+
     .workspace .table-wrap{
         flex: 1 1 auto;
         min-width: 0;
         overflow: hidden;
     }
+
     .workspace .detail-wrap{
         flex: 0 0 360px;
         min-width: 320px;
         overflow: hidden;
-    }
-
-    :root{
-        --theadH: 44px;
-        --rowH: 42px;
-        --pagerH: 44px;
-        --tablePadding: 12px;
     }
 
     .list-card{
@@ -77,6 +382,7 @@
         flex-direction: column;
         overflow: hidden;
     }
+
     .list-card .card-body{
         padding: 10px 12px;
         display:flex;
@@ -90,9 +396,16 @@
         overflow-y: hidden;
     }
 
-    table.table thead tr{ height: var(--theadH); }
-    table.table tbody tr{ height: var(--rowH); }
-    table.table th, table.table td{
+    table.table thead tr{
+        height: var(--theadH);
+    }
+
+    table.table tbody tr{
+        height: var(--rowH);
+    }
+
+    table.table th,
+    table.table td{
         vertical-align: middle;
         padding-top: 8px;
         padding-bottom: 8px;
@@ -104,6 +417,7 @@
         overflow:hidden;
         text-overflow:ellipsis;
     }
+
     .cell-truncate-sm{
         max-width:220px;
         white-space:nowrap;
@@ -118,25 +432,35 @@
         justify-content:space-between;
         margin-top: 8px;
     }
-    .pagination{ margin-bottom:0 !important; }
 
-    .detail-card{ height: 100%; overflow: hidden; }
+    .pagination{
+        margin-bottom:0 !important;
+    }
+
+    .detail-card{
+        height: 100%;
+        overflow: hidden;
+    }
+
     .detail-card .card-body{
         padding: 10px 12px;
         height: 100%;
         overflow: hidden;
     }
+
     .detail-title{
         font-weight: 800;
         font-size: .98rem;
         margin-bottom: .65rem;
     }
+
     .detail-k{
         color:#6c757d;
         font-size:.78rem;
         margin-bottom:.18rem;
         font-weight: 800;
     }
+
     .detail-v{
         font-weight:800;
         margin-bottom:.45rem;
@@ -144,10 +468,74 @@
         line-height: 1.25;
         word-break: break-word;
     }
-    .detail-card hr{ margin: .65rem 0; }
 
-    .clickable-row{ cursor:pointer; }
-    .table-active{ background: rgba(105,108,255,.08) !important; }
+    .detail-card hr{
+        margin: .65rem 0;
+    }
+
+    .clickable-row{
+        cursor:pointer;
+    }
+
+    .table-active{
+        background: rgba(105,108,255,.08) !important;
+    }
+
+    @media (max-width: 1399.98px){
+        .filter-row-top{
+            grid-template-columns: 1fr 1fr 1.4fr;
+        }
+
+        .filter-row-bottom{
+            grid-template-columns: .9fr .82fr .82fr 1.25fr auto;
+        }
+    }
+
+    @media (max-width: 1199.98px){
+        .filter-row-top,
+        .filter-row-bottom{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filter-actions-col{
+            min-width:0;
+            justify-content:flex-start;
+        }
+
+        .filter-actions{
+            justify-content:flex-start;
+        }
+    }
+
+    @media (max-width: 767.98px){
+        .filter-row-top,
+        .filter-row-bottom{
+            grid-template-columns: 1fr;
+        }
+
+        .date-range-wrap{
+            grid-template-columns: 1fr;
+        }
+
+        .range-sep{
+            display:none;
+        }
+
+        .filter-actions{
+            flex-direction:column;
+            align-items:stretch;
+        }
+
+        .filter-actions .btn{
+            width:100%;
+        }
+
+        .dt-panel{
+            width: calc(100vw - 32px);
+            left: 16px !important;
+            right: 16px !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -156,73 +544,82 @@
 
     <div class="card filter-card">
         <div class="card-body">
-        <form method="get" class="row g-2 align-items-end" id="logsFilterForm">
-            <div class="col-xl-4 col-lg-6">
-                <label class="form-label">URL/도메인</label>
-                <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력 :">
-            </div>
+            <form method="get" id="logsFilterForm">
+                <div class="filter-grid">
 
-            <div class="col-xl-4 col-lg-6">
-                <label class="form-label">URL쿼리 스트링</label>
-                <input class="form-control" name="query_string" value="{{ filters.query_string }}" placeholder="입력 :">
-            </div>
+                    <div class="filter-row filter-row-top">
+                        <div class="fg-item">
+                            <label class="form-label">URL/도메인</label>
+                            <input class="form-control" name="url_domain" value="{{ filters.url_domain }}" placeholder="입력">
+                        </div>
 
-            <div class="col-xl-4 col-lg-6">
-                <label class="form-label">정책 이름 / 정책 타입 / 정책 내용</label>
-                <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력 :">
-            </div>
+                        <div class="fg-item">
+                            <label class="form-label">URL쿼리 스트링</label>
+                            <input class="form-control" name="query_string" value="{{ filters.query_string }}" placeholder="입력">
+                        </div>
 
-            <div class="col-xl-3 col-lg-6">
-                <label class="form-label">사용자 IP</label>
-                <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력 :">
-            </div>
+                        <div class="fg-item">
+                            <label class="form-label">정책 이름 / 정책 내용</label>
+                            <input class="form-control" name="policy_kw" value="{{ filters.policy_kw }}" placeholder="입력">
+                        </div>
+                    </div>
 
-            <div class="col-xl-2 col-lg-6">
-                <label class="form-label">도메인 / 정규</label>
-                <div class="radio-line">
-                    <label class="form-check d-flex align-items-center gap-2">
-                        <input class="form-check-input" type="radio" name="policy_type" value="DOMAIN"
-                               {% if filters.policy_type == "DOMAIN" %}checked{% endif %}>
-                        <span class="form-check-label">도메인</span>
-                    </label>
-                    <label class="form-check d-flex align-items-center gap-2">
-                        <input class="form-check-input" type="radio" name="policy_type" value="REGEX"
-                               {% if filters.policy_type == "REGEX" %}checked{% endif %}>
-                        <span class="form-check-label">정규</span>
-                    </label>
+                    <div class="filter-row filter-row-bottom">
+                        <div class="fg-item">
+                            <label class="form-label">사용자 IP</label>
+                            <input class="form-control" name="client_ip" value="{{ filters.client_ip }}" placeholder="입력">
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">정책 타입</label>
+                            <select class="form-select" name="policy_type">
+                                <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
+                                <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>도메인</option>
+                                <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>정규</option>
+                            </select>
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">POST / GET</label>
+                            <div class="radio-line">
+                                <label class="form-check">
+                                    <input class="form-check-input" type="radio" name="method" value="POST"
+                                           {% if filters.method == "POST" %}checked{% endif %}>
+                                    <span class="form-check-label">POST</span>
+                                </label>
+                                <label class="form-check">
+                                    <input class="form-check-input" type="radio" name="method" value="GET"
+                                           {% if filters.method == "GET" %}checked{% endif %}>
+                                    <span class="form-check-label">GET</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="fg-item">
+                            <label class="form-label">탐지 기간</label>
+                            <div class="date-range-wrap">
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="start_dt" id="startDtValue" value="{{ filters.start_dt }}">
+                                    <input type="text" id="startDtDisplay" class="form-control dt-display" placeholder="시작 일시 선택" readonly>
+                                </div>
+                                <span class="range-sep">~</span>
+                                <div class="dt-wrap">
+                                    <input type="hidden" name="end_dt" id="endDtValue" value="{{ filters.end_dt }}">
+                                    <input type="text" id="endDtDisplay" class="form-control dt-display" placeholder="종료 일시 선택" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-actions-col">
+                            <div class="filter-actions">
+                                <button class="btn btn-filter-search" type="submit" id="btnSearch">조회</button>
+                                <a class="btn btn-filter-reset" href="{% url 'logs:list' %}">초기화</a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-            </div>
-
-            <div class="col-xl-2 col-lg-6">
-                <label class="form-label">POST / GET</label>
-                <div class="radio-line">
-                    <label class="form-check d-flex align-items-center gap-2">
-                        <input class="form-check-input" type="radio" name="method" value="POST"
-                               {% if filters.method == "POST" %}checked{% endif %}>
-                        <span class="form-check-label">POST</span>
-                    </label>
-                    <label class="form-check d-flex align-items-center gap-2">
-                        <input class="form-check-input" type="radio" name="method" value="GET"
-                               {% if filters.method == "GET" %}checked{% endif %}>
-                        <span class="form-check-label">GET</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-lg-12">
-                <label class="form-label">탐지 기간(날짜/시간)</label>
-                <div class="d-flex gap-2 align-items-center">
-                    <input class="form-control" type="datetime-local" name="start_dt" value="{{ filters.start_dt }}">
-                    <div class="text-muted">~</div>
-                    <input class="form-control" type="datetime-local" name="end_dt" value="{{ filters.end_dt }}">
-                </div>
-            </div>
-
-            <div class="col-auto ms-auto d-flex gap-1">
-                <button class="btn btn-primary" type="submit" id="btnSearch" style="min-width:80px;height:38px;">조회</button>
-                <a class="btn btn-outline-secondary" href="{% url 'logs:list' %}" style="min-width:80px;height:38px;">초기화</a>
-            </div>
-        </form>
+            </form>
         </div>
     </div>
 
@@ -283,6 +680,29 @@
     </div>
 </div>
 
+<div class="dt-panel" id="datetimePanel">
+    <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
+
+    <input type="date" class="dt-date" id="dtDate">
+
+    <div class="dt-time-row">
+        <select id="dtHour"></select>
+        <div class="dt-colon">:</div>
+        <select id="dtMinute"></select>
+    </div>
+
+    <div class="dt-panel-actions">
+        <div class="dt-panel-actions-left">
+            <button type="button" class="btn-dt" id="dtNowBtn">지금</button>
+            <button type="button" class="btn-dt" id="dtClearBtn">초기화</button>
+        </div>
+        <div class="dt-panel-actions-right">
+            <button type="button" class="btn-dt" id="dtCancelBtn">취소</button>
+            <button type="button" class="btn-dt btn-dt-apply" id="dtApplyBtn">적용</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function(){
     const form = document.getElementById("logsFilterForm");
@@ -300,6 +720,139 @@
     const dDstPort = document.getElementById("dDstPort");
     const dMethod = document.getElementById("dMethod");
     const dCreateAt = document.getElementById("dCreateAt");
+
+    const startDtValue = document.getElementById("startDtValue");
+    const startDtDisplay = document.getElementById("startDtDisplay");
+    const endDtValue = document.getElementById("endDtValue");
+    const endDtDisplay = document.getElementById("endDtDisplay");
+
+    const datetimePanel = document.getElementById("datetimePanel");
+    const dtPanelTitle = document.getElementById("dtPanelTitle");
+    const dtDate = document.getElementById("dtDate");
+    const dtHour = document.getElementById("dtHour");
+    const dtMinute = document.getElementById("dtMinute");
+    const dtNowBtn = document.getElementById("dtNowBtn");
+    const dtClearBtn = document.getElementById("dtClearBtn");
+    const dtCancelBtn = document.getElementById("dtCancelBtn");
+    const dtApplyBtn = document.getElementById("dtApplyBtn");
+
+    let activePicker = null;
+
+    function pad(n){
+        return String(n).padStart(2, "0");
+    }
+
+    function normalizeDateTimeValue(value){
+        if(!value) return "";
+        return value.length === 16 ? value : value.slice(0, 16);
+    }
+
+    function formatDisplay(value){
+        if(!value) return "";
+        return normalizeDateTimeValue(value).replace("T", " ");
+    }
+
+    function parseValue(value){
+        const normalized = normalizeDateTimeValue(value);
+        if(!normalized || normalized.indexOf("T") === -1){
+            return { date: "", hour: "00", minute: "00" };
+        }
+
+        const [date, time] = normalized.split("T");
+        const [hour = "00", minute = "00"] = (time || "").split(":");
+        return {
+            date: date || "",
+            hour: pad(hour),
+            minute: pad(minute),
+        };
+    }
+
+    function buildValue(date, hour, minute){
+        if(!date) return "";
+        return `${date}T${pad(hour)}:${pad(minute)}`;
+    }
+
+    function fillTimeOptions(){
+        for(let h = 0; h < 24; h++){
+            const opt = document.createElement("option");
+            opt.value = pad(h);
+            opt.textContent = pad(h) + "시";
+            dtHour.appendChild(opt);
+        }
+
+        for(let m = 0; m < 60; m += 1){
+            const opt = document.createElement("option");
+            opt.value = pad(m);
+            opt.textContent = pad(m) + "분";
+            dtMinute.appendChild(opt);
+        }
+    }
+
+    function syncDisplay(){
+        startDtDisplay.value = formatDisplay(startDtValue.value);
+        endDtDisplay.value = formatDisplay(endDtValue.value);
+    }
+
+    function getPickerMeta(type){
+        const map = {
+            start_dt: {
+                title: "탐지 시작 일시 선택",
+                valueEl: startDtValue,
+                displayEl: startDtDisplay,
+            },
+            end_dt: {
+                title: "탐지 종료 일시 선택",
+                valueEl: endDtValue,
+                displayEl: endDtDisplay,
+            }
+        };
+        return map[type] || null;
+    }
+
+    function openPicker(type, anchorEl){
+        const meta = getPickerMeta(type);
+        if(!meta) return;
+
+        activePicker = type;
+        dtPanelTitle.textContent = meta.title;
+
+        const parsed = parseValue(meta.valueEl.value);
+        dtDate.value = parsed.date;
+        dtHour.value = parsed.hour;
+        dtMinute.value = parsed.minute;
+
+        const rect = anchorEl.getBoundingClientRect();
+        const panelWidth = 280;
+        const left = Math.min(
+            Math.max(16, rect.left + window.scrollX),
+            window.scrollX + window.innerWidth - panelWidth - 16
+        );
+
+        let top = rect.bottom + window.scrollY + 8;
+        const panelHeight = 210;
+        if(top + panelHeight > window.scrollY + window.innerHeight - 12){
+            top = rect.top + window.scrollY - panelHeight - 8;
+        }
+
+        datetimePanel.style.left = left + "px";
+        datetimePanel.style.top = Math.max(12, top) + "px";
+        datetimePanel.classList.add("show");
+    }
+
+    function closePicker(){
+        datetimePanel.classList.remove("show");
+        activePicker = null;
+    }
+
+    function applyPickerValue(value){
+        if(!activePicker) return;
+        const meta = getPickerMeta(activePicker);
+        if(!meta) return;
+
+        meta.valueEl.value = value;
+        syncDisplay();
+        closePicker();
+    }
 
     function clearActive(){
         partialEl.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
@@ -386,9 +939,55 @@
         loadPartial(url);
     });
 
+    startDtDisplay.addEventListener("click", () => {
+        openPicker("start_dt", startDtDisplay);
+    });
+
+    endDtDisplay.addEventListener("click", () => {
+        openPicker("end_dt", endDtDisplay);
+    });
+
+    dtNowBtn.addEventListener("click", () => {
+        const now = new Date();
+        dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        dtHour.value = pad(now.getHours());
+        dtMinute.value = pad(now.getMinutes());
+    });
+
+    dtClearBtn.addEventListener("click", () => {
+        applyPickerValue("");
+    });
+
+    dtCancelBtn.addEventListener("click", () => {
+        closePicker();
+    });
+
+    dtApplyBtn.addEventListener("click", () => {
+        const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
+        applyPickerValue(value);
+    });
+
+    document.addEventListener("click", (e) => {
+        if(!datetimePanel.classList.contains("show")) return;
+
+        const clickedInsidePanel = datetimePanel.contains(e.target);
+        const clickedDisplay =
+            e.target === startDtDisplay ||
+            e.target === endDtDisplay;
+
+        if(!clickedInsidePanel && !clickedDisplay){
+            closePicker();
+        }
+    });
+
+    window.addEventListener("resize", () => closePicker());
+    window.addEventListener("scroll", () => closePicker(), true);
+
     bindRowClicks();
     bindPagerClicks();
     bindClose();
+    fillTimeOptions();
+    syncDisplay();
 })();
 </script>
 {% endblock %}

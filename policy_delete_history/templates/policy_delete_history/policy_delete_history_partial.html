@@ -1,16 +1,94 @@
 {% comment %} policy_delete_history/policy_delete_history_partial.html {% endcomment %}
 
 <style>
+    #phTable{
+        table-layout: fixed;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
     #phTable th,
     #phTable td{
         padding-top: 8px;
         padding-bottom: 8px;
-        font-size: .92rem;
+        padding-left: 10px;
+        padding-right: 10px;
+        font-size: .90rem;
         vertical-align: middle;
     }
 
     #phTable thead th{
         font-weight: 900;
+        color: #566a7f;
+        background: #fcfcfd;
+        border-bottom-width: 1px;
+        font-size: .83rem;
+        letter-spacing: -.1px;
+    }
+
+    #phTable tbody tr.js-row{
+        cursor: pointer;
+    }
+
+    #phTable tbody tr.js-row:hover{
+        background-color: rgba(105, 108, 255, .04);
+    }
+
+    #phTable tbody tr.table-active{
+        background-color: rgba(105, 108, 255, .08);
+    }
+
+    .cell-truncate{
+        max-width: 360px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cell-truncate-sm{
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pill{
+        display:inline-block;
+        padding:3px 10px;
+        border-radius:8px;
+        font-weight:800;
+        font-size:11px;
+        letter-spacing:.3px;
+        border:1px solid transparent;
+        line-height: 1.2;
+    }
+
+    .pill-active{
+        background: rgba(40,199,111,.12);
+        color:#28c76f;
+        border-color: rgba(40,199,111,.25);
+    }
+
+    .pill-inactive{
+        background: rgba(133,146,163,.12);
+        color:#8592a3;
+        border-color: rgba(133,146,163,.25);
+    }
+
+    .pill-block{
+        background: rgba(255,62,29,.10);
+        color:#ff3e1d;
+        border-color: rgba(255,62,29,.25);
+    }
+
+    .pill-log{
+        background: rgba(3,195,236,.10);
+        color:#03c3ec;
+        border-color: rgba(3,195,236,.25);
+    }
+
+    .td-center{
+        text-align:center;
     }
 
     .ph-pager{
@@ -63,24 +141,21 @@
     }
 </style>
 
-<div class="card">
-    <div class="card-body">
+<div class="card border-0 shadow-none">
+    <div class="card-body p-0">
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="text-muted">조회 결과</div>
-        </div>
 
         <div class="table-responsive text-nowrap">
             <table class="table table-hover align-middle" id="phTable">
                 <thead>
                     <tr>
-                        <th>정책 타입</th>
-                        <th>정책 이름</th>
+                        <th style="width:110px;">정책 타입</th>
+                        <th style="width:220px;">정책 이름</th>
                         <th>정책 URL/표현식</th>
-                        <th class="td-center" style="width:110px">정책 적용 여부</th>
-                        <th class="td-center" style="width:100px">처리 유형</th>
-                        <th>정책 삭제자 id</th>
-                        <th>삭제 시간</th>
+                        <th class="td-center" style="width:120px;">정책 적용 여부</th>
+                        <th class="td-center" style="width:110px;">처리 유형</th>
+                        <th style="width:130px;">정책 삭제자 id</th>
+                        <th style="width:160px;">삭제 시간</th>
                     </tr>
                 </thead>
 
@@ -98,7 +173,7 @@
                         data-policy-desc="{{ h.description|default:''|escape }}"
                         data-restore-action="{% url 'policy_delete_history:restore' h.id %}">
                         <td>{{ h.policy_type }}</td>
-                        <td>{{ h.policy_name }}</td>
+                        <td class="cell-truncate-sm">{{ h.policy_name }}</td>
                         <td class="cell-truncate">{{ h.content }}</td>
 
                         <td class="td-center">
@@ -144,8 +219,8 @@
                     {% if page_obj.has_previous %}
                         <li class="page-item">
                             <a class="page-link js-page"
-                            href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                            이전
+                                href="?page={{ page_obj.previous_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                이전
                             </a>
                         </li>
                     {% else %}
@@ -164,8 +239,8 @@
                                 {% else %}
                                     <li class="page-item">
                                         <a class="page-link js-page"
-                                        href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                                        {{ num }}
+                                            href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                            {{ num }}
                                         </a>
                                     </li>
                                 {% endif %}
@@ -181,8 +256,8 @@
                                         {% else %}
                                             <li class="page-item">
                                                 <a class="page-link js-page"
-                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                                                {{ num }}
+                                                   href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                   {{ num }}
                                                 </a>
                                             </li>
                                         {% endif %}
@@ -198,8 +273,8 @@
                                         {% else %}
                                             <li class="page-item">
                                                 <a class="page-link js-page"
-                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                                                {{ num }}
+                                                    href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                    {{ num }}
                                                 </a>
                                             </li>
                                         {% endif %}
@@ -215,8 +290,8 @@
                                         {% else %}
                                             <li class="page-item">
                                                 <a class="page-link js-page"
-                                                href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                                                {{ num }}
+                                                    href="?page={{ num }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                                    {{ num }}
                                                 </a>
                                             </li>
                                         {% endif %}
@@ -229,8 +304,8 @@
                     {% if page_obj.has_next %}
                         <li class="page-item">
                             <a class="page-link js-page"
-                            href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
-                            다음
+                                href="?page={{ page_obj.next_page_number }}&policy_type={{ filters.policy_type }}&policy_name={{ filters.policy_name }}&content={{ filters.content }}&is_active={{ filters.is_active }}&handling_type={{ filters.handling_type }}&delete_by={{ filters.delete_by }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}">
+                                다음
                             </a>
                         </li>
                     {% else %}
