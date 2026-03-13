@@ -8,7 +8,7 @@ from django.core.cache import cache
 
 from policy.models import Policy
 from ai_analysis_result.models import AiAnalysisResult
-from integrated_detection_logs.models import IntegratedDetectionLogs  # 너 실제 모델명으로 교체
+from integrated_detection_logs.models import IntegratedDetectionLogs  
 
 @login_required
 def kpis_api(request):
@@ -17,13 +17,13 @@ def kpis_api(request):
     yday_start = today_start - timedelta(days=1)
 
     # ✅ 누적 전체 (휴지통 제외)
-    policy_total = Policy.objects.filter(is_deleted=False).count()
+    policy_total = Policy.objects.count()
     ai_total = AiAnalysisResult.objects.count()
     blocked_total = IntegratedDetectionLogs.objects.count()
 
     # ✅ 전일 대비 = (오늘 생성 - 어제 생성)
-    policy_today = Policy.objects.filter(is_deleted=False, create_at__gte=today_start).count()
-    policy_yday = Policy.objects.filter(is_deleted=False, create_at__gte=yday_start, create_at__lt=today_start).count()
+    policy_today = Policy.objects.filter(create_at__gte=today_start).count()
+    policy_yday = Policy.objects.filter(create_at__gte=yday_start, create_at__lt=today_start).count()
     policy_delta = policy_today - policy_yday
 
     ai_today = AiAnalysisResult.objects.filter(create_at__gte=today_start).count()
