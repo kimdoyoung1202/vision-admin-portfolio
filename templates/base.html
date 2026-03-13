@@ -393,28 +393,28 @@
             <li class="menu-item {% if active_group == 'policy' %}active open{% endif %}" data-dropdown="true">
               <div class="menu-link">
                 <i class="bx bx-shield-quarter"></i>
-                <span>정책 관리</span>
+                <span>정책 운영</span>
                 <i class="bx bx-chevron-right caret"></i>
               </div>
               <ul class="submenu">
                 <li>
                   <a class="submenu-link {% if active_menu == 'policy_list' %}current{% endif %}" href="{% url 'policy:list' %}">
-                    정책 조회
+                    정책 현황
                   </a>
                 </li>
                 <li>
                   <a class="submenu-link {% if active_menu == 'policy_add' %}current{% endif %}" href="{% url 'policy:add' %}">
-                    정책 추가
+                    정책 등록
                   </a>
                 </li>
                 <li>
                   <a class="submenu-link {% if active_menu == 'policy_update_history' %}current{% endif %}" href="{% url 'policy_update_history:list' %}">
-                    정책 수정 내역
+                    정책 변경 이력
                   </a>
                 </li>
                 <li>
                   <a class="submenu-link {% if active_menu == 'policy_history' %}current{% endif %}" href="{% url 'policy_delete_history:list' %}">
-                    정책 삭제 관리
+                    삭제 정책 관리
                   </a>
                 </li>
               </ul>
@@ -423,18 +423,18 @@
             <li class="menu-item {% if active_group == 'ai' %}active open{% endif %}" data-dropdown="true">
               <div class="menu-link">
                 <i class="bx bx-bot"></i>
-                <span>AI 관리</span>
+                <span>AI 운영</span>
                 <i class="bx bx-chevron-right caret"></i>
               </div>
               <ul class="submenu">
                 <li>
                   <a class="submenu-link {% if active_menu == 'ai_records' %}current{% endif %}" href="{% url 'ai:records' %}">
-                    AI 기록관
+                    AI 분석 이력
                   </a>
                 </li>
                 <li>
                   <a class="submenu-link {% if active_menu == 'ai_status' %}current{% endif %}" href="{% url 'ai:status' %}">
-                    AI 성능 현황
+                    AI 성능 모니터링
                   </a>
                 </li>
               </ul>
@@ -443,7 +443,7 @@
             <li class="menu-item {% if active_menu == 'logs' %}active{% endif %}">
               <a class="menu-link" href="{% url 'logs:list' %}">
                 <i class="bx bx-receipt"></i>
-                <span>로그 관리</span>
+                <span>탐지 로그 관리</span>
               </a>
             </li>
 

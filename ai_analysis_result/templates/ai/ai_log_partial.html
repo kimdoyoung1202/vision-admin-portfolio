@@ -128,18 +128,18 @@
 <div class="ai-table-topbar" id="topbarArea">
     <div class="ai-sort-group">
         <a
-            class="ai-sort-btn {% if filters.sort == 'confidence' %}is-active{% endif %}"
-            href="#"
-            data-sort="confidence"
-        >
-            유해확률순
-        </a>
-        <a
             class="ai-sort-btn {% if filters.sort == 'latest' or not filters.sort %}is-active{% endif %}"
             href="#"
             data-sort="latest"
         >
             최신순
+        </a>
+        <a
+            class="ai-sort-btn {% if filters.sort == 'confidence' %}is-active{% endif %}"
+            href="#"
+            data-sort="confidence"
+        >
+            유해확률순
         </a>
     </div>
 </div>
