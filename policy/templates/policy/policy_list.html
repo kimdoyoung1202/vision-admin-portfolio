@@ -50,6 +50,7 @@
     border-radius: 10px;
     padding: .52rem 1rem;
     box-shadow: 0 8px 18px rgba(105, 108, 255, .20);
+    transition: all .15s ease;
   }
 
   .btn-policy-add:hover{
@@ -260,6 +261,7 @@
     color: #5f6b7a;
     font-weight: 800;
     font-size: .82rem;
+    transition: all .15s ease;
   }
 
   .btn-dt:hover{
@@ -310,6 +312,7 @@
     border: none;
     color: #fff;
     box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+    transition: all .15s ease;
   }
 
   .btn-filter-search:hover{
@@ -322,6 +325,7 @@
     border: 1px solid #d6dcea;
     background: #f8f9fd;
     color: #5f6b7a;
+    transition: all .15s ease;
   }
 
   .btn-filter-reset:hover{
@@ -370,18 +374,162 @@
     flex-direction: column;
   }
 
+  .detail-title{
+    font-size: 1rem;
+    font-weight: 800;
+    color: #566a7f;
+  }
+
+  .detail-top-actions{
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-detail-edit,
+  .btn-detail-close,
+  .btn-detail-save,
+  .btn-detail-delete,
+  .btn-modal-cancel,
+  .btn-modal-save{
+    border-radius: 10px;
+    font-weight: 800;
+    transition: all .15s ease;
+    box-shadow: none;
+  }
+
+  .btn-detail-edit{
+    border: 1px solid #ccd4ff;
+    background: #f6f7ff;
+    color: #5d67f6;
+  }
+
+  .btn-detail-edit:hover{
+    background: #eef1ff;
+    border-color: #bfc9ff;
+    color: #4f5fd7;
+    transform: translateY(-1px);
+  }
+
+  .btn-detail-edit:disabled{
+    background: #f8f9fb;
+    border-color: #e7ebf3;
+    color: #b5bcc8;
+  }
+
+  .btn-detail-close{
+    border: 1px solid #d6dcea;
+    background: #f8f9fd;
+    color: #5f6b7a;
+  }
+
+  .btn-detail-close:hover{
+    background: #eef2ff;
+    border-color: #c9d2f5;
+    color: #4f5fd7;
+  }
+
+  .detail-scroll .small.text-muted{
+    color: #8592a3 !important;
+    font-size: .82rem;
+  }
+
+  .detail-scroll .table th{
+    color: #8592a3 !important;
+    font-weight: 800;
+    font-size: .84rem;
+    border-color: #edf1f7;
+    background: #fcfdff;
+  }
+
+  .detail-scroll .table td{
+    color: #566a7f;
+    font-weight: 600;
+    font-size: .89rem;
+    border-color: #edf1f7;
+  }
+
   #dDescription{
     flex: 1;
     min-height: 120px;
     resize: none;
     overflow: auto;
+    border: 1px solid #d8e0ec;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+    color: #566a7f;
+    font-size: .9rem;
+    padding: .75rem .85rem;
+  }
+
+  #dDescription:focus{
+    border-color: #7d8bff;
+    box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
   }
 
   .detail-footer{
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-    margin-top: 10px;
+    border-top: 1px solid #eef2f7;
+    padding-top: 12px;
+    margin-top: 12px;
     flex: 0 0 auto;
+  }
+
+  .detail-footer .form-label{
+    margin-bottom: 5px;
+    font-weight: 800;
+    font-size: .80rem;
+    color: #566a7f;
+  }
+
+  .detail-footer .form-select{
+    height: 38px;
+    padding: .38rem .72rem;
+    border-radius: 10px;
+    border: 1px solid #d8e0ec;
+    background: #fff;
+    font-size: .88rem;
+  }
+
+  .detail-footer .form-select:focus{
+    border-color: #7d8bff;
+    box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+  }
+
+  .btn-detail-save{
+    background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+  }
+
+  .btn-detail-save:hover{
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(105, 108, 255, .24);
+  }
+
+  .btn-detail-save:disabled{
+    background: #cfd5ff;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .btn-detail-delete{
+    border: 1px solid #f1c6cf;
+    background: #fff5f7;
+    color: #d1435b;
+  }
+
+  .btn-detail-delete:hover{
+    background: #ffecef;
+    border-color: #eaa8b5;
+    color: #b92f47;
+    transform: translateY(-1px);
+  }
+
+  .btn-detail-delete:disabled{
+    background: #fbfbfc;
+    border-color: #eceef2;
+    color: #c4c9d1;
   }
 
   .cell-truncate{
@@ -417,23 +565,26 @@
     width: 100%;
     max-width: 760px;
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, .18);
+    border: 1px solid #e7ebf3;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(67, 89, 113, 0.18);
     overflow: hidden;
   }
 
   .pm-head{
-    padding: 14px 18px;
-    border-bottom: 1px solid #eee;
+    padding: 15px 18px;
+    border-bottom: 1px solid #eef2f7;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
   }
 
   .pm-title{
     margin: 0;
     font-size: 1rem;
     font-weight: 800;
+    color: #566a7f;
   }
 
   .pm-body{
@@ -442,24 +593,99 @@
 
   .pm-foot{
     padding: 12px 18px 16px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #eef2f7;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
   }
 
   .pm-close-x{
-    border: none;
-    background: transparent;
-    font-size: 1.2rem;
-    line-height: 1;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: #f8f9fd;
     color: #697a8d;
+    font-size: 1.05rem;
+    line-height: 1;
+    transition: all .15s ease;
+  }
+
+  .pm-close-x:hover{
+    background: #eef2ff;
+    color: #4f5fd7;
+    border-color: #d7def7;
   }
 
   .pm-help{
     font-size: .85rem;
     color: #8592a3;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+  }
+
+  .pm-body .form-label{
+    margin-bottom: 5px;
+    font-weight: 800;
+    font-size: .80rem;
+    color: #566a7f;
+  }
+
+  .pm-body .form-control,
+  .pm-body .form-select,
+  .pm-body textarea{
+    border: 1px solid #d8e0ec;
+    border-radius: 10px;
+    font-size: .88rem;
+  }
+
+  .pm-body .form-control,
+  .pm-body .form-select{
+    height: 38px;
+    padding: .38rem .72rem;
+  }
+
+  .pm-body textarea{
+    padding: .7rem .8rem;
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .pm-body .form-control:focus,
+  .pm-body .form-select:focus,
+  .pm-body textarea:focus{
+    border-color: #7d8bff;
+    box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14);
+  }
+
+  .btn-modal-cancel{
+    border: 1px solid #d6dcea;
+    background: #f8f9fd;
+    color: #5f6b7a;
+  }
+
+  .btn-modal-cancel:hover{
+    background: #eef2ff;
+    border-color: #c9d2f5;
+    color: #4f5fd7;
+  }
+
+  .btn-modal-save{
+    background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
+  }
+
+  .btn-modal-save:hover{
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(105, 108, 255, .24);
+  }
+
+  .btn-modal-save:disabled{
+    background: #cfd5ff;
+    color: #fff;
+    box-shadow: none;
   }
 
   @media (max-width: 1599.98px){
@@ -648,10 +874,10 @@
           <div class="card-body">
 
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0 fw-bold">정책 상세</h6>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="detailEditBtn" disabled>수정</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+              <h6 class="mb-0 detail-title">정책 상세</h6>
+              <div class="detail-top-actions">
+                <button type="button" class="btn btn-sm btn-detail-edit" id="detailEditBtn" disabled>수정</button>
+                <button type="button" class="btn btn-sm btn-detail-close" id="detailCloseBtn">닫기</button>
               </div>
             </div>
 
@@ -703,8 +929,8 @@
                 </div>
 
                 <div class="d-flex gap-2 mt-3">
-                  <button type="submit" class="btn btn-primary w-50" id="btnSave" disabled>저장</button>
-                  <button type="button" class="btn btn-outline-danger w-50" id="btnDelete" disabled>삭제</button>
+                  <button type="submit" class="btn btn-detail-save w-50" id="btnSave" disabled>저장</button>
+                  <button type="button" class="btn btn-detail-delete w-50" id="btnDelete" disabled>삭제</button>
                 </div>
               </form>
 
@@ -776,8 +1002,8 @@
       </div>
 
       <div class="pm-foot">
-        <button type="button" class="btn btn-outline-secondary" id="editModalCancelBtn">취소</button>
-        <button type="submit" class="btn btn-primary" id="editModalSaveBtn">수정 저장</button>
+        <button type="button" class="btn btn-modal-cancel" id="editModalCancelBtn">취소</button>
+        <button type="submit" class="btn btn-modal-save" id="editModalSaveBtn">수정 저장</button>
       </div>
     </form>
   </div>
