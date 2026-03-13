@@ -360,19 +360,12 @@
         flex: 1;
         min-height: 0;
         display: flex;
-        gap: var(--gap);
         overflow: hidden;
     }
 
     .workspace .table-wrap{
         flex: 1 1 auto;
         min-width: 0;
-        overflow: hidden;
-    }
-
-    .workspace .detail-wrap{
-        flex: 0 0 360px;
-        min-width: 320px;
         overflow: hidden;
     }
 
@@ -437,48 +430,81 @@
         margin-bottom:0 !important;
     }
 
-    .detail-card{
-        height: 100%;
-        overflow: hidden;
-    }
-
-    .detail-card .card-body{
-        padding: 10px 12px;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    .detail-title{
-        font-weight: 800;
-        font-size: .98rem;
-        margin-bottom: .65rem;
-    }
-
-    .detail-k{
-        color:#6c757d;
-        font-size:.78rem;
-        margin-bottom:.18rem;
-        font-weight: 800;
-    }
-
-    .detail-v{
-        font-weight:800;
-        margin-bottom:.45rem;
-        font-size: .92rem;
-        line-height: 1.25;
-        word-break: break-word;
-    }
-
-    .detail-card hr{
-        margin: .65rem 0;
-    }
-
     .clickable-row{
         cursor:pointer;
     }
 
     .table-active{
         background: rgba(105,108,255,.08) !important;
+    }
+
+    /* =========================
+       로그 상세 모달
+    ========================= */
+    .logs-detail-modal .modal-dialog{
+        max-width: 980px;
+    }
+
+    .logs-detail-modal .modal-content{
+        border: none;
+        border-radius: 18px;
+        overflow: hidden;
+    }
+
+    .logs-detail-modal .modal-header{
+        padding: 14px 18px;
+        border-bottom: 1px solid #ebeef3;
+    }
+
+    .logs-detail-modal .modal-body{
+        padding: 14px 18px 16px;
+        max-height: calc(100vh - 180px);
+        overflow: auto;
+    }
+
+    .modal-subtext{
+        font-size: .90rem;
+        color: #8592a3;
+    }
+
+    .log-id-text{
+        font-weight: 800;
+        color: #566a7f;
+    }
+
+    .meta-table{
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    .meta-table th{
+        width: 130px;
+        color: #8592a3;
+        font-weight: 800;
+        background: #fcfcfd;
+    }
+
+    .meta-table td,
+    .meta-table th{
+        padding: 9px 11px !important;
+        vertical-align: middle;
+        font-size: .90rem;
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    .modal-actions{
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        margin-top: 14px;
+    }
+
+    .modal-actions .btn{
+        min-width: 110px;
+        height: 42px;
+        border-radius: 12px;
+        font-weight: 900;
     }
 
     @media (max-width: 1399.98px){
@@ -624,7 +650,6 @@
     </div>
 
     <div class="workspace" id="mainWorkspace">
-
         <div class="table-wrap" id="tableCol">
             <div class="card list-card">
                 <div class="card-body">
@@ -634,49 +659,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="detail-wrap d-none" id="detailCol">
-            <div class="card detail-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div class="detail-title">상세 정보</div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
-                    </div>
-
-                    <div class="detail-k">URL</div>
-                    <div class="detail-v" id="dRequestUrl">-</div>
-
-                    <div class="detail-k">도메인</div>
-                    <div class="detail-v" id="dDomain">-</div>
-
-                    <div class="detail-k">URL 쿼리스트링</div>
-                    <div class="detail-v" id="dQuery">-</div>
-
-                    <hr>
-
-                    <div class="detail-k">정책 이름</div>
-                    <div class="detail-v" id="dPolicyName">-</div>
-
-                    <div class="detail-k">정책 타입</div>
-                    <div class="detail-v" id="dPolicyType">-</div>
-
-                    <div class="detail-k">정책 내용</div>
-                    <div class="detail-v" id="dPolicyContent">-</div>
-
-                    <hr>
-
-                    <div class="detail-k">서버 포트</div>
-                    <div class="detail-v" id="dDstPort">-</div>
-
-                    <div class="detail-k">메서드</div>
-                    <div class="detail-v" id="dMethod">-</div>
-
-                    <div class="detail-k">로그 추가시간</div>
-                    <div class="detail-v" id="dCreateAt">-</div>
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
 
@@ -703,23 +685,69 @@
     </div>
 </div>
 
+<div class="modal fade logs-detail-modal" id="logsDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold mb-1">탐지 로그 상세</h5>
+                    <div class="modal-subtext">
+                        <span class="log-id-text" id="mLogId">-</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <table class="table table-sm table-bordered align-middle meta-table">
+                        <tbody>
+                            <tr>
+                                <th>URL</th>
+                                <td id="mRequestUrl" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>도메인</th>
+                                <td id="mDomain">-</td>
+                                <th>메서드</th>
+                                <td id="mMethod">-</td>
+                            </tr>
+                            <tr>
+                                <th>URL 쿼리스트링</th>
+                                <td id="mQuery" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>정책 이름</th>
+                                <td id="mPolicyName">-</td>
+                                <th>정책 타입</th>
+                                <td id="mPolicyType">-</td>
+                            </tr>
+                            <tr>
+                                <th>정책 내용</th>
+                                <td id="mPolicyContent" colspan="3">-</td>
+                            </tr>
+                            <tr>
+                                <th>서버 포트</th>
+                                <td id="mDstPort">-</td>
+                                <th>로그 추가시간</th>
+                                <td id="mCreateAt">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function(){
     const form = document.getElementById("logsFilterForm");
     const partialEl = document.getElementById("logsPartial");
-
-    const detailCol = document.getElementById("detailCol");
-    const detailCloseBtn = document.getElementById("detailCloseBtn");
-
-    const dRequestUrl = document.getElementById("dRequestUrl");
-    const dDomain = document.getElementById("dDomain");
-    const dQuery = document.getElementById("dQuery");
-    const dPolicyName = document.getElementById("dPolicyName");
-    const dPolicyType = document.getElementById("dPolicyType");
-    const dPolicyContent = document.getElementById("dPolicyContent");
-    const dDstPort = document.getElementById("dDstPort");
-    const dMethod = document.getElementById("dMethod");
-    const dCreateAt = document.getElementById("dCreateAt");
 
     const startDtValue = document.getElementById("startDtValue");
     const startDtDisplay = document.getElementById("startDtDisplay");
@@ -736,7 +764,29 @@
     const dtCancelBtn = document.getElementById("dtCancelBtn");
     const dtApplyBtn = document.getElementById("dtApplyBtn");
 
+    const logsDetailModalEl = document.getElementById("logsDetailModal");
+
+    const mLogId = document.getElementById("mLogId");
+    const mRequestUrl = document.getElementById("mRequestUrl");
+    const mDomain = document.getElementById("mDomain");
+    const mQuery = document.getElementById("mQuery");
+    const mPolicyName = document.getElementById("mPolicyName");
+    const mPolicyType = document.getElementById("mPolicyType");
+    const mPolicyContent = document.getElementById("mPolicyContent");
+    const mDstPort = document.getElementById("mDstPort");
+    const mMethod = document.getElementById("mMethod");
+    const mCreateAt = document.getElementById("mCreateAt");
+
     let activePicker = null;
+    let logsDetailModal = null;
+
+    function initModal(){
+        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
+            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(logsDetailModalEl);
+    }
 
     function pad(n){
         return String(n).padStart(2, "0");
@@ -854,42 +904,60 @@
         closePicker();
     }
 
+    function textOrDash(v){
+        if (v === undefined || v === null || String(v).trim() === "") return "-";
+        return v;
+    }
+
     function clearActive(){
         partialEl.querySelectorAll(".js-row").forEach(r => r.classList.remove("table-active"));
     }
 
-    function closeDetail(){
-        detailCol.classList.add("d-none");
-        clearActive();
+    function resetModal(){
+        mLogId.textContent = "-";
+        mRequestUrl.textContent = "-";
+        mDomain.textContent = "-";
+        mQuery.textContent = "-";
+        mPolicyName.textContent = "-";
+        mPolicyType.textContent = "-";
+        mPolicyContent.textContent = "-";
+        mDstPort.textContent = "-";
+        mMethod.textContent = "-";
+        mCreateAt.textContent = "-";
     }
 
-    function openDetail(row){
-        clearActive();
-        row.classList.add("table-active");
-        detailCol.classList.remove("d-none");
+    function fillModal(row){
+        const d = row.dataset || {};
 
-        dRequestUrl.textContent = row.dataset.requestUrl || "-";
-        dDomain.textContent = row.dataset.domain || "-";
-        dQuery.textContent = row.dataset.query || "-";
-        dPolicyName.textContent = row.dataset.policyName || "-";
-        dPolicyType.textContent = row.dataset.policyType || "-";
-        dPolicyContent.textContent = row.dataset.policyContent || "-";
-        dDstPort.textContent = row.dataset.dstPort || "-";
-        dMethod.textContent = row.dataset.method || "-";
-        dCreateAt.textContent = row.dataset.createAt || "-";
+        mLogId.textContent = d.id ? `로그 ID : ${d.id}` : "탐지 로그 상세 정보";
+        mRequestUrl.textContent = textOrDash(d.requestUrl);
+        mDomain.textContent = textOrDash(d.domain);
+        mQuery.textContent = textOrDash(d.query);
+        mPolicyName.textContent = textOrDash(d.policyName);
+        mPolicyType.textContent = textOrDash(d.policyType);
+        mPolicyContent.textContent = textOrDash(d.policyContent);
+        mDstPort.textContent = textOrDash(d.dstPort);
+        mMethod.textContent = textOrDash(d.method);
+        mCreateAt.textContent = textOrDash(d.createAt);
     }
 
     function bindRowClicks(){
         const rows = partialEl.querySelectorAll(".js-row");
         rows.forEach(r => {
-            r.addEventListener("click", () => openDetail(r));
-        });
-    }
+            r.addEventListener("click", () => {
+                clearActive();
+                r.classList.add("table-active");
+                fillModal(r);
 
-    function bindClose(){
-        if(detailCloseBtn){
-            detailCloseBtn.addEventListener("click", closeDetail);
-        }
+                if(!logsDetailModal){
+                    logsDetailModal = initModal();
+                }
+
+                if(logsDetailModal){
+                    logsDetailModal.show();
+                }
+            });
+        });
     }
 
     function bindPagerClicks(){
@@ -911,7 +979,12 @@
 
     async function loadPartial(url){
         try{
-            closeDetail();
+            clearActive();
+            resetModal();
+
+            if(logsDetailModal){
+                logsDetailModal.hide();
+            }
 
             const res = await fetch(url, {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
@@ -983,11 +1056,16 @@
     window.addEventListener("resize", () => closePicker());
     window.addEventListener("scroll", () => closePicker(), true);
 
-    bindRowClicks();
-    bindPagerClicks();
-    bindClose();
+    logsDetailModalEl.addEventListener("hidden.bs.modal", () => {
+        clearActive();
+    });
+
     fillTimeOptions();
     syncDisplay();
+    resetModal();
+    logsDetailModal = initModal();
+    bindRowClicks();
+    bindPagerClicks();
 })();
 </script>
 {% endblock %}
