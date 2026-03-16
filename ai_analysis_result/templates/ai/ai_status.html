@@ -459,29 +459,32 @@
     });
   }
 
-  function makeDonut(canvas){
-    return new Chart(canvas, {
-      type: "doughnut",
-      data: {
-        labels: ["Used", "Free"],
-        datasets: [{
-          data: [0, 100],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "72%",
-        animation: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false },
-          centerText: { value: 0 }
-        }
+  function makeDonut(canvas, usedColor = "#696cff", freeColor = "#e9edf5"){
+  return new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels: ["Used", "Free"],
+      datasets: [{
+        data: [0, 100],
+        backgroundColor: [usedColor, freeColor],
+        borderColor: [usedColor, freeColor],
+        hoverBackgroundColor: [usedColor, freeColor],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "72%",
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+        centerText: { value: 0 }
       }
-    });
-  }
+    }
+  });
+}
 
   function setEngine(ok){
     const dot = el("engineDot");
