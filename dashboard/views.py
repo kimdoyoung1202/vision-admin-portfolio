@@ -12,7 +12,10 @@ from integrated_detection_logs.models import IntegratedDetectionLogs
 
 @login_required
 def kpis_api(request):
-    now = timezone.now()
+
+
+    now_utc = timezone.now()
+    now = timezone.localtime(now_utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yday_start = today_start - timedelta(days=1)
 
@@ -33,6 +36,7 @@ def kpis_api(request):
     blocked_today = IntegratedDetectionLogs.objects.filter(create_at__gte=today_start).count()
     blocked_yday = IntegratedDetectionLogs.objects.filter(create_at__gte=yday_start, create_at__lt=today_start).count()
     blocked_delta = blocked_today - blocked_yday
+
 
     total = ai_total + blocked_total
     ratio = (blocked_total / total) if total else 0.0

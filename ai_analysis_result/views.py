@@ -188,9 +188,9 @@ class AiRecordsView(View):
         # latest: 마지막 탐지(last_seen) 기준
         # confidence: confidence_score 우선, 그 다음 last_seen
         if sort == "confidence":
-            qs = qs.order_by("-confidence_score", "-last_seen", "-id")
+            qs = qs.order_by("is_checked","-confidence_score", "-last_seen", "-id")
         else:
-            qs = qs.order_by("-last_seen", "-id")
+            qs = qs.order_by("is_checked","-last_seen", "-id")
 
         # 4) 페이지네이션
         paginator = Paginator(qs, per_page)
@@ -313,7 +313,16 @@ class AiStatusApiView(View):
         # ---------------------------------------------------------
         reviewed = AiAnalysisResult.objects.filter(is_checked=True)
         reviewed_count = reviewed.count()
-        correct_count = reviewed.filter(checked_result__in=["ADD", "IGNORE"]).count()
+
+        correct_count = reviewed.filter(
+            (
+                Q(confidence_score__gte=50) & Q(checked_result="ADD")
+            ) |
+            (
+                Q(confidence_score__lt=50) & Q(checked_result="IGNORE")
+            )
+        ).count()
+
         accuracy = round((correct_count / reviewed_count) * 100, 1) if reviewed_count else 0.0
 
         # ---------------------------------------------------------

@@ -219,7 +219,6 @@
         flex:0 0 24px;
     }
 
-    /* ===== 기간 버튼 축소 ===== */
     .dash-gran{
         display:inline-flex;
         align-items:center;
@@ -348,8 +347,8 @@
                     </div>
                     <div class="kpi-delta-row">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="kpi-delta-label">전일 대비</span>
-                            <span class="kpi-delta" id="kpiAiDelta">-</span>
+                            <span class="kpi-delta-label">미검토 양</span>
+                            <span class="kpi-delta" id="kpiAiUnchecked">-</span>
                         </div>
                         <button type="button" class="kpi-go js-kpi-go" aria-label="AI 기록관으로 이동">↗</button>
                     </div>
@@ -392,18 +391,13 @@
                 <div class="card-sneat pkt-kpi">
                     <div class="pkt-left">
                         <div class="pkt-title">
-                            <div class="t">일일 패킷 현황</div>
+                            <div class="t">패킷 현황</div>
                         </div>
 
                         <div>
                             <div class="text-muted small">TOTAL</div>
                             <div class="pkt-total">
                                 <div class="n" id="sysTotalText">-</div>
-                            </div>
-
-                            <div class="pkt-delta">
-                                <span class="text-muted small">전일 대비</span>
-                                <span class="d" id="dailyDeltaText">-</span>
                             </div>
                         </div>
 
@@ -448,7 +442,7 @@
     const kpiAi = document.getElementById("kpiAi");
     const kpiBlocked = document.getElementById("kpiBlocked");
     const kpiPolicyDelta = document.getElementById("kpiPolicyDelta");
-    const kpiAiDelta = document.getElementById("kpiAiDelta");
+    const kpiAiUnchecked = document.getElementById("kpiAiUnchecked");
     const kpiBlockedDelta = document.getElementById("kpiBlockedDelta");
 
     const ipWindowText = document.getElementById("ipWindowText");
@@ -457,7 +451,6 @@
     const kpiTotalAi = document.getElementById("kpiTotalAi");
     const sysTotalText = document.getElementById("sysTotalText");
     const donutTotalText = document.getElementById("donutTotalText");
-    const dailyDeltaText = document.getElementById("dailyDeltaText");
 
     async function getJSON(url){
         const res = await fetch(url, { credentials:"same-origin", cache:"no-store" });
@@ -781,16 +774,17 @@
     async function refreshKpi(){
         const kpi = await getJSON(`/api/kpis/?gran=total`);
 
-        const policyCount  = Number(kpi.policy_count ?? 0);
-        const aiCount      = Number(kpi.ai_count ?? 0);
-        const blockedCount = Number(kpi.blocked_count ?? 0);
+        const policyCount     = Number(kpi.policy_count ?? 0);
+        const aiCount         = Number(kpi.ai_count ?? 0);
+        const blockedCount    = Number(kpi.blocked_count ?? 0);
+        const aiUncheckedCount = Number(kpi.ai_unchecked_count ?? 0);
 
         kpiPolicy.textContent = policyCount;
         kpiAi.textContent = aiCount;
         kpiBlocked.textContent = blockedCount;
 
         kpiPolicyDelta.textContent = fmtDelta(kpi.policy_delta);
-        kpiAiDelta.textContent = fmtDelta(kpi.ai_delta);
+        kpiAiUnchecked.textContent = aiUncheckedCount;
         kpiBlockedDelta.textContent = fmtDelta(kpi.blocked_delta);
 
         const total = aiCount + blockedCount;
@@ -798,9 +792,6 @@
         kpiTotalBlocked.textContent = blockedCount;
         sysTotalText.textContent = total;
         donutTotalText.textContent = total;
-
-        const totalDelta = Number(kpi.ai_delta ?? 0) + Number(kpi.blocked_delta ?? 0);
-        dailyDeltaText.textContent = fmtDelta(totalDelta);
 
         chartBlockedRatio.data.datasets[0].data = [aiCount, blockedCount];
         chartBlockedRatio.update();

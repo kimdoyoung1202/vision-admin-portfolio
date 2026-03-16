@@ -39,63 +39,102 @@ def kpis_api(request):
     gran = request.GET.get("gran", "day")
     start, end = _gran_to_kst_range(gran)
 
-    # 현재 Policy 모델에는 is_deleted 필드가 없으므로 전체 개수 사용
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yday_start = today_start - timedelta(days=1)
+
+    # -------------------------------------------------
+    # 1) 현재 카드 값
+    # -------------------------------------------------
+
+    # 정책 수: 전체 누적 개수
     policy_cnt = Policy.objects.count()
 
-    # AiAnalysisResult는 hit_count 누적 구조이므로 count() 대신 Sum(hit_count)
+    # AI 분석 수: 선택 범위 내 hit_count 합
     ai_cnt = (
         AiAnalysisResult.objects
         .filter(
             last_seen__gte=start,
-            last_seen__lte=end,
+            last_seen__lt=end,
             confidence_score__gte=0
         )
         .aggregate(v=Coalesce(Sum("hit_count"), Value(0)))
     )["v"]
 
+    # 차단 수: 선택 범위 내 차단 로그 개수
     blocked_cnt = (
         IntegratedDetectionLogs.objects
-        .filter(create_at__gte=start, create_at__lte=end)
+        .filter(
+            create_at__gte=start,
+            create_at__lt=end
+        )
         .count()
     )
 
-    try:
-        pstart, pend = get_prev_range(gran)
+    # -------------------------------------------------
+    # 2) 보조 KPI
+    # -------------------------------------------------
 
-        ai_prev = (
-            AiAnalysisResult.objects
-            .filter(
-                last_seen__gte=pstart,
-                last_seen__lte=pend,
-                confidence_score__gte=0
-            )
-            .aggregate(v=Coalesce(Sum("hit_count"), Value(0)))
-        )["v"]
-
-        blocked_prev = (
-            IntegratedDetectionLogs.objects
-            .filter(create_at__gte=pstart, create_at__lte=pend)
-            .count()
+    # 정책 전일 대비: 오늘 생성 수 - 어제 생성 수
+    policy_today = (
+        Policy.objects
+        .filter(create_at__gte=today_start)
+        .count()
+    )
+    policy_yday = (
+        Policy.objects
+        .filter(
+            create_at__gte=yday_start,
+            create_at__lt=today_start
         )
+        .count()
+    )
+    policy_delta = int(policy_today - policy_yday)
 
-        ai_delta = int((ai_cnt or 0) - (ai_prev or 0))
-        blocked_delta = int((blocked_cnt or 0) - (blocked_prev or 0))
+    # AI 미검토 건수
+    ai_unchecked_count = (
+        AiAnalysisResult.objects
+        .filter(
+            is_checked=False,
+            confidence_score__gte=0
+        )
+        .count()
+    )
 
-    except Exception:
-        ai_delta = 0
-        blocked_delta = 0
+    # 차단 전일 대비: 오늘 차단 수 - 어제 차단 수
+    blocked_today = (
+        IntegratedDetectionLogs.objects
+        .filter(create_at__gte=today_start)
+        .count()
+    )
+    blocked_yday = (
+        IntegratedDetectionLogs.objects
+        .filter(
+            create_at__gte=yday_start,
+            create_at__lt=today_start
+        )
+        .count()
+    )
+    blocked_delta = int(blocked_today - blocked_yday)
 
+    # -------------------------------------------------
+    # 3) 기타 KPI
+    # -------------------------------------------------
     total = int((ai_cnt or 0) + (blocked_cnt or 0))
     ratio = (blocked_cnt / total) if total else 0.0
 
     return JsonResponse({
         "range": gran,
+
         "policy_count": int(policy_cnt or 0),
-        "policy_delta": 0,
+        "policy_delta": int(policy_delta or 0),
+
         "ai_count": int(ai_cnt or 0),
-        "ai_delta": int(ai_delta or 0),
+        "ai_unchecked_count": int(ai_unchecked_count or 0),
+
         "blocked_count": int(blocked_cnt or 0),
         "blocked_delta": int(blocked_delta or 0),
+
         "total_count": int(total or 0),
         "blocked_ratio": ratio,
     })
@@ -111,8 +150,6 @@ def timeseries_api(request):
         create_at__lte=end
     )
 
-    # 현재 IntegratedDetectionLogs 모델에는 policy_id FK가 없고
-    # policy_type 컬럼이 직접 존재함
     domain_qs = base_qs.filter(policy_type="DOMAIN")
     regex_qs = base_qs.filter(policy_type="REGEX")
 
@@ -158,7 +195,6 @@ def timeseries_api(request):
         domain_map = {r["w"]: r["cnt"] for r in domain_rows}
         regex_map = {r["w"]: r["cnt"] for r in regex_rows}
 
-        # MySQL: 1=일, 2=월, ... 7=토
         order = [2, 3, 4, 5, 6, 7, 1]
         labels = ["월", "화", "수", "목", "금", "토", "일"]
         domain_values = [domain_map.get(k, 0) for k in order]
@@ -225,8 +261,6 @@ def top_regex_api(request):
     limit = int(request.GET.get("limit", 10))
     start, end = _gran_to_kst_range(gran)
 
-    # 현재 IntegratedDetectionLogs 모델에는 policy_id FK가 없고
-    # REGEX 여부는 policy_type, 정규식 문자열은 content 컬럼 사용
     rows = (
         IntegratedDetectionLogs.objects
         .filter(
