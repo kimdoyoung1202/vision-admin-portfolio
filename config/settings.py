@@ -146,6 +146,7 @@ LOGIN_EXEMPT_URLS = [
     r"^login/$",
     r"^logout/$",
     r"^otp/$",
+    r"^otp/resend/$",
     r"^admin/.*$", # Django admin 로그인은 열어둠 (선택)
 ]
 

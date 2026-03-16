@@ -3,7 +3,7 @@ from django.conf import settings
 from django.shortcuts import redirect
 
 
-EXEMPT_URLS = [re.compile(settings.LOGIN_URL.lstrip("/"))]
+EXEMPT_URLS = [re.compile(settings.LOGIN_URL.lstrip("/")),re.compile(r"^otp/resend/$"),]
 if hasattr(settings, "LOGIN_EXEMPT_URLS"):
     EXEMPT_URLS += [re.compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
 

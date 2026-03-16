@@ -1,6 +1,7 @@
 import random
 import smtplib
 import threading
+import time
 from email.mime.text import MIMEText
 
 from django.conf import settings
@@ -59,6 +60,9 @@ def _is_ajax(request):
 
 def login_view(request):
     if request.method == "POST":
+        storage = messages.get_messages(request)
+        for _ in storage:
+            pass
         username = (request.POST.get("username") or "").strip()
         password = request.POST.get("password") or ""
         next_url = request.POST.get("next") or "/"
@@ -123,8 +127,11 @@ def login_view(request):
         request.session["otp_code"] = otp_code
         request.session["otp_email"] = user.email
         request.session["next_url"] = next_url
+        request.session["otp_created_at"] = int(time.time())
+        request.session["otp_last_sent_at"] = int(time.time())   
+        request.session["otp_attempts"] = 0 
 
-        # 기존: send_otp_email(user.email, otp_code)
+ 
         send_otp_email_async(user.email, otp_code)
 
         if _is_ajax(request):
@@ -146,6 +153,147 @@ def login_view(request):
 def otp_view(request):
     user_id = request.session.get("preauth_user_id")
     session_otp = request.session.get("otp_code")
+    
+    if not user_id:
+        if _is_ajax(request):
+            return JsonResponse({
+                "ok": False,
+                "message": "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.",
+            }, status=401)
+        return redirect("login")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        request.session.pop("preauth_user_id", None)
+        request.session.pop("otp_code", None)
+        request.session.pop("otp_email", None)
+        request.session.pop("next_url", None)
+        request.session.pop("otp_created_at", None)
+
+        if _is_ajax(request):
+            return JsonResponse({
+                "ok": False,
+                "message": "사용자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.",
+            }, status=401)
+        return redirect("login")
+
+    if request.method == "POST":
+        attempts = request.session.get("otp_attempts", 0)
+        MAX_OTP_ATTEMPTS = 5
+
+        if attempts + 1 >= MAX_OTP_ATTEMPTS:
+            request.session.pop("preauth_user_id", None)
+            request.session.pop("otp_code", None)
+            request.session.pop("otp_email", None)
+            request.session.pop("next_url", None)
+            request.session.pop("otp_created_at", None)
+            request.session.pop("otp_last_sent_at", None)
+            request.session.pop("otp_attempts", None)
+
+            if _is_ajax(request):
+                return JsonResponse({
+                    "ok": False,
+                    "stage": "otp",
+                    "message": "OTP 입력 가능 횟수를 초과했습니다. 다시 로그인해 주세요.",
+                }, status=400)
+
+            messages.error(request, "OTP 입력 가능 횟수를 초과했습니다. 다시 로그인해 주세요.")
+            return redirect("login")
+        
+        otp_created_at = request.session.get("otp_created_at")
+        OTP_EXPIRE_SECONDS = 120
+        
+        if not otp_created_at or int(time.time()) - otp_created_at > OTP_EXPIRE_SECONDS:
+            if _is_ajax(request):
+                return JsonResponse({
+                    "ok": False,
+                    "stage": "otp",
+                    "expired": True,
+                    "message": "OTP 유효시간이 만료되었습니다. 재전송해 주세요.",
+                }, status=400)
+
+            return render(request, "auth/otp.html", {
+                "email": request.session.get("otp_email"),
+                "expired": True,
+                "form_error": "OTP 유효시간이 만료되었습니다. 재전송해 주세요.",
+            })
+
+        otp = (request.POST.get("otp") or "").strip()
+
+        if not otp:
+            if _is_ajax(request):
+                return JsonResponse({
+                    "ok": False,
+                    "stage": "otp",
+                    "message": "OTP 코드를 입력하세요.",
+                }, status=400)
+
+            return render(request, "auth/otp.html", {
+                "email": request.session.get("otp_email"),
+                "form_error": "OTP 코드를 입력하세요.",
+            })
+
+        if otp == session_otp:
+            login(request, user)
+
+            redirect_url = request.session.get("next_url") or "/"
+
+            request.session.pop("preauth_user_id", None)
+            request.session.pop("otp_code", None)
+            request.session.pop("otp_email", None)
+            request.session.pop("next_url", None)
+            request.session.pop("otp_created_at", None)
+            request.session.pop("otp_last_sent_at", None)
+            request.session.pop("otp_attempts", None)
+
+            if _is_ajax(request):
+                return JsonResponse({
+                    "ok": True,
+                    "redirect_url": redirect_url,
+                    "message": "인증이 완료되었습니다.",
+                })
+
+            return redirect(redirect_url)
+        
+        request.session["otp_attempts"] = attempts + 1
+        remaining = MAX_OTP_ATTEMPTS - request.session["otp_attempts"]
+
+        if _is_ajax(request):
+            return JsonResponse({
+                "ok": False,
+                "stage": "otp",
+                "message": f"OTP 코드가 틀렸습니다. 남은 횟수: {remaining}",
+            }, status=400)
+
+        return render(request, "auth/otp.html", {
+            "email": request.session.get("otp_email"),
+            "form_error": f"OTP 코드가 틀렸습니다. 남은 횟수: {remaining}",
+        })
+
+    email = request.session.get("otp_email")
+    return render(request, "auth/otp.html", {
+        "email": email
+    })
+
+
+def logout_view(request):
+    request.session.pop("preauth_user_id", None)
+    request.session.pop("otp_code", None)
+    request.session.pop("otp_email", None)
+    request.session.pop("next_url", None)
+    request.session.pop("otp_created_at", None)
+    request.session.pop("otp_last_sent_at", None)
+    request.session.pop("otp_attempts", None)
+
+    logout(request)
+    return redirect("login")
+
+
+
+def resend_otp_view(request):
+    
+    user_id = request.session.get("preauth_user_id")
 
     if not user_id:
         if _is_ajax(request):
@@ -162,6 +310,7 @@ def otp_view(request):
         request.session.pop("otp_code", None)
         request.session.pop("otp_email", None)
         request.session.pop("next_url", None)
+        request.session.pop("otp_created_at", None)
 
         if _is_ajax(request):
             return JsonResponse({
@@ -169,61 +318,39 @@ def otp_view(request):
                 "message": "사용자 정보를 찾을 수 없습니다. 다시 로그인해 주세요.",
             }, status=401)
         return redirect("login")
+    last_sent_at = request.session.get("otp_last_sent_at")
+    RESEND_COOLDOWN_SECONDS = 30
 
-    if request.method == "POST":
-        otp = (request.POST.get("otp") or "").strip()
-
-        if not otp:
-            if _is_ajax(request):
-                return JsonResponse({
-                    "ok": False,
-                    "stage": "otp",
-                    "message": "OTP 코드를 입력하세요.",
-                }, status=400)
-
-            messages.error(request, "OTP 코드를 입력하세요.")
-            return render(request, "auth/otp.html", {
-                "email": request.session.get("otp_email"),
-            })
-
-        if otp == session_otp:
-            login(request, user)
-
-            redirect_url = request.session.get("next_url") or "/"
-
-            request.session.pop("preauth_user_id", None)
-            request.session.pop("otp_code", None)
-            request.session.pop("otp_email", None)
-            request.session.pop("next_url", None)
-
-            if _is_ajax(request):
-                return JsonResponse({
-                    "ok": True,
-                    "redirect_url": redirect_url,
-                    "message": "인증이 완료되었습니다.",
-                })
-
-            return redirect(redirect_url)
+    if last_sent_at and int(time.time()) - last_sent_at < RESEND_COOLDOWN_SECONDS:
+        remaining = RESEND_COOLDOWN_SECONDS - (int(time.time()) - last_sent_at)
 
         if _is_ajax(request):
             return JsonResponse({
                 "ok": False,
                 "stage": "otp",
-                "message": "OTP 코드가 틀렸습니다.",
+                "message": f"{remaining}초 후에 다시 재전송할 수 있습니다.",
             }, status=400)
 
-        messages.error(request, "OTP 코드가 틀렸습니다.")
+        return render(request, "auth/otp.html", {
+            "email": request.session.get("otp_email"),
+            "form_error": f"{remaining}초 후에 다시 재전송할 수 있습니다.",
+        })
+    
+    otp_code = str(random.randint(100000, 999999))
 
-    email = request.session.get("otp_email")
-    return render(request, "auth/otp.html", {
-        "email": email
-    })
+    request.session["otp_code"] = otp_code
+    request.session["otp_email"] = user.email
+    request.session["otp_created_at"] = int(time.time())
+    request.session["otp_last_sent_at"] = int(time.time())
+    request.session["otp_attempts"] = 0 
+    send_otp_email_async(user.email, otp_code)
 
+    if _is_ajax(request):
+        return JsonResponse({
+            "ok": True,
+            "stage": "otp",
+            "message": "새 인증 코드가 이메일로 발송되었습니다.",
+        })
 
-def logout_view(request):
-    request.session.pop("preauth_user_id", None)
-    request.session.pop("otp_code", None)
-    request.session.pop("otp_email", None)
-    request.session.pop("next_url", None)
-    logout(request)
-    return redirect("login")
+    messages.success(request, "새 인증 코드가 이메일로 발송되었습니다.")
+    return redirect("otp")
