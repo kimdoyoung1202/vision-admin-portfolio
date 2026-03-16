@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block page_title %}AI 기록관{% endblock %}
+{% block page_title %}AI 분석 이력{% endblock %}
 {% block page_subtitle %}FastAPI 결과/로그 조회{% endblock %}
 
 {% block extra_css %}
@@ -483,6 +483,66 @@
         overflow-wrap: anywhere;
     }
 
+    /* 상세 패널 버튼만 수정 */
+    .btn-detail-close{
+        height: 34px;
+        padding: 0 .9rem;
+        border-radius: 10px;
+        border: 1px solid #d6dcea !important;
+        background: #fff !important;
+        color: #5f6b7a !important;
+        font-weight: 800;
+        font-size: .82rem;
+        box-shadow: none !important;
+    }
+
+    .btn-detail-close:hover{
+        background: #f5f7ff !important;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5 !important;
+    }
+
+    .btn-detail-secondary{
+        height: 38px;
+        border-radius: 10px !important;
+        border: 1px solid #d6dcea !important;
+        background: #f8f9fd !important;
+        color: #5f6b7a !important;
+        font-weight: 800;
+        box-shadow: none !important;
+    }
+
+    .btn-detail-secondary:hover:not(:disabled){
+        background: #eef2ff !important;
+        color: #4f5fd7 !important;
+        border-color: #c9d2f5 !important;
+    }
+
+    .btn-detail-primary{
+        height: 38px;
+        border-radius: 10px !important;
+        border: none !important;
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%) !important;
+        color: #fff !important;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(105,108,255,.18) !important;
+    }
+
+    .btn-detail-primary:hover:not(:disabled){
+        color:#fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(105,108,255,.24) !important;
+    }
+
+    .btn-detail-secondary:disabled,
+    .btn-detail-primary:disabled,
+    .btn-detail-close:disabled{
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
     .domain-cell{ position: relative; }
 
     .dup-badge{
@@ -686,7 +746,7 @@
                             <h6 class="mb-0 fw-bold">상세 정보</h6>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-label-secondary text-muted" id="detailIdBadge">선택 없음</span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="detailCloseBtn">닫기</button>
+                                <button type="button" class="btn btn-detail-close" id="detailCloseBtn">닫기</button>
                             </div>
                         </div>
 
@@ -713,8 +773,8 @@
                             </div>
 
                             <div class="d-flex gap-2 mt-2">
-                                <button class="btn btn-outline-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
-                                <button class="btn btn-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
+                                <button class="btn btn-detail-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
+                                <button class="btn btn-detail-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
                             </div>
                         </div>
 
