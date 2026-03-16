@@ -49,7 +49,7 @@ def policy_delete_history_list(request):
     if end_date:
         qs = qs.filter(delete_at__date__lte=end_date)
 
-    paginator = Paginator(qs, 12)
+    paginator = Paginator(qs, 14)
     page_number = request.GET.get("page", "1")
     page_obj = paginator.get_page(page_number)
 

@@ -199,7 +199,7 @@ def history_list(request):
 
         enriched.append(row)
 
-    paginator = Paginator(enriched, 12)
+    paginator = Paginator(enriched, 15)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
 
