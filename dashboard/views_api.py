@@ -81,17 +81,8 @@ def kpis_api(request):
         .filter(create_at__gte=today_start)
         .count()
     )
-    policy_yday = (
-        Policy.objects
-        .filter(
-            create_at__gte=yday_start,
-            create_at__lt=today_start
-        )
-        .count()
-    )
-    policy_delta = int(policy_today - policy_yday)
-
     
+    policy_delta = int(policy_today)
     # AI 미검토 건수
     ai_unchecked_count = (
         AiAnalysisResult.objects
@@ -108,17 +99,8 @@ def kpis_api(request):
         .filter(create_at__gte=today_start)
         .count()
     )
-    blocked_yday = (
-        IntegratedDetectionLogs.objects
-        .filter(
-            create_at__gte=yday_start,
-            create_at__lt=today_start
-        )
-        .count()
-    )
-    blocked_delta = int(blocked_today - blocked_yday)
-
     
+    blocked_delta = int(blocked_today)
     # -------------------------------------------------
     # 3) 기타 KPI
     # -------------------------------------------------
