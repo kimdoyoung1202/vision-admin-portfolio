@@ -91,6 +91,9 @@ def kpis_api(request):
     )
     policy_delta = int(policy_today - policy_yday)
 
+    if policy_delta < 0 :
+        policy_delta = 0
+
     # AI 미검토 건수
     ai_unchecked_count = (
         AiAnalysisResult.objects
@@ -116,7 +119,8 @@ def kpis_api(request):
         .count()
     )
     blocked_delta = int(blocked_today - blocked_yday)
-
+    if blocked_delta < 0 :
+        blocked_delta = 0
     # -------------------------------------------------
     # 3) 기타 KPI
     # -------------------------------------------------
