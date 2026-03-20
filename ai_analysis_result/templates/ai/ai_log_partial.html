@@ -125,6 +125,7 @@
     }
 </style>
 
+<!-- 정렬 버튼 영역 -->
 <div class="ai-table-topbar" id="topbarArea">
     <div class="ai-sort-group">
         <a
@@ -144,6 +145,7 @@
     </div>
 </div>
 
+<!-- AI 기록 목록 테이블 -->
 <div class="table-viewport table-responsive text-nowrap">
     <table class="table table-hover align-middle mb-0" id="aiTable">
         <thead>
@@ -161,8 +163,10 @@
             </tr>
         </thead>
 
+        <!-- 목록 행 출력 영역 -->
         <tbody id="rowsArea">
             {% for row in page_obj %}
+            <!-- JS에서 선택 시 상세 패널에 사용하는 데이터 행 -->
             <tr class="js-row" style="cursor:pointer;"
                 data-id="{{ row.id }}"
                 data-domain="{{ row.domain|default:'' }}"
@@ -247,6 +251,7 @@
                 </td>
             </tr>
             {% empty %}
+            <!-- 조회 결과가 없을 때 표시 -->
             <tr>
                 <td colspan="10" class="text-center text-muted py-4">
                     조회 결과가 없습니다.
@@ -257,6 +262,7 @@
     </table>
 </div>
 
+<!-- 페이지네이션 영역 -->
 <div class="ai-pager" id="pagerArea">
     <div class="ai-pager-top d-flex justify-content-between align-items-center">
         <div class="text-muted">
@@ -268,6 +274,7 @@
     <nav aria-label="AI 로그 페이지 이동">
         <ul class="pagination mb-0">
 
+            <!-- 이전 페이지 버튼 -->
             {% if page_obj.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
@@ -278,6 +285,7 @@
             </li>
             {% endif %}
 
+            <!-- 현재 페이지 기준 번호 목록 -->
             {% with current=page_obj.number total=page_obj.paginator.num_pages %}
                 {% if total <= 1 %}
                     <li class="page-item active">
@@ -342,6 +350,7 @@
                 {% endif %}
             {% endwith %}
 
+            <!-- 다음 페이지 버튼 -->
             {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>

@@ -7,23 +7,43 @@ from policy.models import Policy
 
 
 def _txt(v):
+    """
+    None 값을 빈 문자열로 바꾸고,
+    나머지는 문자열로 변환 후 좌우 공백 제거
+    """
     return "" if v is None else str(v).strip()
 
 
 def _active_text(v):
+    """
+    활성 여부(Boolean)를 화면용 한글 텍스트로 변환
+    """
     return "적용" if bool(v) else "미적용"
 
 
 def _normalize_active_param(v):
+    """
+    검색 파라미터로 들어온 활성 여부 값을 정규화
+    - 활성 관련 값이면 True
+    - 비활성 관련 값이면 False
+    - 그 외는 None
+    """
     v = (v or "").strip().lower()
+
     if v in ("1", "true", "y", "yes", "active", "적용"):
         return True
+
     if v in ("0", "false", "n", "no", "inactive", "미적용"):
         return False
+
     return None
 
 
 def _changed_fields(before_obj, after_obj):
+    """
+    수정 전/후 객체를 비교해서
+    실제 변경된 필드명만 리스트로 반환
+    """
     fields = []
 
     if _txt(before_obj.policy_type) != _txt(after_obj.policy_type):
@@ -49,9 +69,11 @@ def _changed_fields(before_obj, after_obj):
 
 def _build_after_map(rows):
     """
-    같은 policy_id 기준
-    - 더 최근 history row가 있으면 그 row가 현재 row의 after
-    - 없으면 현재 policy 테이블 값이 after
+    같은 policy_id 기준으로 각 history row의 '수정 후 상태(after)'를 매핑
+
+    규칙:
+    - 더 최근 history row가 있으면 그 row를 현재 row의 after 로 사용
+    - 더 최근 history row가 없으면 현재 Policy 테이블 값을 after 로 사용
     """
     policy_ids = list({row.policy_id for row in rows if row.policy_id is not None})
 
@@ -66,12 +88,15 @@ def _build_after_map(rows):
     after_map = {}
 
     for policy_id, items in grouped.items():
+        # 최신 수정 이력이 앞에 오도록 정렬
         items = sorted(items, key=lambda x: (x.update_at, x.id), reverse=True)
 
         for idx, row in enumerate(items):
             if idx == 0:
+                # 가장 최신 이력의 after 는 현재 Policy 테이블 상태
                 after_obj = current_policies.get(policy_id)
             else:
+                # 그 외에는 바로 이전(더 최신) history row를 after 로 사용
                 after_obj = items[idx - 1]
 
             after_map[row.id] = after_obj
@@ -80,6 +105,13 @@ def _build_after_map(rows):
 
 
 def _build_changed_rows(before_obj, after_obj):
+    """
+    수정 전/후 차이를 모달 상세 표시용 구조로 생성
+    [
+        {"label": "...", "before": "...", "after": "..."},
+        ...
+    ]
+    """
     rows = []
 
     def add_row(label, before_val, after_val):
@@ -104,8 +136,16 @@ def _build_changed_rows(before_obj, after_obj):
 
 
 def history_list(request):
+    """
+    정책 수정 이력 목록 조회
+    - 검색 조건 적용
+    - 수정 전/후 비교 데이터 생성
+    - 페이지네이션 처리
+    - 일반 요청 / partial 요청 템플릿 분기
+    """
     qs = PolicyUpdateHistory.objects.all().order_by("-update_at", "-id")
 
+    # 검색 파라미터 수집
     policy_type = (request.GET.get("policy_type") or "").strip().upper()
     policy_name = (request.GET.get("policy_name") or "").strip()
     policy_id = (request.GET.get("policy_id") or "").strip()
@@ -116,56 +156,70 @@ def history_list(request):
     start_date = (request.GET.get("start_date") or "").strip()
     end_date = (request.GET.get("end_date") or "").strip()
 
+    # 정책 타입 필터
     if policy_type in ("DOMAIN", "REGEX"):
         qs = qs.filter(policy_type=policy_type)
 
+    # 정책 이름 필터
     if policy_name:
         qs = qs.filter(policy_name__icontains=policy_name)
 
+    # 정책 ID 필터
     if policy_id:
         if policy_id.isdigit():
             qs = qs.filter(policy_id=int(policy_id))
         else:
             qs = qs.none()
 
+    # URL/표현식 필터
     if content:
         qs = qs.filter(content__icontains=content)
 
+    # 처리 유형 필터
     if handling_type in ("block", "log"):
         qs = qs.filter(handling_type__iexact=handling_type)
 
+    # 활성 여부 필터
     active_value = _normalize_active_param(is_active)
     if active_value is not None:
         qs = qs.filter(is_active=active_value)
 
+    # 수정자 필터
     if update_by:
         qs = qs.filter(update_by__icontains=update_by)
 
+    # 날짜 필터
     sd = parse_date(start_date) if start_date else None
     ed = parse_date(end_date) if end_date else None
 
     if sd:
         qs = qs.filter(update_at__date__gte=sd)
+
     if ed:
         qs = qs.filter(update_at__date__lte=ed)
 
+    # queryset 평가 후, 각 row별 after 상태 계산
     rows = list(qs)
     after_map = _build_after_map(rows)
 
     enriched = []
+
     for row in rows:
         after_obj = after_map.get(row.id)
         if not after_obj:
             continue
 
+        # 변경된 필드명 목록
         changed = _changed_fields(row, after_obj)
+
+        # 변경 상세(before / after)
         changed_rows = _build_changed_rows(row, after_obj)
 
         row.changed_fields = changed
         row.changed_rows = changed_rows
         row.changed_fields_text = ", ".join(changed) if changed else "변경 없음"
 
-        # 모달 상단 표시용
+        # 모달 상단 표시용 데이터
         row.modal_policy_id = row.policy_id
         row.modal_policy_type = row.policy_type or "-"
         row.modal_policy_name = row.policy_name or "-"
@@ -194,15 +248,17 @@ def history_list(request):
         row.after_is_active = after_obj.is_active
         row.after_is_active_text = _active_text(after_obj.is_active)
 
-        # 리스트 표시용
+        # 리스트 표시용 활성 상태 텍스트
         row.is_active_text = _active_text(row.is_active)
 
         enriched.append(row)
 
+    # 페이지네이션
     paginator = Paginator(enriched, 15)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
 
+    # 템플릿에서 검색값 유지용
     filters = {
         "policy_type": policy_type,
         "policy_name": policy_name,
@@ -222,7 +278,9 @@ def history_list(request):
         "active_menu": "policy_update_history",
     }
 
+    # partial 요청이면 목록 영역만 반환
     if request.GET.get("partial") == "1":
         return render(request, "policy_update_history/history_list_partial.html", context)
 
+    # 일반 요청이면 전체 페이지 반환
     return render(request, "policy_update_history/history_list.html", context)

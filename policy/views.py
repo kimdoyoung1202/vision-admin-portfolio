@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.utils.dateparse import parse_datetime
 from django.http import JsonResponse
+from django.urls import reverse
 
 from policy.utils_engine import send_reload_signal
 from policy_delete_history.models import PolicyDeleteHistory
@@ -14,10 +15,9 @@ from .models import Policy
 from ai_analysis_result.models import AiAnalysisResult
 
 
+# 정책 수정 이력을 저장하는 공통 함수
+# 수정 전 상태를 policy_update_history 테이블에 백업한다.
 def save_policy_update_history(policy, request):
-    """
-    policy 수정 직전 상태를 policy_update_history에 저장
-    """
     PolicyUpdateHistory.objects.create(
         policy_id=policy.id,
         policy_name=policy.policy_name,
@@ -33,15 +33,33 @@ def save_policy_update_history(policy, request):
     )
 
 
+# 정책 추가 화면용 컨텍스트를 만드는 공통 함수
+# 에러 재렌더링 시 입력값과 AI 연계값을 함께 넘긴다.
+def build_policy_add_context(ai_id, return_to, ai_row=None, errors=None, form=None):
+    return {
+        "errors": errors or [],
+        "ai_id": ai_id,
+        "return_to": return_to,
+        "initial_content": ai_row.request_url if ai_row else "",
+        "initial_domain": ai_row.domain if ai_row else "",
+        "form": form or {},
+        "active_group": "policy",
+        "active_menu": "policy_add",
+    }
+
+
+# 내부 경로만 리다이렉트 대상으로 허용한다.
+def is_safe_internal_path(path):
+    return bool(path) and path.startswith("/") and not path.startswith("//")
+
+
+# 정책 목록 페이지
+# 필터, 날짜 검색, 페이지네이션, 부분 렌더링을 처리한다.
 def policy_list(request):
-    """
-    정책 목록 + 필터링 + 페이지네이션
-    - partial=1 이면 테이블 영역만 렌더링 (AJAX 갱신용)
-    - dashboard에서 policy_type=DOMAIN / REGEX 로 진입 가능
-    - start_date / end_date 는 datetime-local 형식(예: 2026-03-11T14:30) 지원
-    """
+    # 기본 목록 조회
     qs = Policy.objects.all().order_by("-create_at", "-id")
 
+    # 필터 값 수집
     policy_type = (request.GET.get("policy_type") or "").strip().upper()
     policy_id = (request.GET.get("policy_id") or "").strip()
     policy_name = (request.GET.get("policy_name") or "").strip()
@@ -52,6 +70,7 @@ def policy_list(request):
     start_date = (request.GET.get("start_date") or "").strip()
     end_date = (request.GET.get("end_date") or "").strip()
 
+    # 검색 조건 적용
     if policy_type in ("DOMAIN", "REGEX"):
         qs = qs.filter(policy_type=policy_type)
 
@@ -78,6 +97,7 @@ def policy_list(request):
     elif is_active == "false":
         qs = qs.filter(is_active=False)
 
+    # 날짜 범위 필터
     start_dt = parse_datetime(start_date) if start_date else None
     end_dt = parse_datetime(end_date) if end_date else None
 
@@ -93,6 +113,7 @@ def policy_list(request):
     if end_dt:
         qs = qs.filter(create_at__lte=end_dt)
 
+    # 페이지네이션
     paginator = Paginator(qs, 12)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
@@ -116,17 +137,20 @@ def policy_list(request):
         "active_menu": "policy_list",
     }
 
-    if request.GET.get("partial") == "1":
+    # AJAX 요청이면 목록 부분만 반환
+    if (
+        request.GET.get("partial") == "1"
+        and request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    ):
         return render(request, "policy/policy_list_partial.html", context)
 
     return render(request, "policy/policy_list.html", context)
 
 
+# 정책 삭제 처리
+# 삭제 전 데이터를 PolicyDeleteHistory에 저장한 뒤 실제 정책을 삭제한다.
 @require_POST
 def policy_delete(request, policy_id):
-    """
-    정책 삭제(완전 삭제) + PolicyDeleteHistory에 백업
-    """
     policy = get_object_or_404(Policy, id=policy_id)
 
     with transaction.atomic():
@@ -142,7 +166,6 @@ def policy_delete(request, policy_id):
             delete_by=(request.user.username if request.user.is_authenticated else "system"),
             delete_at=timezone.now(),
         )
-
         policy.delete()
 
     try:
@@ -154,13 +177,9 @@ def policy_delete(request, policy_id):
     return redirect("policy:list")
 
 
+# 정책 추가 페이지
+# 신규 정책 저장과 AI 분석 결과 연계를 처리한다.
 def policy_add(request):
-    """
-    정책 추가 페이지/처리
-    - ai_id가 있으면 AiAnalysisResult에서 값 프리필
-    - 저장 성공 후 엔진 reload 시도(실패해도 저장은 성공)
-    - 동일 content 중복 등록 방지
-    """
     ai_id = request.GET.get("ai_id") or request.POST.get("ai_id")
     return_to = request.GET.get("return_to") or request.POST.get("return_to")
 
@@ -169,6 +188,7 @@ def policy_add(request):
         ai_row = AiAnalysisResult.objects.filter(id=int(ai_id)).first()
 
     if request.method == "POST":
+        # 입력값 수집
         policy_type = (request.POST.get("policy_type") or "").strip().upper()
         content = (request.POST.get("content") or "").strip()
         policy_name = (request.POST.get("policy_name") or "").strip()
@@ -177,6 +197,16 @@ def policy_add(request):
         is_active_raw = (request.POST.get("is_active") or "false").strip().lower()
         is_active = (is_active_raw == "true")
 
+        form_data = {
+            "policy_type": {"value": policy_type},
+            "content": {"value": content},
+            "policy_name": {"value": policy_name},
+            "description": {"value": description},
+            "handling_type": {"value": handling_type},
+            "is_active": {"value": is_active_raw},
+        }
+
+        # 입력값 검증
         errors = []
 
         if policy_type not in ("DOMAIN", "REGEX"):
@@ -195,23 +225,17 @@ def policy_add(request):
             errors.append("동일한 도메인/패턴이 이미 등록되어 있습니다.")
 
         if errors:
-            return render(request, "policy/policy_add.html", {
-                "errors": errors,
-                "ai_id": ai_id,
-                "return_to": return_to,
-                "initial_content": ai_row.request_url if ai_row else "",
-                "initial_domain": ai_row.domain if ai_row else "",
-                "form": {
-                    "policy_type": {"value": policy_type},
-                    "content": {"value": content},
-                    "policy_name": {"value": policy_name},
-                    "description": {"value": description},
-                    "handling_type": {"value": handling_type},
-                    "is_active": {"value": is_active_raw},
-                },
-                "active_group": "policy",
-                "active_menu": "policy_add",
-            })
+            return render(
+                request,
+                "policy/policy_add.html",
+                build_policy_add_context(
+                    ai_id=ai_id,
+                    return_to=return_to,
+                    ai_row=ai_row,
+                    errors=errors,
+                    form=form_data,
+                ),
+            )
 
         try:
             with transaction.atomic():
@@ -229,6 +253,7 @@ def policy_add(request):
                     create_at=now,
                 )
 
+                # DOMAIN 정책은 같은 도메인 로그를 일괄 반영한다.
                 if policy_type == "DOMAIN":
                     AiAnalysisResult.objects.filter(
                         domain__iexact=content
@@ -240,6 +265,7 @@ def policy_add(request):
                         admin=admin_name,
                     )
 
+                # REGEX 정책은 선택한 AI 로그 1건만 반영한다.
                 elif policy_type == "REGEX" and ai_id and ai_row:
                     ai_row.is_checked = True
                     ai_row.checked_result = "ADD"
@@ -255,23 +281,17 @@ def policy_add(request):
                     ])
 
         except IntegrityError:
-            return render(request, "policy/policy_add.html", {
-                "errors": ["동일한 도메인/패턴이 이미 등록되어 있습니다."],
-                "ai_id": ai_id,
-                "return_to": return_to,
-                "initial_content": ai_row.request_url if ai_row else "",
-                "initial_domain": ai_row.domain if ai_row else "",
-                "form": {
-                    "policy_type": {"value": policy_type},
-                    "content": {"value": content},
-                    "policy_name": {"value": policy_name},
-                    "description": {"value": description},
-                    "handling_type": {"value": handling_type},
-                    "is_active": {"value": is_active_raw},
-                },
-                "active_group": "policy",
-                "active_menu": "policy_add",
-            })
+            return render(
+                request,
+                "policy/policy_add.html",
+                build_policy_add_context(
+                    ai_id=ai_id,
+                    return_to=return_to,
+                    ai_row=ai_row,
+                    errors=["동일한 도메인/패턴이 이미 등록되어 있습니다."],
+                    form=form_data,
+                ),
+            )
 
         try:
             send_reload_signal("reload")
@@ -283,7 +303,7 @@ def policy_add(request):
         if rt.lower() in ("none", "null", "undefined"):
             rt = ""
 
-        if rt:
+        if is_safe_internal_path(rt):
             return redirect(rt)
 
         if ai_id and str(ai_id).isdigit():
@@ -291,26 +311,27 @@ def policy_add(request):
 
         return redirect("policy:list")
 
-    return render(request, "policy/policy_add.html", {
-        "ai_id": ai_id,
-        "return_to": return_to,
-        "initial_content": ai_row.request_url if ai_row else "",
-        "initial_domain": ai_row.domain if ai_row else "",
-        "active_group": "policy",
-        "active_menu": "policy_add",
-    })
+    return render(
+        request,
+        "policy/policy_add.html",
+        build_policy_add_context(
+            ai_id=ai_id,
+            return_to=return_to,
+            ai_row=ai_row,
+        ),
+    )
 
 
+# 정책 간단 수정 처리
+# is_active와 handling_type 값을 수정하고 변경 이력을 남긴다.
 @require_POST
 def policy_update(request, policy_id):
-    """
-    정책의 is_active / handling_type 업데이트
-    - 수정 전 상태를 policy_update_history에 저장
-    """
+    # 입력값 수집
     is_active_raw = (request.POST.get("is_active") or "").strip().lower()
     handling_type = (request.POST.get("handling_type") or "").strip().lower()
     next_url = (request.POST.get("next") or "").strip()
 
+    # 입력값 검증
     errors = []
 
     if is_active_raw not in ("true", "false"):
@@ -320,8 +341,8 @@ def policy_update(request, policy_id):
         errors.append("처리 유형 값이 올바르지 않습니다.")
 
     if errors:
-        for e in errors:
-            messages.error(request, e)
+        for error in errors:
+            messages.error(request, error)
         return redirect(next_url or "policy:list")
 
     is_active = (is_active_raw == "true")
@@ -336,9 +357,9 @@ def policy_update(request, policy_id):
         if changed:
             save_policy_update_history(policy, request)
 
-        policy.is_active = is_active
-        policy.handling_type = handling_type
-        policy.save(update_fields=["is_active", "handling_type"])
+            policy.is_active = is_active
+            policy.handling_type = handling_type
+            policy.save(update_fields=["is_active", "handling_type"])
 
     try:
         send_reload_signal("reload")
@@ -349,15 +370,13 @@ def policy_update(request, policy_id):
     return redirect(next_url or "policy:list")
 
 
+# 정책 전체 수정 AJAX
+# 정책 기본 정보와 상태값을 수정하고 JSON으로 결과를 반환한다.
 @require_POST
 def policy_edit_ajax(request, policy_id):
-    """
-    정책 전체 수정 모달용 AJAX
-    - 정책 타입 / 이름 / URL패턴 / 설명 / 적용 여부 / 처리유형 수정
-    - 수정 전 상태를 policy_update_history에 저장
-    """
     policy = get_object_or_404(Policy, id=policy_id)
 
+    # 입력값 수집
     policy_type = (request.POST.get("policy_type") or "").strip().upper()
     policy_name = (request.POST.get("policy_name") or "").strip()
     content = (request.POST.get("content") or "").strip()
@@ -365,6 +384,7 @@ def policy_edit_ajax(request, policy_id):
     is_active_raw = (request.POST.get("is_active") or "").strip().lower()
     handling_type = (request.POST.get("handling_type") or "").strip().lower()
 
+    # 입력값 검증
     errors = []
 
     if policy_type not in ("DOMAIN", "REGEX"):
@@ -408,20 +428,20 @@ def policy_edit_ajax(request, policy_id):
         if changed:
             save_policy_update_history(policy, request)
 
-        policy.policy_type = policy_type
-        policy.policy_name = policy_name
-        policy.content = content
-        policy.description = description
-        policy.is_active = is_active
-        policy.handling_type = handling_type
-        policy.save(update_fields=[
-            "policy_type",
-            "policy_name",
-            "content",
-            "description",
-            "is_active",
-            "handling_type",
-        ])
+            policy.policy_type = policy_type
+            policy.policy_name = policy_name
+            policy.content = content
+            policy.description = description
+            policy.is_active = is_active
+            policy.handling_type = handling_type
+            policy.save(update_fields=[
+                "policy_type",
+                "policy_name",
+                "content",
+                "description",
+                "is_active",
+                "handling_type",
+            ])
 
     try:
         send_reload_signal("reload")
@@ -442,7 +462,7 @@ def policy_edit_ajax(request, policy_id):
             "handling_type": policy.handling_type,
             "create_by": policy.create_by,
             "create_at": policy.create_at.strftime("%Y-%m-%d %H:%M") if policy.create_at else "",
-            "update_url": f"/policy/update/{policy.id}/",
-            "delete_url": f"/policy/delete/{policy.id}/",
+            "update_url": reverse("policy:update", args=[policy.id]),
+            "delete_url": reverse("policy:delete", args=[policy.id]),
         }
     })

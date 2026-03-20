@@ -626,14 +626,17 @@
 {% endblock %}
 
 {% block content %}
+<!-- AI 기록 페이지 전체 영역 -->
 <div class="ai-rec-page">
     <div class="container-fluid ai-rec-wrap container-p-y">
 
+        <!-- 검색 필터 영역 -->
         <div class="card filter-card">
             <div class="card-body">
                 <form method="get" id="filterForm">
                     <div class="filter-grid">
 
+                        <!-- 1행 필터 -->
                         <div class="filter-row filter-row-top">
                             <div class="fg-item">
                                 <label class="form-label">URL/도메인</label>
@@ -673,6 +676,7 @@
                             </div>
                         </div>
 
+                        <!-- 2행 필터 -->
                         <div class="filter-row filter-row-mid">
                             <div class="fg-item">
                                 <label class="form-label">관리자 검토 결과</label>
@@ -712,6 +716,7 @@
                                 <input class="form-control" name="admin" value="{{ filters.admin }}" placeholder="입력" id="adminInput">
                             </div>
 
+                            <!-- 조회 / 초기화 버튼 -->
                             <div class="filter-actions-col">
                                 <div class="filter-actions">
                                     <button class="btn btn-filter-search" type="submit">조회</button>
@@ -722,16 +727,20 @@
 
                     </div>
 
+                    <!-- 목록 정렬 및 페이지 수 유지값 -->
                     <input type="hidden" name="sort" id="sortHidden" value="{{ filters.sort }}">
                     <input type="hidden" name="per_page" value="12">
                 </form>
             </div>
         </div>
 
+        <!-- 목록 / 상세 패널 작업 영역 -->
         <div class="row g-2 workspace">
+            <!-- AI 기록 목록 영역 -->
             <div class="col-12" id="tableCol">
                 <div class="card workspace-card">
                     <div class="card-body">
+                        <!-- AJAX로 목록이 교체되는 영역 -->
                         <div id="listArea">
                             {% include "ai/ai_log_partial.html" %}
                         </div>
@@ -739,9 +748,11 @@
                 </div>
             </div>
 
+            <!-- 선택 항목 상세 패널 -->
             <div class="col-4 d-none" id="detailCol">
                 <div class="card workspace-card">
                     <div class="card-body">
+                        <!-- 상세 패널 헤더 -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0 fw-bold">상세 정보</h6>
                             <div class="d-flex align-items-center gap-2">
@@ -754,6 +765,7 @@
                         <div class="small text-muted fw-bold mb-2">선택한 AI 로그 1건의 상세정보가 표시됩니다</div>
 
                         <div class="detail-scroll">
+                            <!-- 선택 행 상세 정보 테이블 -->
                             <div class="detail-table-wrap table-responsive">
                                 <table class="table table-sm align-middle mb-0">
                                     <tbody>
@@ -772,6 +784,7 @@
                                 </table>
                             </div>
 
+                            <!-- 상세 패널 하단 액션 버튼 -->
                             <div class="d-flex gap-2 mt-2">
                                 <button class="btn btn-detail-secondary w-50" type="button" id="btnIgnoreDetail" disabled>무시</button>
                                 <button class="btn btn-detail-primary w-50" type="button" id="btnAddPolicyDetail" disabled>추가</button>
@@ -786,6 +799,7 @@
     </div>
 </div>
 
+<!-- 날짜 / 시간 선택 팝업 -->
 <div class="dt-panel" id="datetimePanel">
     <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
 
@@ -797,6 +811,7 @@
         <select id="dtMinute"></select>
     </div>
 
+    <!-- 날짜 선택 패널 액션 버튼 -->
     <div class="dt-panel-actions">
         <div class="dt-panel-actions-left">
             <button type="button" class="btn-dt" id="dtNowBtn">지금</button>
@@ -809,6 +824,7 @@
     </div>
 </div>
 
+<!-- AI 기록 페이지 전용 스크립트 -->
 <script>
 (function(){
     const filterForm = document.getElementById("filterForm");
@@ -898,6 +914,7 @@
         return `${date}T${pad(hour)}:${pad(minute)}`;
     }
 
+    /* 시간 선택 옵션 초기화 */
     function fillTimeOptions(){
         for(let h = 0; h < 24; h++){
             const opt = document.createElement("option");
@@ -914,6 +931,7 @@
         }
     }
 
+    /* 숨김값을 화면 표시값으로 동기화 */
     function syncDisplay(){
         logStartDisplay.value = formatDisplay(logStartValue.value);
         logEndDisplay.value = formatDisplay(logEndValue.value);
@@ -921,6 +939,7 @@
         appliedEndDisplay.value = formatDisplay(appliedEndValue.value);
     }
 
+    /* 날짜 선택 대상 입력창 정보 반환 */
     function getPickerMeta(type){
         const map = {
             log_start: {
@@ -947,6 +966,7 @@
         return map[type] || null;
     }
 
+    /* 날짜 선택 패널 열기 */
     function openPicker(type, anchorEl){
         const meta = getPickerMeta(type);
         if(!meta) return;
@@ -977,11 +997,13 @@
         datetimePanel.classList.add("show");
     }
 
+    /* 날짜 선택 패널 닫기 */
     function closePicker(){
         datetimePanel.classList.remove("show");
         activePicker = null;
     }
 
+    /* 날짜 선택값 적용 */
     function applyPickerValue(value){
         if(!activePicker) return;
         const meta = getPickerMeta(activePicker);
@@ -992,6 +1014,7 @@
         closePicker();
     }
 
+    /* 검토 결과 버튼 활성 상태 반영 */
     function updateCheckedResultUI(type){
         btnAdd.classList.remove("btn-filter-active");
         btnIgnore.classList.remove("btn-filter-active");
@@ -1000,6 +1023,7 @@
         if(type === "IGNORE") btnIgnore.classList.add("btn-filter-active");
     }
 
+    /* 검토 여부에 따라 관련 입력 상태 제어 */
     function setEnabled(){
         const reviewed = (isCheckedSelect.value === "true");
         const checkedResult = checkedResultHidden.value;
@@ -1019,12 +1043,14 @@
         adminInput.disabled = !isAdd;
     }
 
+    /* 상세 패널 열기 */
     function openDetail(){
         detailCol.classList.remove("d-none");
         tableCol.classList.remove("col-12");
         tableCol.classList.add("col-8");
     }
 
+    /* 상세 패널 초기화 */
     function resetDetail(){
         badge.textContent = "선택 없음";
         dRequestUrl.textContent = "-";
@@ -1048,6 +1074,7 @@
         window.__selectedCheckedResult = null;
     }
 
+    /* 상세 패널 닫기 */
     function closeDetail(){
         detailCol.classList.add("d-none");
         tableCol.classList.remove("col-8");
@@ -1057,6 +1084,7 @@
         resetDetail();
     }
 
+    /* 현재 필터 기준 쿼리 문자열 생성 */
     function buildQuery(extra){
         const fd = new FormData(filterForm);
         const params = new URLSearchParams(fd);
@@ -1066,6 +1094,7 @@
         return params.toString();
     }
 
+    /* AJAX로 목록 다시 불러오기 */
     async function loadPage(page, extra={}){
         closeDetail();
 
@@ -1084,11 +1113,13 @@
         history.replaceState({}, "", `${window.location.pathname}?${fullParams.toString()}`);
     }
 
+    /* 필터 조회 */
     filterForm.addEventListener("submit", (e) => {
         e.preventDefault();
         loadPage(1).catch(console.error);
     });
 
+    /* 검토 결과: 추가 */
     btnAdd.addEventListener("click", () => {
         if(btnAdd.disabled) return;
 
@@ -1102,6 +1133,7 @@
         setEnabled();
     });
 
+    /* 검토 결과: 무시 */
     btnIgnore.addEventListener("click", () => {
         if(btnIgnore.disabled) return;
 
@@ -1115,6 +1147,7 @@
         setEnabled();
     });
 
+    /* 검토 여부 변경 시 관련 입력 상태 갱신 */
     isCheckedSelect.addEventListener("change", () => {
         if(isCheckedSelect.value !== "true"){
             checkedResultHidden.value = "";
@@ -1123,6 +1156,7 @@
         setEnabled();
     });
 
+    /* 로그 시간 선택 */
     logStartDisplay.addEventListener("click", () => {
         openPicker("log_start", logStartDisplay);
     });
@@ -1131,6 +1165,7 @@
         openPicker("log_end", logEndDisplay);
     });
 
+    /* 정책 추가 시간 선택 */
     appliedStartDisplay.addEventListener("click", () => {
         if(appliedStartDisplay.disabled) return;
         openPicker("applied_start", appliedStartDisplay);
@@ -1141,6 +1176,7 @@
         openPicker("applied_end", appliedEndDisplay);
     });
 
+    /* 현재 시각 입력 */
     dtNowBtn.addEventListener("click", () => {
         const now = new Date();
         dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -1148,19 +1184,23 @@
         dtMinute.value = pad(now.getMinutes());
     });
 
+    /* 날짜 선택값 초기화 */
     dtClearBtn.addEventListener("click", () => {
         applyPickerValue("");
     });
 
+    /* 날짜 선택 취소 */
     dtCancelBtn.addEventListener("click", () => {
         closePicker();
     });
 
+    /* 날짜 선택 적용 */
     dtApplyBtn.addEventListener("click", () => {
         const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
         applyPickerValue(value);
     });
 
+    /* 패널 외부 클릭 시 날짜 선택창 닫기 */
     document.addEventListener("click", (e) => {
         if(!datetimePanel.classList.contains("show")) return;
 
@@ -1179,6 +1219,7 @@
     window.addEventListener("resize", () => closePicker());
     window.addEventListener("scroll", () => closePicker(), true);
 
+    /* 목록 내 정렬, 페이지 이동, 행 선택 처리 */
     listArea.addEventListener("click", (e) => {
         const pageLink = e.target.closest("a[data-page]");
         if(pageLink){
@@ -1226,13 +1267,16 @@
         btnAddPolicyDetail.disabled = false;
     });
 
+    /* 상세 패널 닫기 버튼 */
     detailCloseBtn.addEventListener("click", closeDetail);
 
+    /* CSRF 토큰 조회 */
     function getCookie(name){
         const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
         return v ? decodeURIComponent(v.split("=")[1]) : null;
     }
 
+    /* 선택한 AI 로그를 무시 처리 */
     async function postIgnore(aiId){
         const res = await fetch(`/ai/records/${aiId}/ignore/`, {
             method: "POST",
@@ -1251,6 +1295,7 @@
         return data;
     }
 
+    /* 상세 패널 무시 버튼 */
     btnIgnoreDetail.addEventListener("click", async () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
@@ -1276,6 +1321,7 @@
         }
     });
 
+    /* 상세 패널 추가 버튼 */
     btnAddPolicyDetail.addEventListener("click", () => {
         const aiId = window.__selectedAiId;
         if (!aiId) return;
@@ -1284,6 +1330,7 @@
         window.location.href = `/policy/add/?ai_id=${aiId}&return_to=${returnTo}`;
     });
 
+    /* 초기 화면 설정 */
     fillTimeOptions();
     syncDisplay();
 

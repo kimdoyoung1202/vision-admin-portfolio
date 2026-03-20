@@ -1,3 +1,10 @@
+{% comment %}
+policy_update_history/history_list_partial.html
+
+- 정책 수정 이력 목록 partial 템플릿
+- AJAX 요청 시 목록/페이지네이션 영역만 교체해서 사용
+{% endcomment %}
+
 <style>
     #tableViewport{
         width: 100%;
@@ -120,6 +127,7 @@
     }
 </style>
 
+{% comment %} 수정 이력 테이블 영역 {% endcomment %}
 <div id="tableViewport" class="text-nowrap">
     <table class="table table-hover align-middle mb-0" id="historyTable">
         <thead>
@@ -138,6 +146,10 @@
 
         <tbody>
             {% for h in page_obj %}
+            {% comment %}
+            행 클릭 시 상세 모달에 표시할 값을 data-* 속성으로 전달
+            changed_rows 는 JS 에서 비교표 렌더링용으로 사용
+            {% endcomment %}
             <tr class="js-row"
                 data-id="{{ h.id }}"
                 data-policy-id="{{ h.modal_policy_id|default:''|escape }}"
@@ -183,6 +195,7 @@
                 </td>
             </tr>
             {% empty %}
+            {% comment %} 조회 결과가 없을 때 표시 {% endcomment %}
             <tr>
                 <td colspan="9" class="text-center text-muted py-4">
                     조회 결과가 없습니다.
@@ -193,6 +206,7 @@
     </table>
 </div>
 
+{% comment %} 페이지네이션 영역 {% endcomment %}
 <div class="history-pager">
     <div class="history-pager-top d-flex justify-content-between align-items-center">
         <div class="text-muted table-note">
@@ -203,6 +217,8 @@
 
     <nav class="d-flex justify-content-center" aria-label="수정이력 페이지 이동">
         <ul class="pagination mb-0">
+
+            {% comment %} 이전 페이지 이동 버튼 {% endcomment %}
             {% if page_obj.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="#" data-page="{{ page_obj.previous_page_number }}">이전</a>
@@ -213,12 +229,14 @@
             </li>
             {% endif %}
 
+            {% comment %} 페이지 번호 목록 {% endcomment %}
             {% with current=page_obj.number total=page_obj.paginator.num_pages %}
                 {% if total <= 1 %}
                     <li class="page-item active">
                         <span class="page-link">1</span>
                     </li>
                 {% elif total <= 5 %}
+                    {% comment %} 전체 페이지가 5 이하이면 모두 표시 {% endcomment %}
                     {% for num in page_obj.paginator.page_range %}
                         {% if num == current %}
                         <li class="page-item active">
@@ -232,6 +250,7 @@
                     {% endfor %}
                 {% else %}
                     {% if current <= 3 %}
+                        {% comment %} 앞쪽 구간이면 1~5 표시 {% endcomment %}
                         {% for num in page_obj.paginator.page_range %}
                             {% if num <= 5 %}
                                 {% if num == current %}
@@ -246,6 +265,7 @@
                             {% endif %}
                         {% endfor %}
                     {% elif current >= total|add:"-2" %}
+                        {% comment %} 뒤쪽 구간이면 마지막 5개 표시 {% endcomment %}
                         {% for num in page_obj.paginator.page_range %}
                             {% if num >= total|add:"-4" %}
                                 {% if num == current %}
@@ -260,6 +280,7 @@
                             {% endif %}
                         {% endfor %}
                     {% else %}
+                        {% comment %} 중간 구간이면 현재 페이지 기준 앞뒤 2개씩 표시 {% endcomment %}
                         {% for num in page_obj.paginator.page_range %}
                             {% if num >= current|add:"-2" and num <= current|add:"2" %}
                                 {% if num == current %}
@@ -277,6 +298,7 @@
                 {% endif %}
             {% endwith %}
 
+            {% comment %} 다음 페이지 이동 버튼 {% endcomment %}
             {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link" href="#" data-page="{{ page_obj.next_page_number }}">다음</a>

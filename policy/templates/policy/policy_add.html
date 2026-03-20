@@ -7,16 +7,24 @@
 
 {% block extra_css %}
 <style>
+    /* =========================
+       공통 색상 변수
+       - 정책 등록 페이지에서 사용하는 주요 색상
+       ========================= */
     :root{
         --vision-primary: #696cff;
         --vision-primary-dark: #5f63f2;
-        --vision-primary-soft: rgba(105,108,255,.12);
+        --vision-primary-soft: rgba(105, 108, 255, .12);
         --vision-border: #e7ebf3;
         --vision-muted: #8592a3;
         --vision-text: #566a7f;
         --vision-danger: #ff3e1d;
     }
 
+    /* =========================
+       페이지 바깥 레이아웃
+       - 카드 전체 폭과 가운데 정렬 담당
+       ========================= */
     .pa-wrap{
         max-width: 1120px;
         margin-left: auto;
@@ -28,9 +36,9 @@
         margin-left: auto;
         margin-right: auto;
         border: 1px solid var(--vision-border);
-        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
         border-radius: 16px;
         overflow: hidden;
+        box-shadow: 0 4px 18px rgba(67, 89, 113, 0.06);
     }
 
     .pa-card .card-body{
@@ -40,6 +48,33 @@
     .pa-inner{
         max-width: 830px;
         margin: 0 auto;
+    }
+
+    /* =========================
+       상단 헤더 영역
+       - 제목, 설명, 이동 버튼
+       ========================= */
+    .pa-head{
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 22px;
+    }
+
+    .pa-head-title{
+        margin: 0;
+        font-size: 1.34rem;
+        font-weight: 900;
+        color: #2f3a4a;
+        line-height: 1.2;
+    }
+
+    .pa-head-desc{
+        margin: 6px 0 0 0;
+        font-size: .86rem;
+        color: var(--vision-muted);
+        line-height: 1.5;
     }
 
     .btn-policy-go{
@@ -60,51 +95,33 @@
         border-color: #c9d2f5;
     }
 
-    .pa-head{
-        display:flex;
-        align-items:flex-start;
-        justify-content:space-between;
-        gap:18px;
-        margin-bottom: 22px;
-    }
-
-    .pa-head-title{
-        margin:0;
-        font-size: 1.34rem;
-        font-weight: 900;
-        color: #2f3a4a;
-        line-height: 1.2;
-    }
-
-    .pa-head-desc{
-        margin:6px 0 0 0;
-        font-size:.86rem;
-        color: var(--vision-muted);
-        line-height:1.5;
-    }
-
+    /* =========================
+       입력 폼 공통 영역
+       - 각 입력 블록 간 간격과 라벨 스타일
+       ========================= */
     .pa-section{
-        display:flex;
-        flex-direction:column;
+        display: flex;
+        flex-direction: column;
         gap: 19px;
     }
 
     .pa-field{
-        min-width:0;
+        min-width: 0;
     }
 
     .pa-label{
-        display:block;
+        display: block;
         margin-bottom: 7px;
-        font-weight: 800;
         font-size: .85rem;
+        font-weight: 800;
         color: var(--vision-text);
         line-height: 1.15;
     }
 
+    /* 필수 입력 항목 뒤에 * 표시 */
     .pa-required::after{
-        content:" *";
-        color: #ff3e1d;
+        content: " *";
+        color: var(--vision-danger);
         font-weight: 900;
         font-size: .95em;
     }
@@ -116,6 +133,10 @@
         line-height: 1.48;
     }
 
+    /* =========================
+       기본 입력 요소 스타일
+       - input, select 공통 톤 통일
+       ========================= */
     .pa-card .form-control,
     .pa-card .form-select{
         height: 43px;
@@ -135,39 +156,43 @@
         box-shadow: 0 0 0 .16rem rgba(105, 108, 255, .14) !important;
     }
 
+    /* =========================
+       정책 타입 탭 버튼
+       - DOMAIN / REGEX 선택
+       ========================= */
     .pa-type-tabs{
-        display:flex;
+        display: flex;
         gap: 8px;
-        flex-wrap:wrap;
+        flex-wrap: wrap;
         margin: 0;
         padding: 0;
-        list-style:none;
+        list-style: none;
     }
 
     .pa-type-tabs .nav-item{
-        margin:0 !important;
+        margin: 0 !important;
     }
 
     .pa-type-tabs input{
-        display:none;
+        display: none;
     }
 
     .pa-type-tabs .nav-link{
         min-width: 122px;
         height: 40px;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 0 1rem;
         border-radius: 10px;
         border: 1px solid #d6dcea;
         background: #fff;
         color: #5f6b7a;
+        font-size: .9rem;
         font-weight: 800;
         cursor: pointer;
-        user-select:none;
+        user-select: none;
         transition: all .15s ease;
-        font-size: .9rem;
     }
 
     .pa-type-tabs .nav-link:hover{
@@ -180,59 +205,67 @@
         background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
         border-color: #696cff;
         color: #fff;
-        box-shadow: 0 8px 18px rgba(105,108,255,.16);
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .16);
     }
 
+    /* =========================
+       pill형 라디오 버튼
+       - 처리 유형, 적용 여부 선택
+       ========================= */
     .pa-pill-group{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        flex-wrap:wrap;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
         margin-top: 2px;
     }
 
     .pa-pill{
-        position:relative;
+        position: relative;
     }
 
     .pa-pill input{
-        display:none;
+        display: none;
     }
 
     .pa-pill label{
         min-width: 82px;
         height: 35px;
-        display:inline-flex;
-        align-items:center;
-        justify-content:center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: 0 1rem;
+        margin: 0;
         border-radius: 999px;
         border: 1px solid #d6dcea;
         background: #fff;
         color: #5f6b7a;
         font-size: .82rem;
         font-weight: 800;
-        cursor:pointer;
+        cursor: pointer;
         transition: all .15s ease;
-        margin:0;
     }
 
     .pa-pill label:hover{
-        background:#f5f7ff;
-        color:#4f5fd7;
-        border-color:#c9d2f5;
+        background: #f5f7ff;
+        color: #4f5fd7;
+        border-color: #c9d2f5;
     }
 
     .pa-pill input:checked + label{
         background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
-        border-color:#696cff;
-        color:#fff;
-        box-shadow: 0 8px 16px rgba(105,108,255,.14);
+        border-color: #696cff;
+        color: #fff;
+        box-shadow: 0 8px 16px rgba(105, 108, 255, .14);
     }
 
+    /* =========================
+       하단 액션 버튼
+       - 추가 / 취소 버튼
+       ========================= */
     .pa-actions{
-        display:flex;
-        justify-content:center;
+        display: flex;
+        justify-content: center;
         gap: 10px;
         margin-top: 12px;
         padding-top: 4px;
@@ -243,22 +276,22 @@
         height: 40px;
         padding: .45rem 1rem;
         border-radius: 10px;
+        font-size: .92rem;
         font-weight: 800;
         white-space: nowrap;
-        font-size: .92rem;
     }
 
     .pa-btn-submit{
-        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
         border: none;
         color: #fff;
-        box-shadow: 0 8px 18px rgba(105,108,255,.18);
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
+        box-shadow: 0 8px 18px rgba(105, 108, 255, .18);
     }
 
     .pa-btn-submit:hover{
-        color:#fff;
+        color: #fff;
         transform: translateY(-1px);
-        box-shadow: 0 10px 22px rgba(105,108,255,.24);
+        box-shadow: 0 10px 22px rgba(105, 108, 255, .24);
     }
 
     .pa-btn-cancel{
@@ -273,6 +306,10 @@
         border-color: #c9d2f5;
     }
 
+    /* =========================
+       에러 모달 스타일
+       - 입력 오류 목록 표시
+       ========================= */
     .pa-error-modal .modal-content{
         border: 1px solid rgba(255, 62, 29, .14);
         border-radius: 16px;
@@ -281,9 +318,9 @@
     }
 
     .pa-error-modal .modal-header{
+        padding: 14px 18px;
         border-bottom: 1px solid #f1d7d0;
         background: #fff7f5;
-        padding: 14px 18px;
     }
 
     .pa-error-modal .modal-title{
@@ -320,25 +357,29 @@
     .pa-error-confirm{
         min-width: 90px;
         height: 38px;
+        border: none;
         border-radius: 10px;
         font-weight: 800;
-        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
-        border: none;
         color: #fff;
+        background: linear-gradient(135deg, #696cff 0%, #5d67f6 100%);
     }
 
     .pa-error-confirm:hover{
-        color:#fff;
+        color: #fff;
     }
 
+    /* =========================
+       반응형 처리
+       - 모바일에서 버튼과 탭 폭 정리
+       ========================= */
     @media (max-width: 767.98px){
         .pa-card .card-body{
             padding: 20px 15px 18px;
         }
 
         .pa-head{
-            flex-direction:column;
-            align-items:stretch;
+            flex-direction: column;
+            align-items: stretch;
             margin-bottom: 18px;
         }
 
@@ -347,13 +388,13 @@
         }
 
         .pa-actions{
-            flex-direction:column;
-            align-items:stretch;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .pa-btn,
         .btn-policy-go{
-            width:100%;
+            width: 100%;
         }
 
         .pa-type-tabs .nav-link{
@@ -362,7 +403,7 @@
         }
 
         .pa-type-tabs .nav-item{
-            flex:1 1 0;
+            flex: 1 1 0;
         }
     }
 </style>
@@ -374,15 +415,19 @@
         <div class="card-body">
             <div class="pa-inner">
 
+                {# 정책 등록 폼 시작 #}
                 <form method="post" action="">
                     {% csrf_token %}
 
+                    {# 이전 화면 복귀나 AI 연동 시 필요한 숨김값 #}
                     <input type="hidden" name="ai_id" value="{{ ai_id|default:'' }}">
                     <input type="hidden" name="return_to" value="{{ return_to|default:'' }}">
 
+                    {# 정책 타입 전환 시 기본값으로 사용할 초기 데이터 #}
                     <input type="hidden" id="initial_url" value="{{ initial_content|default_if_none:'' }}">
                     <input type="hidden" id="initial_domain" value="{{ initial_domain|default_if_none:'' }}">
 
+                    {# 상단 제목 및 이동 버튼 #}
                     <div class="pa-head">
                         <div>
                             <h5 class="pa-head-title">정책 등록</h5>
@@ -396,6 +441,7 @@
 
                     <div class="pa-section">
 
+                        {# 정책 타입 선택: DOMAIN / REGEX #}
                         <div class="pa-field">
                             <label class="pa-label pa-required">정책 타입</label>
 
@@ -436,6 +482,7 @@
                             <div class="pa-sub">정책 타입에 따라 도메인 또는 정규표현식을 등록합니다.</div>
                         </div>
 
+                        {# 정책 대상 입력: 도메인 또는 정규표현식 #}
                         <div class="pa-field">
                             <label class="pa-label pa-required">정책 URL/표현식</label>
                             <input
@@ -448,6 +495,7 @@
                             >
                         </div>
 
+                        {# 관리자 화면에 표시할 정책 이름 #}
                         <div class="pa-field">
                             <label class="pa-label pa-required">정책 이름</label>
                             <input
@@ -459,6 +507,7 @@
                             >
                         </div>
 
+                        {# 정책 용도나 배경을 기록하는 선택 입력 항목 #}
                         <div class="pa-field">
                             <label class="pa-label">정책 설명</label>
                             <input
@@ -470,6 +519,7 @@
                             >
                         </div>
 
+                        {# 탐지 후 동작 선택: 차단 또는 로그만 기록 #}
                         <div class="pa-field">
                             <label class="pa-label pa-required">처리 유형</label>
                             <div class="pa-pill-group">
@@ -498,6 +548,7 @@
                             <div class="pa-sub">탐지 시 차단할지, 로그만 남길지 선택합니다.</div>
                         </div>
 
+                        {# 등록 직후 정책 활성 여부 선택 #}
                         <div class="pa-field">
                             <label class="pa-label pa-required">정책 적용 여부</label>
                             <div class="pa-pill-group">
@@ -526,32 +577,37 @@
                             <div class="pa-sub">등록 직후 정책을 바로 적용할지 선택합니다.</div>
                         </div>
 
+                        {# 하단 액션 버튼 #}
                         <div class="pa-actions">
                             <button class="btn pa-btn pa-btn-submit" type="submit">추가</button>
 
                             {% if return_to %}
-                            <a class="btn pa-btn pa-btn-cancel" href="{{ return_to }}">취소</a>
+                                <a class="btn pa-btn pa-btn-cancel" href="{{ return_to }}">취소</a>
                             {% else %}
-                            <a class="btn pa-btn pa-btn-cancel" href="{% url 'policy:list' %}">취소</a>
+                                <a class="btn pa-btn pa-btn-cancel" href="{% url 'policy:list' %}">취소</a>
                             {% endif %}
                         </div>
 
                     </div>
                 </form>
+                {# 정책 등록 폼 끝 #}
 
             </div>
         </div>
     </div>
 </div>
 
+{# 서버 검증 오류가 있을 때만 모달 렌더링 #}
 {% if errors %}
 <div class="modal fade pa-error-modal" id="policyErrorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+
             <div class="modal-header">
                 <h5 class="modal-title">입력 내용을 확인하세요</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
             </div>
+
             <div class="modal-body">
                 <ul>
                     {% for err in errors %}
@@ -559,9 +615,11 @@
                     {% endfor %}
                 </ul>
             </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn pa-error-confirm" data-bs-dismiss="modal">확인</button>
             </div>
+
         </div>
     </div>
 </div>
@@ -569,29 +627,51 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const labels = document.querySelectorAll(".pa-type-tabs label.nav-link");
-    const input = document.getElementById("policy_content");
+    /*
+     * 정책 타입 탭 버튼과 정책 내용 입력창을 찾는다.
+     * 정책 타입이 바뀌면 도메인/정규식 기본값을 자동으로 넣는다.
+     */
+    const typeLabels = document.querySelectorAll(".pa-type-tabs label.nav-link");
+    const contentInput = document.getElementById("policy_content");
 
+    /*
+     * 초기값
+     * - initial_url: REGEX 선택 시 넣을 기본 URL/패턴 값
+     * - initial_domain: DOMAIN 선택 시 넣을 기본 도메인 값
+     */
     const initialUrl = (document.getElementById("initial_url")?.value || "").trim();
     const initialDomain = (document.getElementById("initial_domain")?.value || "").trim();
 
-    labels.forEach((label) => {
-        label.addEventListener("click", () => {
-            labels.forEach((item) => item.classList.remove("active"));
+    /*
+     * 정책 타입 탭 클릭 처리
+     * - active 클래스 갱신
+     * - 선택한 타입에 따라 content 입력값 보정
+     */
+    typeLabels.forEach((label) => {
+        label.addEventListener("click", function () {
+            typeLabels.forEach((item) => item.classList.remove("active"));
             label.classList.add("active");
 
-            const target = label.getAttribute("for");
+            const targetId = label.getAttribute("for");
 
-            if (target === "type_regex") {
-                if (initialUrl) input.value = initialUrl;
-            } else if (target === "type_domain") {
-                if (initialDomain) input.value = initialDomain;
+            if (targetId === "type_regex" && initialUrl) {
+                contentInput.value = initialUrl;
+            }
+
+            if (targetId === "type_domain" && initialDomain) {
+                contentInput.value = initialDomain;
             }
         });
     });
 
     {% if errors %}
+    /*
+     * 서버 검증 오류가 있을 때 에러 모달을 자동으로 띄운다.
+     * Bootstrap JS가 있으면 정식 모달로 열고,
+     * 없으면 최소 동작 방식으로 직접 표시한다.
+     */
     const modalEl = document.getElementById("policyErrorModal");
+
     if (modalEl) {
         if (window.bootstrap && bootstrap.Modal) {
             const errorModal = new bootstrap.Modal(modalEl);

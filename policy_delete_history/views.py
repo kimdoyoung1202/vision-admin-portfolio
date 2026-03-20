@@ -12,6 +12,12 @@ from .models import PolicyDeleteHistory
 
 
 def policy_delete_history_list(request):
+    """
+    삭제된 정책 목록 조회
+    - 검색 조건을 적용해 삭제 이력을 필터링
+    - 일반 요청이면 전체 페이지 템플릿 반환
+    - AJAX 요청이면 목록 partial 템플릿만 반환
+    """
     qs = PolicyDeleteHistory.objects.all().order_by("-delete_at")
 
     policy_type = request.GET.get("policy_type", "")
@@ -78,26 +84,33 @@ def policy_delete_history_list(request):
 
 @require_POST
 def policy_delete_history_restore(request, history_id):
+    """
+    삭제 이력 1건을 정책 테이블로 복구
+    - 복구 성공 후 삭제 이력은 제거
+    - 엔진 reload 신호 전송
+    - AJAX / 일반 요청 모두 처리
+    """
     is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-    h = get_object_or_404(PolicyDeleteHistory, id=history_id)
+    history = get_object_or_404(PolicyDeleteHistory, id=history_id)
 
     try:
         with transaction.atomic():
             Policy.objects.create(
-                policy_type=h.policy_type,
-                policy_name=h.policy_name,
-                content=h.content,
-                description=h.description or "",
-                handling_type=h.handling_type,
+                policy_type=history.policy_type,
+                policy_name=history.policy_name,
+                content=history.content,
+                description=history.description or "",
+                handling_type=history.handling_type,
                 is_active=True,
                 create_by=request.user.username if request.user.is_authenticated else "system",
                 create_at=timezone.now(),
             )
 
-            h.delete()
+            history.delete()
 
         reload_ok = True
         reload_error = ""
+
         try:
             send_reload_signal("reload")
         except Exception as e:
@@ -105,16 +118,21 @@ def policy_delete_history_restore(request, history_id):
             reload_error = str(e)
 
         if is_ajax:
-            return JsonResponse({
-                "ok": True,
-                "reload_ok": reload_ok,
-                "reload_error": reload_error,
-            })
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "reload_ok": reload_ok,
+                    "reload_error": reload_error,
+                }
+            )
 
         if reload_ok:
             messages.success(request, "정책이 복구되었습니다. (엔진 반영 완료)")
         else:
-            messages.warning(request, f"정책은 복구되었습니다. (엔진 반영 실패: {reload_error})")
+            messages.warning(
+                request,
+                f"정책은 복구되었습니다. (엔진 반영 실패: {reload_error})"
+            )
 
         return redirect("policy_delete_history:list")
 

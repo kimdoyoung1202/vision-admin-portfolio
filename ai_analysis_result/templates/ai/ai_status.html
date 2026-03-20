@@ -224,8 +224,10 @@
 {% endblock %}
 
 {% block content %}
+<!-- AI 상태 페이지 전체 영역 -->
 <div class="ai-page">
 
+  <!-- 엔진 상태 표시 영역 -->
   <div class="d-flex justify-content-end">
     <div class="status-pill">
       <span class="dot" id="engineDot"></span>
@@ -233,6 +235,7 @@
     </div>
   </div>
 
+  <!-- 상단 KPI 카드 영역 -->
   <div class="row g-2">
     <div class="col-3">
       <div class="panel kpi-card">
@@ -272,6 +275,7 @@
   </div>
 
   <div class="ai-mid">
+    <!-- 실시간 차트 영역 -->
     <div class="row g-2 chart-row">
       <div class="col-6">
         <div class="panel chart-panel">
@@ -292,11 +296,14 @@
       </div>
     </div>
 
+    <!-- 하단 자원 사용량 / 시스템 정보 / 오류 목록 영역 -->
     <div class="row g-2 bottom-row">
       <div class="col-4" style="height:100%; min-height:0;">
         <div class="panel left-bundle">
           <div>
             <div class="bundle-head">자원 사용량</div>
+
+            <!-- CPU / 메모리 도넛 차트 -->
             <div class="donut-wrap">
               <div class="donut-card">
                 <div class="donut-head">
@@ -318,6 +325,7 @@
             </div>
           </div>
 
+          <!-- 시스템 정보 영역 -->
           <div class="system-box">
             <div class="bundle-head" style="margin-bottom:8px;">시스템 정보</div>
             <div class="table-responsive">
@@ -337,11 +345,13 @@
       <div class="col-8" style="height:100%; min-height:0;">
         <div class="panel errors-panel">
 
+          <!-- 최근 오류 헤더 및 재검토 버튼 -->
           <div class="section-head">
             <div class="chart-title" style="margin:0;">최근 오류</div>
             <button class="btn btn-outline-primary btn-recheck" id="btnRecheck">재검토</button>
           </div>
 
+          <!-- 최근 오류 목록 -->
           <div class="table-responsive">
             <table class="table table-sm mb-0">
               <thead>
@@ -368,6 +378,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function(){
+  /* 차트 인스턴스 보관 */
   const charts = {
     latency: null,
     throughput: null,
@@ -375,26 +386,31 @@
     mem: null
   };
 
+  /* 필수 DOM 요소 조회 */
   function el(id){
     const node = document.getElementById(id);
     if(!node) throw new Error(`#${id} not found`);
     return node;
   }
 
+  /* Chart.js 인스턴스 여부 확인 */
   function isChart(x){
     return x && typeof x.update === "function" && x.data && x.config;
   }
 
+  /* 숫자 변환 */
   function toNum(v, d=0){
     const n = Number(v);
     return Number.isFinite(n) ? n : d;
   }
 
+  /* CSRF 토큰 조회 */
   function getCookie(name){
     const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
     return v ? decodeURIComponent(v.split("=")[1]) : null;
   }
 
+  /* 도넛 중앙 텍스트 플러그인 */
   const centerTextPlugin = {
     id: "centerText",
     afterDraw(chart) {
@@ -417,10 +433,12 @@
     }
   };
 
+  /* 플러그인 등록 */
   if(!Chart.registry.plugins.get("centerText")){
     Chart.register(centerTextPlugin);
   }
 
+  /* 라인 차트 생성 */
   function makeLine(canvas){
     return new Chart(canvas, {
       type: "line",
@@ -459,33 +477,35 @@
     });
   }
 
+  /* 도넛 차트 생성 */
   function makeDonut(canvas, usedColor = "#696cff", freeColor = "#e9edf5"){
-  return new Chart(canvas, {
-    type: "doughnut",
-    data: {
-      labels: ["Used", "Free"],
-      datasets: [{
-        data: [0, 100],
-        backgroundColor: [usedColor, freeColor],
-        borderColor: [usedColor, freeColor],
-        hoverBackgroundColor: [usedColor, freeColor],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: "72%",
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false },
-        centerText: { value: 0 }
+    return new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: ["Used", "Free"],
+        datasets: [{
+          data: [0, 100],
+          backgroundColor: [usedColor, freeColor],
+          borderColor: [usedColor, freeColor],
+          hoverBackgroundColor: [usedColor, freeColor],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "72%",
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+          centerText: { value: 0 }
+        }
       }
-    }
-  });
-}
+    });
+  }
 
+  /* 엔진 상태 표시 갱신 */
   function setEngine(ok){
     const dot = el("engineDot");
     const txt = el("engineText");
@@ -501,12 +521,14 @@
     }
   }
 
+  /* 값이 모두 0일 때 y축 범위 보정 */
   function applyZeroAxisFix(chart, series){
     const allZero = series.every(v => Number(v) === 0);
     chart.options.scales.y.min = 0;
     chart.options.scales.y.max = allZero ? 1 : undefined;
   }
 
+  /* 라인 차트 데이터 반영 */
   function setLineChart(chart, labels, series){
     chart.data.labels = labels;
     chart.data.datasets[0].data = series;
@@ -514,6 +536,7 @@
     chart.update("none");
   }
 
+  /* 도넛 차트 데이터 반영 */
   function setDonutChart(chart, percent){
     const value = Math.max(0, Math.min(100, toNum(percent, 0)));
     chart.data.datasets[0].data = [value, Math.max(0, 100 - value)];
@@ -522,6 +545,7 @@
     return value;
   }
 
+  /* 상태 API 호출 후 화면 갱신 */
   async function loadStatus(){
     const res = await fetch("{% url 'ai:status_api' %}", {
       credentials: "same-origin",
@@ -539,17 +563,20 @@
     const systemInfo = data.system_info || {};
     const recentErrors = data.recent_errors || [];
 
+    /* KPI 값 반영 */
     el("kpiLatency").textContent = kpi.latency ?? "-";
     el("kpiThroughput").textContent = kpi.rpm ?? "-";
     el("kpiTotal").textContent = kpi.total_today ?? "-";
     el("kpiAcc").textContent = kpi.accuracy ?? "-";
 
+    /* 엔진 상태 / 시스템 정보 반영 */
     setEngine(!!kpi.engine_ok);
 
     el("sysVersion").textContent = systemInfo.version ?? "-";
     el("sysDev").textContent = systemInfo.developer ?? "-";
     el("sysUpdate").textContent = "2초";
 
+    /* 차트 최초 생성 */
     if(!isChart(charts.latency)) {
       charts.latency = makeLine(el("latencyChart"));
     }
@@ -563,6 +590,7 @@
       charts.mem = makeDonut(el("memDonut"));
     }
 
+    /* 실시간 차트 데이터 반영 */
     const rtLabels = Array.isArray(chart.rt_labels) ? chart.rt_labels : [];
     const rtLatencySeries = Array.isArray(chart.rt_latency_series)
       ? chart.rt_latency_series.map(v => toNum(v, 0))
@@ -574,12 +602,14 @@
     setLineChart(charts.latency, rtLabels, rtLatencySeries);
     setLineChart(charts.throughput, rtLabels, rtThroughputSeries);
 
+    /* 도넛 차트 데이터 반영 */
     const cpu = kpi.engine_ok ? setDonutChart(charts.cpu, kpi.cpu) : setDonutChart(charts.cpu, 0);
     const mem = kpi.engine_ok ? setDonutChart(charts.mem, kpi.memory) : setDonutChart(charts.mem, 0);
 
     el("cpuPct").textContent = kpi.engine_ok ? `${Math.round(cpu)}%` : "-";
     el("memPct").textContent = kpi.engine_ok ? `${Math.round(mem)}%` : "-";
 
+    /* 최근 오류 목록 갱신 */
     const tbody = el("recentErrorsTbody");
     tbody.innerHTML = recentErrors.length === 0
       ? `<tr><td colspan="3" class="text-center text-muted">표시할 항목이 없습니다.</td></tr>`
@@ -599,11 +629,15 @@
       }).join("");
   }
 
+  /* 최초 조회 */
   loadStatus().catch(e => console.error("loadStatus failed:", e));
+
+  /* 주기적 상태 갱신 */
   setInterval(() => {
     loadStatus().catch(e => console.error("loadStatus failed:", e));
   }, 2000);
 
+  /* 재검토 요청 버튼 */
   document.getElementById("btnRecheck")?.addEventListener("click", async () => {
     const btn = document.getElementById("btnRecheck");
     btn.disabled = true;

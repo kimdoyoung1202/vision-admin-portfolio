@@ -358,7 +358,7 @@
     flex-direction: column;
   }
 
-  #listArea{
+  .listArea{
     flex: 1;
     min-height: 0;
     overflow: hidden;
@@ -761,9 +761,11 @@
 <div class="policy-page">
   <div class="container-fluid policy-fluid container-p-y">
 
+    {% comment %} 상단 검색 필터 카드 {% endcomment %}
     <div class="card filter-card">
       <div class="card-body">
 
+        {% comment %} 정책 타입 탭 {% endcomment %}
         <ul class="nav nav-pills">
           <li class="nav-item">
             <a class="nav-link {% if filters.policy_type == '' %}active{% endif %}"
@@ -779,6 +781,7 @@
           </li>
         </ul>
 
+        {% comment %} 검색 폼 {% endcomment %}
         <form method="get" id="filterForm">
           <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
 
@@ -857,8 +860,10 @@
       </div>
     </div>
 
+    {% comment %} 목록 영역 + 상세 패널 영역 {% endcomment %}
     <div class="row g-2 workspace">
 
+      {% comment %} 정책 목록 카드 {% endcomment %}
       <div class="col-12" id="tableCol">
         <div class="card list-card workspace-card">
           <div class="card-body">
@@ -869,6 +874,7 @@
         </div>
       </div>
 
+      {% comment %} 우측 상세 패널, 행 선택 시 표시 {% endcomment %}
       <div class="col-4 d-none" id="detailCol">
         <div class="card workspace-card">
           <div class="card-body">
@@ -906,6 +912,7 @@
               </div>
             </div>
 
+            {% comment %} 상세 패널 내 빠른 수정/삭제 폼 {% endcomment %}
             <div class="detail-footer">
               <form method="post" id="detailUpdateForm">
                 {% csrf_token %}
@@ -947,6 +954,7 @@
   </div>
 </div>
 
+{% comment %} 정책 전체 수정 모달 {% endcomment %}
 <div class="pm-backdrop" id="editModalBackdrop">
   <div class="pm-modal">
     <div class="pm-head">
@@ -1009,6 +1017,7 @@
   </div>
 </div>
 
+{% comment %} 날짜/시간 선택 패널 {% endcomment %}
 <div class="dt-panel" id="datetimePanel">
   <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
 
@@ -1032,6 +1041,14 @@
   </div>
 </div>
 
+{% comment %}
+페이지 동작 스크립트
+- 날짜 선택 패널 제어
+- 목록 partial 갱신
+- 상세 패널 열기/닫기
+- 수정 모달 처리
+- 삭제 처리
+{% endcomment %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const listArea = document.getElementById("listArea");

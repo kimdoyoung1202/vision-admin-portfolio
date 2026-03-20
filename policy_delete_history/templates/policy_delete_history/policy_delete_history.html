@@ -527,9 +527,11 @@
 <div class="ph-page">
     <div class="container-fluid ph-wrap container-p-y">
 
+        {% comment %} 상단 검색 필터 카드 {% endcomment %}
         <div class="card filter-card">
             <div class="card-body">
 
+                {% comment %} 정책 타입 탭 영역 {% endcomment %}
                 <ul class="nav nav-pills mb-2" id="typeTabs">
                     <li class="nav-item">
                         <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
@@ -545,6 +547,7 @@
                     </li>
                 </ul>
 
+                {% comment %} 삭제 정책 검색 폼 {% endcomment %}
                 <form method="get" id="historyFilterForm">
                     <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
                     <input type="hidden" name="per_page" value="12">
@@ -611,6 +614,7 @@
             </div>
         </div>
 
+        {% comment %} 목록 partial 이 표시되는 작업 영역 {% endcomment %}
         <div class="workspace">
             <div id="tableCol">
                 <div class="card workspace-card">
@@ -626,6 +630,7 @@
     </div>
 </div>
 
+{% comment %} 삭제시간 검색용 날짜/시간 선택 패널 {% endcomment %}
 <div class="dt-panel" id="datetimePanel">
     <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
 
@@ -649,6 +654,7 @@
     </div>
 </div>
 
+{% comment %} 삭제 정책 상세 및 복구 모달 {% endcomment %}
 <div class="modal fade history-modal" id="deleteDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -705,6 +711,14 @@
     </div>
 </div>
 
+{% comment %}
+페이지 동작 스크립트
+- 필터 검색
+- partial 목록 갱신
+- 행 클릭 시 상세 모달 표시
+- 복구 요청 처리
+- 날짜/시간 선택 패널 제어
+{% endcomment %}
 <script>
 (function(){
     const form = document.getElementById("historyFilterForm");

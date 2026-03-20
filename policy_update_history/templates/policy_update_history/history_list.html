@@ -550,9 +550,11 @@
 <div class="history-page">
     <div class="container-fluid history-fluid container-p-y">
 
+        {% comment %} 상단 검색 필터 카드 {% endcomment %}
         <div class="card filter-card">
             <div class="card-body">
 
+                {% comment %} 정책 타입 탭 영역 {% endcomment %}
                 <ul class="nav nav-pills mb-2" id="typeTabs">
                     <li class="nav-item">
                         <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
@@ -568,6 +570,7 @@
                     </li>
                 </ul>
 
+                {% comment %} 검색 필터 폼 {% endcomment %}
                 <form method="get" id="filterForm">
                     <input type="hidden" name="policy_type" value="{{ filters.policy_type }}">
 
@@ -638,6 +641,7 @@
             </div>
         </div>
 
+        {% comment %} 수정 이력 목록이 표시되는 작업 영역 {% endcomment %}
         <div class="workspace">
             <div class="col-12 h-100">
                 <div class="card list-card workspace-card">
@@ -653,6 +657,7 @@
     </div>
 </div>
 
+{% comment %} 수정시간 검색용 날짜/시간 선택 패널 {% endcomment %}
 <div class="dt-panel" id="datetimePanel">
     <div class="dt-panel-head" id="dtPanelTitle">일시 선택</div>
 
@@ -676,6 +681,7 @@
     </div>
 </div>
 
+{% comment %} 정책 수정 상세 및 변경 전후 비교 모달 {% endcomment %}
 <div class="modal fade history-modal" id="historyDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -742,6 +748,14 @@
     </div>
 </div>
 
+{% comment %}
+페이지 동작 스크립트
+- 필터 검색
+- partial 목록 갱신
+- 행 클릭 시 상세 모달 표시
+- 변경 필드 비교 렌더링
+- 날짜/시간 선택 패널 제어
+{% endcomment %}
 <script>
 (function(){
     const listArea = document.getElementById("listArea");
