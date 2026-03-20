@@ -20,17 +20,30 @@ def policy_delete_history_list(request):
     """
     qs = PolicyDeleteHistory.objects.all().order_by("-delete_at")
 
-    policy_type = request.GET.get("policy_type", "")
+    policy_type = request.GET.get("policy_type", "").strip()
     policy_name = request.GET.get("policy_name", "").strip()
     content = request.GET.get("content", "").strip()
     is_active = request.GET.get("is_active", "")
     handling_type = request.GET.get("handling_type", "")
     delete_by = request.GET.get("delete_by", "").strip()
-    start_date = request.GET.get("start_date", "")
-    end_date = request.GET.get("end_date", "")
+    start_date = request.GET.get("start_date", "").strip()
+    end_date = request.GET.get("end_date", "").strip()
 
-    if policy_type:
-        qs = qs.filter(policy_type=policy_type)
+    # policy_type 입력값 정규화
+    # 프론트에서 한글/영문 어느 쪽이 와도 DB 저장값 기준으로 변환
+    policy_type_map = {
+        "도메인": "DOMAIN",
+        "정규표현식": "REGEX",
+        "domain": "DOMAIN",
+        "regex": "REGEX",
+        "DOMAIN": "DOMAIN",
+        "REGEX": "REGEX",
+    }
+
+    normalized_policy_type = policy_type_map.get(policy_type, policy_type)
+
+    if normalized_policy_type:
+        qs = qs.filter(policy_type=normalized_policy_type)
 
     if policy_name:
         qs = qs.filter(policy_name__icontains=policy_name)
@@ -49,13 +62,20 @@ def policy_delete_history_list(request):
     elif is_active == "false":
         qs = qs.filter(is_active=False)
 
+    # datetime-local(예: 2026-03-20T15:30)가 들어와도 날짜 부분만 잘라서 비교
     if start_date:
-        qs = qs.filter(delete_at__date__gte=start_date)
+        qs = qs.filter(delete_at__date__gte=start_date[:10])
 
     if end_date:
-        qs = qs.filter(delete_at__date__lte=end_date)
+        qs = qs.filter(delete_at__date__lte=end_date[:10])
 
-    paginator = Paginator(qs, 14)
+    # 프론트에서 per_page를 보내면 반영, 없으면 12 기본값
+    try:
+        per_page = int(request.GET.get("per_page", 12))
+    except ValueError:
+        per_page = 12
+
+    paginator = Paginator(qs, per_page)
     page_number = request.GET.get("page", "1")
     page_obj = paginator.get_page(page_number)
 
@@ -70,6 +90,7 @@ def policy_delete_history_list(request):
             "delete_by": delete_by,
             "start_date": start_date,
             "end_date": end_date,
+            "per_page": per_page,
         },
     }
 

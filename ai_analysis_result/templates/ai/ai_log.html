@@ -691,8 +691,8 @@
                                 <label class="form-label">정책 타입</label>
                                 <select class="form-select" name="policy_type" id="policyTypeSelect">
                                     <option value="" {% if filters.policy_type == "" %}selected{% endif %}>선택</option>
-                                    <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>Domain</option>
-                                    <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>Regex</option>
+                                    <option value="DOMAIN" {% if filters.policy_type == "DOMAIN" %}selected{% endif %}>도메인</option>
+                                    <option value="REGEX" {% if filters.policy_type == "REGEX" %}selected{% endif %}>정규표현식</option>
                                 </select>
                             </div>
 

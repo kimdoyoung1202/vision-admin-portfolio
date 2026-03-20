@@ -538,11 +538,11 @@
                            href="{% url 'policy_delete_history:list' %}?policy_type=">전체</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if filters.policy_type == '도메인' %}active{% endif %} js-tab"
+                        <a class="nav-link {% if filters.policy_type == 'DOMAIN' %}active{% endif %} js-tab"
                            href="{% url 'policy_delete_history:list' %}?policy_type=도메인">도메인</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if filters.policy_type == '정규표현식' %}active{% endif %} js-tab"
+                        <a class="nav-link {% if filters.policy_type == 'REGEX' %}active{% endif %} js-tab"
                            href="{% url 'policy_delete_history:list' %}?policy_type=정규표현식">정규 표현식</a>
                     </li>
                 </ul>
@@ -711,402 +711,503 @@
     </div>
 </div>
 
-{% comment %}
-페이지 동작 스크립트
-- 필터 검색
-- partial 목록 갱신
-- 행 클릭 시 상세 모달 표시
-- 복구 요청 처리
-- 날짜/시간 선택 패널 제어
-{% endcomment %}
 <script>
-(function(){
-    const form = document.getElementById("historyFilterForm");
-    const partialWrap = document.getElementById("historyPartial");
-    const deleteDetailModalEl = document.getElementById("deleteDetailModal");
+    (function(){
+        /* =========================
+        기본 DOM 참조
+        ========================= */
+        const form = document.getElementById("historyFilterForm");
+        const partialWrap = document.getElementById("historyPartial");
+        const deleteDetailModalEl = document.getElementById("deleteDetailModal");
 
-    let deleteDetailModal = null;
-    let restoreAction = null;
+        let deleteDetailModal = null;
+        let restoreAction = null;
 
-    const mHistoryId = document.getElementById("mHistoryId");
-    const mPolicyType = document.getElementById("mPolicyType");
-    const mPolicyName = document.getElementById("mPolicyName");
-    const mContent = document.getElementById("mContent");
-    const mHandlingType = document.getElementById("mHandlingType");
-    const mIsActive = document.getElementById("mIsActive");
-    const mDescription = document.getElementById("mDescription");
-    const mDeleteBy = document.getElementById("mDeleteBy");
-    const mDeleteAt = document.getElementById("mDeleteAt");
-    const modalRestoreBtn = document.getElementById("modalRestoreBtn");
+        /* =========================
+        모달 내부 표시 요소
+        ========================= */
+        const mHistoryId = document.getElementById("mHistoryId");
+        const mPolicyType = document.getElementById("mPolicyType");
+        const mPolicyName = document.getElementById("mPolicyName");
+        const mContent = document.getElementById("mContent");
+        const mHandlingType = document.getElementById("mHandlingType");
+        const mIsActive = document.getElementById("mIsActive");
+        const mDescription = document.getElementById("mDescription");
+        const mDeleteBy = document.getElementById("mDeleteBy");
+        const mDeleteAt = document.getElementById("mDeleteAt");
+        const modalRestoreBtn = document.getElementById("modalRestoreBtn");
 
-    const datetimePanel = document.getElementById("datetimePanel");
-    const dtPanelTitle = document.getElementById("dtPanelTitle");
-    const dtDate = document.getElementById("dtDate");
-    const dtHour = document.getElementById("dtHour");
-    const dtMinute = document.getElementById("dtMinute");
-    const dtNowBtn = document.getElementById("dtNowBtn");
-    const dtClearBtn = document.getElementById("dtClearBtn");
-    const dtCancelBtn = document.getElementById("dtCancelBtn");
-    const dtApplyBtn = document.getElementById("dtApplyBtn");
+        /* =========================
+        날짜/시간 선택 패널 요소
+        ========================= */
+        const datetimePanel = document.getElementById("datetimePanel");
+        const dtPanelTitle = document.getElementById("dtPanelTitle");
+        const dtDate = document.getElementById("dtDate");
+        const dtHour = document.getElementById("dtHour");
+        const dtMinute = document.getElementById("dtMinute");
+        const dtNowBtn = document.getElementById("dtNowBtn");
+        const dtClearBtn = document.getElementById("dtClearBtn");
+        const dtCancelBtn = document.getElementById("dtCancelBtn");
+        const dtApplyBtn = document.getElementById("dtApplyBtn");
 
-    const startDateValue = document.getElementById("startDateValue");
-    const startDateDisplay = document.getElementById("startDateDisplay");
-    const endDateValue = document.getElementById("endDateValue");
-    const endDateDisplay = document.getElementById("endDateDisplay");
+        const startDateValue = document.getElementById("startDateValue");
+        const startDateDisplay = document.getElementById("startDateDisplay");
+        const endDateValue = document.getElementById("endDateValue");
+        const endDateDisplay = document.getElementById("endDateDisplay");
 
-    let activePicker = null;
+        let activePicker = null;
 
-    function initModal(){
-        if (typeof bootstrap === "undefined" || !bootstrap.Modal){
-            console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
-            return null;
-        }
-        return bootstrap.Modal.getOrCreateInstance(deleteDetailModalEl);
-    }
-
-    function pad(n){
-        return String(n).padStart(2, "0");
-    }
-
-    function formatDisplay(value){
-        if(!value) return "";
-        return value.replace("T", " ");
-    }
-
-    function parseValue(value){
-        if(!value || value.indexOf("T") === -1){
-            return { date: "", hour: "00", minute: "00" };
-        }
-        const parts = value.split("T");
-        const date = parts[0] || "";
-        const time = parts[1] || "00:00";
-        const t = time.split(":");
-        return {
-            date: date,
-            hour: pad(t[0] || "00"),
-            minute: pad(t[1] || "00"),
-        };
-    }
-
-    function buildValue(date, hour, minute){
-        if(!date) return "";
-        return `${date}T${pad(hour)}:${pad(minute)}`;
-    }
-
-    function fillTimeOptions(){
-        for(let h = 0; h < 24; h++){
-            const opt = document.createElement("option");
-            opt.value = pad(h);
-            opt.textContent = pad(h) + "시";
-            dtHour.appendChild(opt);
+        /* =========================
+        Bootstrap 모달 초기화
+        ========================= */
+        function initModal(){
+            if (typeof bootstrap === "undefined" || !bootstrap.Modal){
+                console.error("Bootstrap Modal JS가 로드되지 않았습니다.");
+                return null;
+            }
+            return bootstrap.Modal.getOrCreateInstance(deleteDetailModalEl);
         }
 
-        for(let m = 0; m < 60; m += 1){
-            const opt = document.createElement("option");
-            opt.value = pad(m);
-            opt.textContent = pad(m) + "분";
-            dtMinute.appendChild(opt);
-        }
-    }
-
-    function syncDisplay(){
-        startDateDisplay.value = formatDisplay(startDateValue.value);
-        endDateDisplay.value = formatDisplay(endDateValue.value);
-    }
-
-    function openPicker(type, anchorEl){
-        activePicker = type;
-        dtPanelTitle.textContent = type === "start" ? "시작 일시 선택" : "종료 일시 선택";
-
-        const rawValue = type === "start" ? startDateValue.value : endDateValue.value;
-        const parsed = parseValue(rawValue);
-
-        dtDate.value = parsed.date;
-        dtHour.value = parsed.hour;
-        dtMinute.value = parsed.minute;
-
-        const rect = anchorEl.getBoundingClientRect();
-        const panelWidth = 280;
-        const left = Math.min(
-            Math.max(16, rect.left + window.scrollX),
-            window.scrollX + window.innerWidth - panelWidth - 16
-        );
-
-        let top = rect.bottom + window.scrollY + 8;
-        const panelHeight = 210;
-        if(top + panelHeight > window.scrollY + window.innerHeight - 12){
-            top = rect.top + window.scrollY - panelHeight - 8;
+        /* =========================
+        공용 유틸
+        ========================= */
+        function pad(n){
+            return String(n).padStart(2, "0");
         }
 
-        datetimePanel.style.left = left + "px";
-        datetimePanel.style.top = Math.max(12, top) + "px";
-        datetimePanel.classList.add("show");
-    }
-
-    function closePicker(){
-        datetimePanel.classList.remove("show");
-        activePicker = null;
-    }
-
-    function applyPickerValue(value){
-        if(!activePicker) return;
-
-        if(activePicker === "start"){
-            startDateValue.value = value;
-        }else{
-            endDateValue.value = value;
+        function formatDisplay(value){
+            if(!value) return "";
+            return value.replace("T", " ");
         }
-        syncDisplay();
-        closePicker();
-    }
 
-    function getCookie(name){
-        const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
-        return v ? decodeURIComponent(v.split("=")[1]) : "";
-    }
-
-    function getCSRFToken(){
-        const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        return (el && el.value) ? el.value : getCookie("csrftoken");
-    }
-
-    function textOrDash(v){
-        if (v === undefined || v === null || String(v).trim() === "") return "-";
-        return v;
-    }
-
-    function clearActive(){
-        partialWrap.querySelectorAll(".js-row.table-active").forEach(r => r.classList.remove("table-active"));
-    }
-
-    function resetModal(){
-        mHistoryId.textContent = "-";
-        mPolicyType.textContent = "-";
-        mPolicyName.textContent = "-";
-        mContent.textContent = "-";
-        mHandlingType.textContent = "-";
-        mIsActive.textContent = "-";
-        mDescription.textContent = "-";
-        mDeleteBy.textContent = "-";
-        mDeleteAt.textContent = "-";
-        restoreAction = null;
-        modalRestoreBtn.disabled = true;
-    }
-
-    function fillModal(d){
-        mHistoryId.textContent = d.historyId ? `삭제 기록 ID : ${d.historyId}` : "-";
-        mPolicyType.textContent = textOrDash(d.policyType);
-        mPolicyName.textContent = textOrDash(d.policyName);
-        mContent.textContent = textOrDash(d.content);
-        mHandlingType.textContent = textOrDash(d.handlingType);
-        mIsActive.textContent = d.isActive === "true" ? "적용" : "미적용";
-        mDescription.textContent = textOrDash(d.policyDesc);
-        mDeleteBy.textContent = textOrDash(d.deleteBy);
-        mDeleteAt.textContent = textOrDash(d.deleteAt);
-
-        restoreAction = d.restoreAction || null;
-        modalRestoreBtn.disabled = !restoreAction;
-    }
-
-    function buildParams(extra){
-        const fd = new FormData(form);
-        const params = new URLSearchParams(fd);
-        params.set("partial", "1");
-
-        if (extra){
-            Object.entries(extra).forEach(([k, v]) => params.set(k, v));
-        }
-        return params;
-    }
-
-    async function loadPartial(url){
-        try{
-            partialWrap.classList.add("dim-loading");
-            clearActive();
-            resetModal();
-
-            if(deleteDetailModal){
-                deleteDetailModal.hide();
+        function parseValue(value){
+            if(!value || value.indexOf("T") === -1){
+                return { date: "", hour: "00", minute: "00" };
             }
 
-            const res = await fetch(url, {
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            });
-            if(!res.ok) throw new Error("partial fetch failed");
+            const parts = value.split("T");
+            const date = parts[0] || "";
+            const time = parts[1] || "00:00";
+            const t = time.split(":");
 
-            partialWrap.innerHTML = await res.text();
-            bindPagerClicks();
-            bindTabs();
-            bindRowClicks();
-        }catch(e){
-            console.error(e);
-            alert("조회 중 오류가 발생했습니다. 콘솔을 확인하세요.");
-        }finally{
-            partialWrap.classList.remove("dim-loading");
+            return {
+                date: date,
+                hour: pad(t[0] || "00"),
+                minute: pad(t[1] || "00"),
+            };
         }
-    }
 
-    function bindPagerClicks(){
-        partialWrap.querySelectorAll("a.js-page, a[data-page]").forEach(a => {
-            a.addEventListener("click", (e) => {
-                e.preventDefault();
-                const url = a.getAttribute("href");
-                const page = a.dataset.page;
-                if(url){
-                    loadPartial(url);
-                }else if(page){
-                    const params = buildParams({ page: page });
-                    loadPartial(`${window.location.pathname}?${params.toString()}`);
-                }
+        function buildValue(date, hour, minute){
+            if(!date) return "";
+            return `${date}T${pad(hour)}:${pad(minute)}`;
+        }
+
+        function getCookie(name){
+            const v = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+            return v ? decodeURIComponent(v.split("=")[1]) : "";
+        }
+
+        function getCSRFToken(){
+            const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            return (el && el.value) ? el.value : getCookie("csrftoken");
+        }
+
+        function textOrDash(v){
+            if (v === undefined || v === null || String(v).trim() === "") return "-";
+            return v;
+        }
+
+        /* =========================
+        날짜/시간 선택 패널 관련
+        ========================= */
+        function fillTimeOptions(){
+            /* 시(hour) 옵션 생성 */
+            for(let h = 0; h < 24; h++){
+                const opt = document.createElement("option");
+                opt.value = pad(h);
+                opt.textContent = pad(h) + "시";
+                dtHour.appendChild(opt);
+            }
+
+            /* 분(minute) 옵션 생성 */
+            for(let m = 0; m < 60; m += 1){
+                const opt = document.createElement("option");
+                opt.value = pad(m);
+                opt.textContent = pad(m) + "분";
+                dtMinute.appendChild(opt);
+            }
+        }
+
+        function syncDisplay(){
+            /* hidden input 값을 화면 표시용 input에 반영 */
+            startDateDisplay.value = formatDisplay(startDateValue.value);
+            endDateDisplay.value = formatDisplay(endDateValue.value);
+        }
+
+        function openPicker(type, anchorEl){
+            activePicker = type;
+            dtPanelTitle.textContent = type === "start" ? "시작 일시 선택" : "종료 일시 선택";
+
+            const rawValue = type === "start" ? startDateValue.value : endDateValue.value;
+            const parsed = parseValue(rawValue);
+
+            dtDate.value = parsed.date;
+            dtHour.value = parsed.hour;
+            dtMinute.value = parsed.minute;
+
+            /* 클릭한 input 아래에 패널 배치 */
+            const rect = anchorEl.getBoundingClientRect();
+            const panelWidth = 280;
+
+            const left = Math.min(
+                Math.max(16, rect.left + window.scrollX),
+                window.scrollX + window.innerWidth - panelWidth - 16
+            );
+
+            let top = rect.bottom + window.scrollY + 8;
+            const panelHeight = 210;
+
+            /* 아래 공간이 부족하면 위쪽으로 띄움 */
+            if(top + panelHeight > window.scrollY + window.innerHeight - 12){
+                top = rect.top + window.scrollY - panelHeight - 8;
+            }
+
+            datetimePanel.style.left = left + "px";
+            datetimePanel.style.top = Math.max(12, top) + "px";
+            datetimePanel.classList.add("show");
+        }
+
+        function closePicker(){
+            datetimePanel.classList.remove("show");
+            activePicker = null;
+        }
+
+        function applyPickerValue(value){
+            if(!activePicker) return;
+
+            if(activePicker === "start"){
+                startDateValue.value = value;
+            }else{
+                endDateValue.value = value;
+            }
+
+            syncDisplay();
+            closePicker();
+        }
+
+        /* =========================
+        목록 / 모달 상태 제어
+        ========================= */
+        function clearActive(){
+            partialWrap.querySelectorAll(".js-row.table-active").forEach(row => {
+                row.classList.remove("table-active");
             });
+        }
+
+        function resetModal(){
+            mHistoryId.textContent = "-";
+            mPolicyType.textContent = "-";
+            mPolicyName.textContent = "-";
+            mContent.textContent = "-";
+            mHandlingType.textContent = "-";
+            mIsActive.textContent = "-";
+            mDescription.textContent = "-";
+            mDeleteBy.textContent = "-";
+            mDeleteAt.textContent = "-";
+
+            restoreAction = null;
+            modalRestoreBtn.disabled = true;
+        }
+
+        function fillModal(d){
+            mHistoryId.textContent = d.historyId ? `삭제 기록 ID : ${d.historyId}` : "-";
+            mPolicyType.textContent = textOrDash(d.policyType);
+            mPolicyName.textContent = textOrDash(d.policyName);
+            mContent.textContent = textOrDash(d.content);
+            mHandlingType.textContent = textOrDash(d.handlingType);
+            mIsActive.textContent = d.isActive === "true" ? "적용" : "미적용";
+            mDescription.textContent = textOrDash(d.policyDesc);
+            mDeleteBy.textContent = textOrDash(d.deleteBy);
+            mDeleteAt.textContent = textOrDash(d.deleteAt);
+
+            restoreAction = d.restoreAction || null;
+            modalRestoreBtn.disabled = !restoreAction;
+        }
+
+        /* =========================
+        검색 파라미터 생성
+        ========================= */
+        function buildParams(extra){
+            const fd = new FormData(form);
+            const params = new URLSearchParams(fd);
+
+            /* partial 요청임을 서버에 알림 */
+            params.set("partial", "1");
+
+            if (extra){
+                Object.entries(extra).forEach(([k, v]) => {
+                    params.set(k, v);
+                });
+            }
+
+            return params;
+        }
+
+        /* =========================
+        partial 목록 다시 불러오기
+        주의:
+        - 탭은 고정 DOM 이므로 여기서 다시 bind 하면 안 됨
+        - 페이지/행은 partial 내부 요소라 다시 bind 해야 함
+        ========================= */
+        async function loadPartial(url){
+            try{
+                partialWrap.classList.add("dim-loading");
+                clearActive();
+                resetModal();
+
+                if(deleteDetailModal){
+                    deleteDetailModal.hide();
+                }
+
+                const res = await fetch(url, {
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+
+                if(!res.ok){
+                    throw new Error("partial fetch failed");
+                }
+
+                partialWrap.innerHTML = await res.text();
+
+                /* partial 안에서 새로 생성된 요소들만 다시 바인딩 */
+                bindPagerClicks();
+                bindRowClicks();
+
+            }catch(e){
+                console.error(e);
+                alert("조회 중 오류가 발생했습니다. 콘솔을 확인하세요.");
+            }finally{
+                partialWrap.classList.remove("dim-loading");
+            }
+        }
+
+        /* =========================
+        페이지네이션 클릭 바인딩
+        partial 안 요소이므로 매번 다시 바인딩 필요
+        ========================= */
+        function bindPagerClicks(){
+            partialWrap.querySelectorAll("a.js-page, a[data-page]").forEach(a => {
+                /* 중복 바인딩 방지 */
+                if (a.dataset.bound === "1") return;
+                a.dataset.bound = "1";
+
+                a.addEventListener("click", (e) => {
+                    e.preventDefault();
+
+                    const url = a.getAttribute("href");
+                    const page = a.dataset.page;
+
+                    if(url){
+                        loadPartial(url);
+                    }else if(page){
+                        const params = buildParams({ page: page });
+                        loadPartial(`${window.location.pathname}?${params.toString()}`);
+                    }
+                });
+            });
+        }
+
+        /* =========================
+        상단 정책 타입 탭 바인딩
+        중요:
+        - 탭은 partial 밖의 고정 DOM
+        - 최초 1번만 바인딩해야 함
+        - loadPartial 안에서 다시 호출하면 안 됨
+        ========================= */
+        function bindTabs(){
+            document.querySelectorAll("a.js-tab").forEach(a => {
+                /* 이미 바인딩된 탭이면 건너뜀 */
+                if (a.dataset.bound === "1") return;
+                a.dataset.bound = "1";
+
+                a.addEventListener("click", (e) => {
+                    e.preventDefault();
+
+                    /* 활성 탭 UI 갱신 */
+                    document.querySelectorAll("a.js-tab").forEach(x => {
+                        x.classList.remove("active");
+                    });
+                    a.classList.add("active");
+
+                    /* 클릭한 탭의 policy_type 값을 hidden input에 반영 */
+                    const url = new URL(a.href, window.location.origin);
+                    const pt = url.searchParams.get("policy_type") ?? "";
+                    form.querySelector('input[name="policy_type"]').value = pt;
+
+                    /* 첫 페이지부터 다시 조회 */
+                    const params = new URLSearchParams(new FormData(form));
+                    params.set("page", "1");
+                    params.set("per_page", "12");
+                    params.set("partial", "1");
+
+                    loadPartial(`${window.location.pathname}?${params.toString()}`);
+                });
+            });
+        }
+
+        /* =========================
+        목록 행 클릭 바인딩
+        partial 안 요소이므로 매번 다시 바인딩 필요
+        ========================= */
+        function bindRowClicks(){
+            partialWrap.querySelectorAll("tr.js-row").forEach(row => {
+                /* 중복 바인딩 방지 */
+                if (row.dataset.bound === "1") return;
+                row.dataset.bound = "1";
+
+                row.addEventListener("click", () => {
+                    clearActive();
+                    row.classList.add("table-active");
+
+                    /* data-* 값을 모달에 채움 */
+                    fillModal(row.dataset);
+
+                    if (!deleteDetailModal){
+                        deleteDetailModal = initModal();
+                    }
+
+                    if (deleteDetailModal){
+                        deleteDetailModal.show();
+                    }
+                });
+            });
+        }
+
+        /* =========================
+        날짜 선택 input 클릭 이벤트
+        ========================= */
+        fillTimeOptions();
+        syncDisplay();
+
+        startDateDisplay.addEventListener("click", function () {
+            openPicker("start", startDateDisplay);
         });
-    }
 
-    function bindTabs(){
-        document.querySelectorAll("a.js-tab").forEach(a => {
-            a.addEventListener("click", (e) => {
-                e.preventDefault();
+        endDateDisplay.addEventListener("click", function () {
+            openPicker("end", endDateDisplay);
+        });
 
-                document.querySelectorAll("a.js-tab").forEach(x => x.classList.remove("active"));
-                a.classList.add("active");
+        dtNowBtn.addEventListener("click", function () {
+            const now = new Date();
+            dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            dtHour.value = pad(now.getHours());
+            dtMinute.value = pad(now.getMinutes());
+        });
 
-                const url = new URL(a.href, window.location.origin);
-                const pt = url.searchParams.get("policy_type") ?? "";
-                form.querySelector('input[name="policy_type"]').value = pt;
+        dtClearBtn.addEventListener("click", function () {
+            applyPickerValue("");
+        });
 
+        dtCancelBtn.addEventListener("click", function () {
+            closePicker();
+        });
+
+        dtApplyBtn.addEventListener("click", function () {
+            const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
+            applyPickerValue(value);
+        });
+
+        /* 날짜 패널 바깥 클릭 시 닫기 */
+        document.addEventListener("click", function (e) {
+            if (!datetimePanel.classList.contains("show")) return;
+
+            const clickedInsidePanel = datetimePanel.contains(e.target);
+            const clickedDisplay =
+                e.target === startDateDisplay ||
+                e.target === endDateDisplay;
+
+            if (!clickedInsidePanel && !clickedDisplay) {
+                closePicker();
+            }
+        });
+
+        /* 화면 변형 시 패널 닫기 */
+        window.addEventListener("resize", function () {
+            closePicker();
+        });
+
+        window.addEventListener("scroll", function () {
+            closePicker();
+        }, true);
+
+        /* =========================
+        복구 버튼 클릭 처리
+        ========================= */
+        modalRestoreBtn.addEventListener("click", async () => {
+            if(!restoreAction) return;
+            if(!confirm("정말 복구하시겠습니까?")) return;
+
+            try{
+                partialWrap.classList.add("dim-loading");
+
+                const res = await fetch(restoreAction, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                });
+
+                const data = await res.json().catch(() => null);
+
+                if(!res.ok || !data || !data.ok){
+                    const msg = (data && data.error) ? data.error : "복구 실패";
+                    alert(msg);
+                    return;
+                }
+
+                /* 복구 후 현재 필터 기준으로 첫 페이지 재조회 */
                 const params = new URLSearchParams(new FormData(form));
                 params.set("page", "1");
                 params.set("per_page", "12");
                 params.set("partial", "1");
-                loadPartial(`${window.location.pathname}?${params.toString()}`);
-            });
-        });
-    }
 
-    function bindRowClicks(){
-        partialWrap.querySelectorAll("tr.js-row").forEach(row => {
-            row.addEventListener("click", () => {
-                clearActive();
-                row.classList.add("table-active");
-                fillModal(row.dataset);
-
-                if (!deleteDetailModal){
-                    deleteDetailModal = initModal();
-                }
-
-                if (deleteDetailModal){
-                    deleteDetailModal.show();
-                }
-            });
-        });
-    }
-
-    fillTimeOptions();
-    syncDisplay();
-
-    startDateDisplay.addEventListener("click", function () {
-        openPicker("start", startDateDisplay);
-    });
-
-    endDateDisplay.addEventListener("click", function () {
-        openPicker("end", endDateDisplay);
-    });
-
-    dtNowBtn.addEventListener("click", function () {
-        const now = new Date();
-        dtDate.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        dtHour.value = pad(now.getHours());
-        dtMinute.value = pad(now.getMinutes());
-    });
-
-    dtClearBtn.addEventListener("click", function () {
-        applyPickerValue("");
-    });
-
-    dtCancelBtn.addEventListener("click", function () {
-        closePicker();
-    });
-
-    dtApplyBtn.addEventListener("click", function () {
-        const value = buildValue(dtDate.value, dtHour.value, dtMinute.value);
-        applyPickerValue(value);
-    });
-
-    document.addEventListener("click", function (e) {
-        if (!datetimePanel.classList.contains("show")) return;
-
-        const clickedInsidePanel = datetimePanel.contains(e.target);
-        const clickedDisplay =
-            e.target === startDateDisplay ||
-            e.target === endDateDisplay;
-
-        if (!clickedInsidePanel && !clickedDisplay) {
-            closePicker();
-        }
-    });
-
-    window.addEventListener("resize", function () {
-        closePicker();
-    });
-
-    window.addEventListener("scroll", function () {
-        closePicker();
-    }, true);
-
-    modalRestoreBtn.addEventListener("click", async () => {
-        if(!restoreAction) return;
-        if(!confirm("정말 복구하시겠습니까?")) return;
-
-        try{
-            partialWrap.classList.add("dim-loading");
-
-            const res = await fetch(restoreAction, {
-                method: "POST",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "X-CSRFToken": getCSRFToken(),
-                },
-            });
-
-            const data = await res.json().catch(() => null);
-
-            if(!res.ok || !data || !data.ok){
-                const msg = (data && data.error) ? data.error : "복구 실패";
-                alert(msg);
-                return;
+                await loadPartial(`${window.location.pathname}?${params.toString()}`);
+            }catch(err){
+                console.error(err);
+                alert("복구 중 오류가 발생했습니다. 콘솔을 확인하세요.");
+            }finally{
+                partialWrap.classList.remove("dim-loading");
             }
+        });
+
+        /* =========================
+        검색 폼 submit 처리
+        ========================= */
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
 
             const params = new URLSearchParams(new FormData(form));
             params.set("page", "1");
             params.set("per_page", "12");
             params.set("partial", "1");
-            await loadPartial(`${window.location.pathname}?${params.toString()}`);
-        }catch(err){
-            console.error(err);
-            alert("복구 중 오류가 발생했습니다. 콘솔을 확인하세요.");
-        }finally{
-            partialWrap.classList.remove("dim-loading");
-        }
-    });
 
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const params = new URLSearchParams(new FormData(form));
-        params.set("page", "1");
-        params.set("per_page", "12");
-        params.set("partial", "1");
-        loadPartial(`${window.location.pathname}?${params.toString()}`);
-    });
+            loadPartial(`${window.location.pathname}?${params.toString()}`);
+        });
 
-    deleteDetailModalEl.addEventListener("hidden.bs.modal", () => {
-        clearActive();
-    });
+        /* 모달 닫힐 때 행 active 해제 */
+        deleteDetailModalEl.addEventListener("hidden.bs.modal", () => {
+            clearActive();
+        });
 
-    bindPagerClicks();
-    bindTabs();
-    bindRowClicks();
-    resetModal();
-    deleteDetailModal = initModal();
-})();
+        /* =========================
+        최초 1회 초기화
+        ========================= */
+        bindPagerClicks();   /* partial 내부 */
+        bindTabs();         /* 고정 탭 - 최초 1회만 */
+        bindRowClicks();    /* partial 내부 */
+        resetModal();
+        deleteDetailModal = initModal();
+    })();
 </script>
 {% endblock %}
