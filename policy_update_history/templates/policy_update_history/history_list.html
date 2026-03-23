@@ -558,15 +558,15 @@
                 <ul class="nav nav-pills mb-2" id="typeTabs">
                     <li class="nav-item">
                         <a class="nav-link {% if filters.policy_type == '' %}active{% endif %} js-tab"
-                           href="{% url 'policy_update_history:list' %}?policy_type=">전체</a>
+                            href="{% url 'policy_update_history:list' %}?policy_type=">전체</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if filters.policy_type == 'DOMAIN' %}active{% endif %} js-tab"
-                           href="{% url 'policy_update_history:list' %}?policy_type=DOMAIN">도메인</a>
+                            href="{% url 'policy_update_history:list' %}?policy_type=DOMAIN">도메인</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if filters.policy_type == 'REGEX' %}active{% endif %} js-tab"
-                           href="{% url 'policy_update_history:list' %}?policy_type=REGEX">정규표현식</a>
+                            href="{% url 'policy_update_history:list' %}?policy_type=REGEX">정규표현식</a>
                     </li>
                 </ul>
 
